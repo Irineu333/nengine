@@ -7,11 +7,13 @@
 - `:engine` — núcleo da engine em Kotlin puro (sem dependência de Compose). Scene graph, lifecycle, math, SPI de `Renderer`/`Input`, `Collider`/`PhysicsSystem`, `GameLoop`.
 - `:engine-compose` — backend Compose Multiplatform da engine: `ComposeRenderer`, `ComposeInput`, composable `GameSurface` que dirige o loop via `withFrameNanos`.
 - `:games:pong` — jogo Pong executável (humano vs IA), usado como prova de aceitação da fundação.
+- `:games:tictactoe` — jogo Velha executável (humano vs humano), prova de interação discreta (click, hit-test, máquina de estados).
 
 ## Como rodar
 
 ```sh
 ./gradlew :games:pong:run
+./gradlew :games:tictactoe:run
 ```
 
 ## Documentação

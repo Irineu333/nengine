@@ -1,0 +1,82 @@
+package com.neoutils.engine.games.tictactoe
+
+import com.neoutils.engine.math.Rect
+import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.scene.Node2D
+
+class Board : Node2D() {
+
+    val cells: Array<Mark?> = arrayOfNulls(9)
+
+    var currentPlayer: Mark = Mark.X
+        private set
+
+    var winner: Mark? = null
+        private set
+
+    var isDraw: Boolean = false
+        private set
+
+    var winningLine: Triple<Int, Int, Int>? = null
+        private set
+
+    var origin: Vec2 = Vec2.ZERO
+    var cellSize: Float = 100f
+
+    val gameOver: Boolean get() = winner != null || isDraw
+
+    fun cellRect(index: Int): Rect {
+        val row = index / 3
+        val col = index % 3
+        return Rect(
+            origin = Vec2(origin.x + col * cellSize, origin.y + row * cellSize),
+            size = Vec2(cellSize, cellSize),
+        )
+    }
+
+    fun cellAt(point: Vec2): Int? {
+        for (i in 0 until 9) {
+            if (cellRect(i).contains(point)) return i
+        }
+        return null
+    }
+
+    fun checkWinner(): Triple<Int, Int, Int>? {
+        for (line in WINNING_LINES) {
+            val (a, b, c) = line
+            val mark = cells[a] ?: continue
+            if (cells[b] == mark && cells[c] == mark) return line
+        }
+        return null
+    }
+
+    fun reset() {
+        for (i in 0 until 9) cells[i] = null
+        winner = null
+        isDraw = false
+        winningLine = null
+        currentPlayer = Mark.X
+    }
+
+    internal fun placeMove(index: Int) {
+        if (gameOver || cells[index] != null) return
+        cells[index] = currentPlayer
+        val line = checkWinner()
+        if (line != null) {
+            winner = currentPlayer
+            winningLine = line
+        } else if (cells.all { it != null }) {
+            isDraw = true
+        } else {
+            currentPlayer = currentPlayer.other()
+        }
+    }
+
+    companion object {
+        private val WINNING_LINES: List<Triple<Int, Int, Int>> = listOf(
+            Triple(0, 1, 2), Triple(3, 4, 5), Triple(6, 7, 8), // rows
+            Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8), // cols
+            Triple(0, 4, 8), Triple(2, 4, 6), // diagonals
+        )
+    }
+}

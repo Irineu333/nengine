@@ -74,12 +74,13 @@ fun GameSurface(
             }
     ) {
         @Suppress("UNUSED_EXPRESSION") frameNanos // subscribe to recomposition
+        scene.resize(size.width, size.height)
         renderer.bind(this)
         try {
             loop.tick(pendingDt)
             if (Debug.showFps) {
                 val text = "fps ${Debug.currentFps.toInt()}"
-                renderer.drawText(text, Vec2(8f, 8f), size = 14f, color = Color.WHITE)
+                renderer.drawText(text, Vec2(8f, 24f), size = 18f, color = Color.WHITE)
             }
         } finally {
             renderer.unbind()

@@ -12,6 +12,21 @@ open class Scene : Node() {
     @Volatile var input: Input? = null
         internal set
 
+    var width: Float = 0f
+        private set
+    var height: Float = 0f
+        private set
+
+    /** Called by the runtime when the rendering surface size changes. */
+    fun resize(width: Float, height: Float) {
+        if (width == this.width && height == this.height) return
+        this.width = width
+        this.height = height
+        onResize(width, height)
+    }
+
+    open fun onResize(width: Float, height: Float) {}
+
     fun start() {
         if (!isLive) attachToLiveTree()
     }

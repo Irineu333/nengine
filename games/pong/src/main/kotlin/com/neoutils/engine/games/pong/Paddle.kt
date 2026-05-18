@@ -9,7 +9,7 @@ import com.neoutils.engine.scene.Node2D
 
 class Paddle(
     val size: Vec2 = Vec2(WIDTH, HEIGHT),
-    val playFieldHeight: Float,
+    var playFieldHeight: Float,
     var upKey: Key? = null,
     var downKey: Key? = null,
     var ai: Boolean = false,

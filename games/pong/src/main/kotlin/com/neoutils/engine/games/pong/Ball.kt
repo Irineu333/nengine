@@ -15,7 +15,7 @@ class Ball(
     val initialSpeed: Float = 280f,
     val maxSpeed: Float = 560f,
     val speedupPerHit: Float = 1.05f,
-    val fieldCenter: Vec2,
+    var fieldCenter: Vec2,
     private val random: Random = Random.Default,
     private val onScore: (Goal.Side) -> Unit = {},
 ) : Node2D() {
@@ -52,15 +52,26 @@ class Ball(
             }
             other is Wall -> velocity = velocity.copy(y = -velocity.y)
             other is PaddleCollider -> {
-                val newX = -velocity.x
-                val faster = (Vec2(newX, velocity.y) * speedupPerHit)
-                velocity = clampSpeed(faster, maxSpeed)
-                // Nudge ball out of paddle to prevent re-collision next tick.
                 val paddleBounds = other.bounds()
+                val paddleCenterY = paddleBounds.top + paddleBounds.size.y / 2f
+                val ballCenterY = transform.position.y + size / 2f
+                val relative = ((ballCenterY - paddleCenterY) /
+                    (paddleBounds.size.y / 2f)).coerceIn(-1f, 1f)
+
+                val newSpeed = (velocity.length * speedupPerHit).coerceAtMost(maxSpeed)
+                val horizontalSign = if (velocity.x > 0f) -1f else 1f
+                val maxAngleRad = (kotlin.math.PI / 3f).toFloat() // ±60°
+                val angle = relative * maxAngleRad
+                velocity = Vec2(
+                    horizontalSign * newSpeed * kotlin.math.cos(angle),
+                    newSpeed * kotlin.math.sin(angle),
+                )
+
+                // Nudge ball out of paddle to prevent re-collision next tick.
                 val ballPos = transform.position
                 val ballRight = ballPos.x + size
                 val ballLeft = ballPos.x
-                val shift = if (newX < 0f) paddleBounds.left - ballRight - 0.5f
+                val shift = if (horizontalSign < 0f) paddleBounds.left - ballRight - 0.5f
                 else paddleBounds.right - ballLeft + 0.5f
                 transform = transform.copy(position = ballPos.copy(x = ballPos.x + shift))
             }
@@ -69,7 +80,9 @@ class Ball(
 
     fun reset(serveToward: Float) {
         transform = transform.copy(position = fieldCenter - Vec2(size / 2f, size / 2f))
-        val angle = (random.nextFloat() - 0.5f) * 0.6f // ~ ±0.3 rad
+        // Wider angle range so the AI paddle has visible vertical work to do
+        // and the ball doesn't degenerate into a horizontal line.
+        val angle = (random.nextFloat() - 0.5f) * 1.4f // ~ ±0.7 rad (~40deg)
         val sx = if (serveToward >= 0f) 1f else -1f
         velocity = Vec2(
             sx * initialSpeed * kotlin.math.cos(angle),

@@ -13,7 +13,10 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import org.jetbrains.skia.Font
+import org.jetbrains.skia.FontMgr
+import org.jetbrains.skia.FontStyle
 import org.jetbrains.skia.Paint
+import org.jetbrains.skia.Typeface
 
 /**
  * Renderer backed by a Compose `DrawScope`. The scope is rebound each frame
@@ -23,6 +26,10 @@ import org.jetbrains.skia.Paint
 class ComposeRenderer : Renderer {
 
     private var scope: DrawScope? = null
+
+    private val defaultTypeface: Typeface =
+        FontMgr.default.matchFamilyStyle(null, FontStyle.NORMAL)
+            ?: Typeface.makeEmpty()
 
     fun bind(drawScope: DrawScope) {
         scope = drawScope
@@ -67,7 +74,7 @@ class ComposeRenderer : Renderer {
             this.color = color.toSkiaArgb()
             isAntiAlias = true
         }
-        val font = Font(null, size)
+        val font = Font(defaultTypeface, size)
         s.drawIntoCanvas { canvas ->
             canvas.skiaCanvas.drawString(text, position.x, position.y + size, font, paint)
         }

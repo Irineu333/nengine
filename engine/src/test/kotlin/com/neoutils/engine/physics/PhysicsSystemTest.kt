@@ -3,8 +3,11 @@ package com.neoutils.engine.physics
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Scene
+import kotlin.math.PI
+import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 private class RecordingBox(size: Vec2) : BoxCollider(size) {
     val partners: MutableList<Collider> = mutableListOf()
@@ -50,6 +53,36 @@ class PhysicsSystemTest {
         PhysicsSystem().step(scene)
         assertEquals(listOf<Collider>(b), a.partners)
         assertEquals(listOf<Collider>(a), b.partners)
+    }
+
+    @Test
+    fun `bounds account for parent scale`() {
+        val scene = Scene()
+        val parent = com.neoutils.engine.scene.Node2D().apply {
+            transform = Transform(scale = Vec2(2f, 3f))
+        }
+        val box = BoxCollider(Vec2(10f, 20f))
+        parent.addChild(box)
+        scene.addChild(parent)
+        scene.start()
+        val b = box.bounds()
+        assertEquals(Vec2(20f, 60f), b.size)
+    }
+
+    @Test
+    fun `bounds expand to AABB of OBB when parent is rotated`() {
+        val scene = Scene()
+        val parent = com.neoutils.engine.scene.Node2D().apply {
+            transform = Transform(rotation = (PI / 4.0).toFloat())
+        }
+        val box = BoxCollider(Vec2(10f, 10f))
+        parent.addChild(box)
+        scene.addChild(parent)
+        scene.start()
+        val expected = 10f * sqrt(2f)
+        val b = box.bounds()
+        assertTrue(kotlin.math.abs(b.size.x - expected) < 1e-3f, "width=${b.size.x}, expected≈$expected")
+        assertTrue(kotlin.math.abs(b.size.y - expected) < 1e-3f, "height=${b.size.y}, expected≈$expected")
     }
 
     @Test

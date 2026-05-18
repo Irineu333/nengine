@@ -9,10 +9,10 @@
 
 ## 2. Engine math primitives
 
-- [ ] 2.1 Implement `Vec2(x: Float, y: Float)` with `+`, `-`, `*` (scalar), `length`, `normalized`.
-- [ ] 2.2 Implement `Rect(origin: Vec2, size: Vec2)` with `intersects(other: Rect): Boolean` and `contains(point: Vec2): Boolean`.
-- [ ] 2.3 Implement `Transform(position: Vec2, scale: Vec2, rotation: Float)` as an immutable data class with a `copy(...)`-friendly API.
-- [ ] 2.4 Add unit tests covering arithmetic, intersection, and non-intersection of `Rect`.
+- [x] 2.1 Implement `Vec2(x: Float, y: Float)` with `+`, `-`, `*` (scalar), `length`, `normalized`.
+- [x] 2.2 Implement `Rect(origin: Vec2, size: Vec2)` with `intersects(other: Rect): Boolean` and `contains(point: Vec2): Boolean`.
+- [x] 2.3 Implement `Transform(position: Vec2, scale: Vec2, rotation: Float)` as an immutable data class with a `copy(...)`-friendly API.
+- [x] 2.4 Add unit tests covering arithmetic, intersection, and non-intersection of `Rect`.
 
 ## 3. Scene graph core
 

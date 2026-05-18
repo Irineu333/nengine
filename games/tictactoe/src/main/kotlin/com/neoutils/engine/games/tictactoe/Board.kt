@@ -115,7 +115,7 @@ class Board : Node2D() {
             }
             Mark.O -> {
                 val radius = rect.size.x / 2f - inset
-                renderer.drawCircle(Vec2(cx, cy), radius, color, filled = false)
+                renderer.drawCircle(Vec2(cx, cy), radius, color, filled = false, thickness = thickness)
             }
         }
     }

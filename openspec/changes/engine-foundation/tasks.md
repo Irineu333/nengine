@@ -26,9 +26,9 @@
 
 ## 4. Renderer and Input SPIs
 
-- [ ] 4.1 Define `Renderer` interface in `:engine` with: `clear(color)`, `drawRect(rect, color, filled)`, `drawCircle(center, radius, color, filled)`, `drawText(text, position, size, color)`.
-- [ ] 4.2 Define `Input` interface in `:engine` with: `isKeyDown(Key): Boolean`, `wasKeyPressed(Key): Boolean`, `pointerPosition: Vec2`. Define a `Key` enum/sealed class covering at least the alphabet, arrow keys, space, escape.
-- [ ] 4.3 Sanity check: `:engine`'s `build.gradle.kts` has no Compose dependency; the SPIs reference no Compose types.
+- [x] 4.1 Define `Renderer` interface in `:engine` with: `clear(color)`, `drawRect(rect, color, filled)`, `drawCircle(center, radius, color, filled)`, `drawText(text, position, size, color)`.
+- [x] 4.2 Define `Input` interface in `:engine` with: `isKeyDown(Key): Boolean`, `wasKeyPressed(Key): Boolean`, `pointerPosition: Vec2`. Define a `Key` enum/sealed class covering at least the alphabet, arrow keys, space, escape.
+- [x] 4.3 Sanity check: `:engine`'s `build.gradle.kts` has no Compose dependency; the SPIs reference no Compose types.
 
 ## 5. Collision and physics
 

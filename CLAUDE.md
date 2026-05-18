@@ -20,9 +20,10 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 ## Module Structure & How to Run
 
 ```
-:engine          ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX)
-:engine-compose  ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface)
-:games:pong      ← jogo Pong executável (humano vs IA) — prova viva da fundação
+:engine            ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX)
+:engine-compose    ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface)
+:games:pong        ← jogo Pong executável (humano vs IA) — prova viva da fundação
+:games:tictactoe   ← jogo Velha (humano vs humano) — prova de interação discreta / hit-test
 ```
 
 Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durante a change `engine-foundation`.

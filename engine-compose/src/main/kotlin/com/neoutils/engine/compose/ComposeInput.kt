@@ -43,6 +43,14 @@ class ComposeInput : Input {
         pointerPosition = Vec2(x, y)
     }
 
+    fun onPointerButton(button: MouseButton, pressed: Boolean) {
+        if (pressed) {
+            if (downButtons.add(button)) pendingButtonPresses += button
+        } else {
+            downButtons.remove(button)
+        }
+    }
+
     /** Called by the runtime at the start of each tick. */
     fun beginTick() {
         pressedThisTick.clear()

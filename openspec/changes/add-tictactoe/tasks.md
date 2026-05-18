@@ -12,7 +12,7 @@
 - [x] 2.2 Add `ComposeInput.onPointerButton(buttonId, pressed)` (or equivalent) called from `GameSurface`'s `pointerInput` block on `PointerEventType.Press`/`Release`
 - [x] 2.3 Extend `ComposeInput.beginTick()` to swap pending button presses into the per-tick snapshot
 - [x] 2.4 Implement `Input.isMouseDown` and `Input.wasMouseClicked` on `ComposeInput`
-- [ ] 2.5 Update `GameSurface` `pointerInput` block to detect button press/release events and forward them to `ComposeInput`
+- [x] 2.5 Update `GameSurface` `pointerInput` block to detect button press/release events and forward them to `ComposeInput`
 - [ ] 2.6 Implement `ComposeRenderer.drawLine` on top of `DrawScope.drawLine`
 
 ## 3. Tic-tac-toe module scaffolding

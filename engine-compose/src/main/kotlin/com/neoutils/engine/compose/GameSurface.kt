@@ -11,21 +11,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import com.neoutils.engine.dx.Debug
 import com.neoutils.engine.dx.FpsCounter
+import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Scene
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun GameSurface(
     scene: Scene,
@@ -72,6 +77,14 @@ fun GameSurface(
                         val event = awaitPointerEvent()
                         val pos = event.changes.firstOrNull()?.position
                         if (pos != null) input.onPointerMove(pos.x, pos.y)
+                        val mapped = event.button?.toEngineMouseButton()
+                        if (mapped != null) {
+                            when (event.type) {
+                                PointerEventType.Press -> input.onPointerButton(mapped, pressed = true)
+                                PointerEventType.Release -> input.onPointerButton(mapped, pressed = false)
+                                else -> Unit
+                            }
+                        }
                     }
                 }
             }
@@ -93,4 +106,11 @@ fun GameSurface(
     }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+}
+
+private fun PointerButton.toEngineMouseButton(): MouseButton? = when (this) {
+    PointerButton.Primary -> MouseButton.Left
+    PointerButton.Secondary -> MouseButton.Right
+    PointerButton.Tertiary -> MouseButton.Middle
+    else -> null
 }

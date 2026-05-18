@@ -24,6 +24,7 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 :engine-compose    ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface)
 :games:pong        ← jogo Pong executável (humano vs IA) — prova viva da fundação
 :games:tictactoe   ← jogo Velha (humano vs humano) — prova de interação discreta / hit-test
+:games:demos       ← cenas de demonstração visual das melhorias da engine (não é um jogo)
 ```
 
 Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durante a change `engine-foundation`.
@@ -52,6 +53,20 @@ Durante o jogo:
 - Quando a partida termina (vitória ou empate), o próximo clique esquerdo em qualquer lugar reinicia (esse clique só reinicia — não joga)
 - `F1` liga/desliga overlay de FPS
 - `F2` liga/desliga visualização de colliders (Velha não usa colliders, mas o overlay continua disponível)
+
+Para rodar Demos:
+
+```sh
+./gradlew :games:demos:run
+```
+
+Durante a execução:
+
+- `1` Transform orbit — pai rotacionando faz os filhos orbitarem (composição de rotação sobre posição, A1)
+- `2` Scale hierarchy — pai com `scale` oscilando faz o filho crescer e encolher (composição de scale via `Shape.onRender`, A1)
+- `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameSurface` (A2)
+- `F1` liga/desliga overlay de FPS
+- `F2` liga/desliga visualização de colliders
 
 ## Coding Conventions
 

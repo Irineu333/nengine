@@ -71,4 +71,4 @@
 - [x] 8.6 `ScaleHierarchyDemo`: pai com `scale` oscilando entre 0.5 e 2.0 em `onUpdate`; `Shape` filho fixo em tamanho local. Visual: o filho cresce e encolhe — valida A1 (scale composto via `Shape.onRender` lendo `worldTransform().scale`).
 - [x] 8.7 `SpawnerDemo`: cada clique do mouse adiciona um `BoxCollider` com `Shape` filho colorido em posição aleatória, criado **dentro de `onUpdate`** do spawner; outro nó "trap" central com `BoxCollider` chama `parent.removeChild(other.parent)` em `onCollide` para remover spawns que tocam — valida A4 (mutação durante `onUpdate` e durante `onCollide` sem CME e visível na fase seguinte). F2 evidencia o overlay (valida A2).
 - [x] 8.8 Atualizar `CLAUDE.md` adicionando bloco `Para rodar Demos:` com `./gradlew :games:demos:run` e o cheat sheet das teclas.
-- [ ] 8.9 Rodar `./gradlew :games:demos:run` manualmente e conferir as três demos.
+- [x] 8.9 Rodar `./gradlew :games:demos:run` manualmente e conferir as três demos.

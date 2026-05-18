@@ -29,6 +29,7 @@ private class CountingRenderer : Renderer {
     override fun clear(color: Color) { clears++ }
     override fun drawRect(rect: Rect, color: Color, filled: Boolean) {}
     override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean) {}
+    override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {}
     override fun drawText(text: String, position: Vec2, size: Float, color: Color) {}
 }
 
@@ -65,6 +66,7 @@ class GameLoopTest {
             override fun clear(color: Color) {}
             override fun drawRect(rect: Rect, color: Color, filled: Boolean) {}
             override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean) {}
+            override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {}
             override fun drawText(text: String, position: Vec2, size: Float, color: Color) {}
         }
         // Inject a render-time recording node.

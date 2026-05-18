@@ -11,5 +11,7 @@ interface Renderer {
 
     fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean = true)
 
+    fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color)
+
     fun drawText(text: String, position: Vec2, size: Float, color: Color)
 }

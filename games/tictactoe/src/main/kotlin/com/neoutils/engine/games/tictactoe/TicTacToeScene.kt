@@ -25,20 +25,28 @@ class TicTacToeScene(
         layout(defaultWidth, defaultHeight)
     }
 
+    override fun onResize(width: Float, height: Float) {
+        layout(width, height)
+    }
+
     private fun layout(width: Float, height: Float) {
-        // Placeholder layout — step 7.2 replaces this with the responsive
-        // calculation that reserves space for status text and centers the
-        // board on the smaller axis.
-        val available = (minOf(width, height) - STATUS_RESERVED).coerceAtLeast(60f)
-        board.cellSize = available / 3f
+        val availableHeight = (height - STATUS_RESERVED).coerceAtLeast(0f)
+        val side = minOf(width, availableHeight).coerceAtLeast(0f)
+        board.cellSize = side / 3f
         val boardSide = board.cellSize * 3f
-        board.origin = Vec2((width - boardSide) / 2f, STATUS_RESERVED + (height - STATUS_RESERVED - boardSide) / 2f)
-        status.transform = status.transform.copy(position = Vec2(width / 2f - 60f, 16f))
+        val originX = (width - boardSide) / 2f
+        val originY = STATUS_RESERVED + (availableHeight - boardSide) / 2f
+        board.origin = Vec2(originX, originY)
+        status.transform = status.transform.copy(
+            position = Vec2(width / 2f - STATUS_TEXT_OFFSET_X, STATUS_BASELINE_Y)
+        )
     }
 
     companion object {
         private const val STATUS_TEXT_SIZE: Float = 22f
         private const val STATUS_RESERVED: Float = 60f
+        private const val STATUS_TEXT_OFFSET_X: Float = 180f
+        private const val STATUS_BASELINE_Y: Float = 16f
     }
 }
 

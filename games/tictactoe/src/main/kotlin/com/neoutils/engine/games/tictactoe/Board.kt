@@ -3,6 +3,8 @@ package com.neoutils.engine.games.tictactoe
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.render.Color
+import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Scene
 
@@ -77,6 +79,25 @@ class Board : Node2D() {
         placeMove(target)
     }
 
+    override fun onRender(renderer: Renderer) {
+        drawGrid(renderer)
+    }
+
+    private fun drawGrid(renderer: Renderer) {
+        val thickness = (cellSize * GRID_THICKNESS_RATIO).coerceAtLeast(1f)
+        val boardSize = cellSize * 3f
+        val left = origin.x
+        val top = origin.y
+        val right = origin.x + boardSize
+        val bottom = origin.y + boardSize
+        for (i in 1..2) {
+            val x = origin.x + cellSize * i
+            renderer.drawLine(Vec2(x, top), Vec2(x, bottom), thickness, GRID_COLOR)
+            val y = origin.y + cellSize * i
+            renderer.drawLine(Vec2(left, y), Vec2(right, y), thickness, GRID_COLOR)
+        }
+    }
+
     internal fun placeMove(index: Int) {
         if (gameOver || cells[index] != null) return
         cells[index] = currentPlayer
@@ -97,5 +118,8 @@ class Board : Node2D() {
             Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8), // cols
             Triple(0, 4, 8), Triple(2, 4, 6), // diagonals
         )
+
+        private const val GRID_THICKNESS_RATIO: Float = 0.04f
+        private val GRID_COLOR: Color = Color(0.9f, 0.9f, 0.9f)
     }
 }

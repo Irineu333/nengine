@@ -15,12 +15,24 @@ abstract class Node {
     var isLive: Boolean = false
         private set
 
+    /**
+     * Cached owning `Scene` while this node is live. Populated by
+     * `attachToLiveTree` before `onEnter` runs and cleared by
+     * `detachFromLiveTree` after `onExit` returns. Lets `rootScene()` run in
+     * O(1) instead of walking the parent chain every frame.
+     */
+    var scene: Scene? = null
+        internal set
+
     fun addChild(child: Node) {
         require(child.parent == null) { "Node '${child.name}' already has a parent" }
         require(child !== this) { "Cannot add a node as its own child" }
         child.parent = this
         _children.add(child)
-        if (isLive) child.attachToLiveTree()
+        if (isLive) {
+            val owning = if (this is Scene) this else scene
+            if (owning != null) child.attachToLiveTree(owning)
+        }
     }
 
     fun removeChild(child: Node) {
@@ -30,11 +42,12 @@ abstract class Node {
         child.parent = null
     }
 
-    internal fun attachToLiveTree() {
+    internal fun attachToLiveTree(owningScene: Scene) {
         if (isLive) return
+        scene = owningScene
         isLive = true
         onEnter()
-        for (child in _children) child.attachToLiveTree()
+        for (child in _children) child.attachToLiveTree(owningScene)
     }
 
     internal fun detachFromLiveTree() {
@@ -42,17 +55,11 @@ abstract class Node {
         for (child in _children) child.detachFromLiveTree()
         onExit()
         isLive = false
+        scene = null
     }
 
-    /** Walks up the parent chain to locate the owning Scene, if any. */
-    fun rootScene(): Scene? {
-        var n: Node? = this
-        while (n != null) {
-            if (n is Scene) return n
-            n = n.parent
-        }
-        return null
-    }
+    /** Returns the owning `Scene` in O(1) when live, or `null` otherwise. */
+    fun rootScene(): Scene? = scene
 
     open fun onEnter() {}
     open fun onUpdate(dt: Float) {}

@@ -8,11 +8,11 @@
 
 ## 2. A3 — Cache de scene no Node
 
-- [ ] 2.1 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Node.kt`, adicionar campo `var scene: Scene? = null` com setter `private` ao módulo.
-- [ ] 2.2 No `attachToLiveTree`, antes de chamar `onEnter()`, atribuir `this.scene` à `Scene` proprietária (passar como parâmetro do helper `attachToLiveTree(scene: Scene)` ou descobrir via `parent?.scene`).
-- [ ] 2.3 No `detachFromLiveTree`, depois de `onExit()` retornar, zerar `this.scene = null`.
-- [ ] 2.4 Reescrever `rootScene()` como `return scene` (preservando assinatura `Scene?`).
-- [ ] 2.5 Rodar `./gradlew :engine:test`; `NodeTest` e `GameLoopTest` devem continuar verdes.
+- [x] 2.1 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Node.kt`, adicionar campo `var scene: Scene? = null` com setter `private` ao módulo.
+- [x] 2.2 No `attachToLiveTree`, antes de chamar `onEnter()`, atribuir `this.scene` à `Scene` proprietária (passar como parâmetro do helper `attachToLiveTree(scene: Scene)` ou descobrir via `parent?.scene`).
+- [x] 2.3 No `detachFromLiveTree`, depois de `onExit()` retornar, zerar `this.scene = null`.
+- [x] 2.4 Reescrever `rootScene()` como `return scene` (preservando assinatura `Scene?`).
+- [x] 2.5 Rodar `./gradlew :engine:test`; `NodeTest` e `GameLoopTest` devem continuar verdes.
 
 ## 3. A1 — Transform composition
 

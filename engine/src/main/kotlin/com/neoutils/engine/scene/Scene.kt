@@ -28,7 +28,7 @@ open class Scene : Node() {
     open fun onResize(width: Float, height: Float) {}
 
     fun start() {
-        if (!isLive) attachToLiveTree()
+        if (!isLive) attachToLiveTree(this)
     }
 
     fun stop() {

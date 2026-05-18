@@ -78,13 +78,19 @@ class ComposeRenderer(
 
     override fun drawText(text: String, position: Vec2, size: Float, color: Color) {
         val s = required()
-        val style = TextStyle(
-            color = color.toUi(),
-            fontSize = TextUnit(size, TextUnitType.Sp),
-        )
-        val measured = textMeasurer.measure(text = text, style = style)
+        val measured = textMeasurer.measure(text = text, style = textStyle(size, color))
         s.drawText(textLayoutResult = measured, topLeft = Offset(position.x, position.y))
     }
+
+    override fun measureText(text: String, size: Float): Vec2 {
+        val measured = textMeasurer.measure(text = text, style = textStyle(size, Color.WHITE))
+        return Vec2(measured.size.width.toFloat(), measured.size.height.toFloat())
+    }
+
+    private fun textStyle(size: Float, color: Color): TextStyle = TextStyle(
+        color = color.toUi(),
+        fontSize = TextUnit(size, TextUnitType.Sp),
+    )
 }
 
 internal fun Color.toUi(): UiColor = UiColor(r, g, b, a)

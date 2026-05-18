@@ -14,4 +14,6 @@ interface Renderer {
     fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color)
 
     fun drawText(text: String, position: Vec2, size: Float, color: Color)
+
+    fun measureText(text: String, size: Float): Vec2
 }

@@ -146,4 +146,5 @@ private object NoopRenderer : com.neoutils.engine.render.Renderer {
     override fun drawCircle(center: Vec2, radius: Float, color: com.neoutils.engine.render.Color, filled: Boolean, thickness: Float) {}
     override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: com.neoutils.engine.render.Color) {}
     override fun drawText(text: String, position: Vec2, size: Float, color: com.neoutils.engine.render.Color) {}
+    override fun measureText(text: String, size: Float): Vec2 = Vec2.ZERO
 }

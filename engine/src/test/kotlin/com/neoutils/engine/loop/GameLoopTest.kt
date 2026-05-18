@@ -31,6 +31,7 @@ private class CountingRenderer : Renderer {
     override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean, thickness: Float) {}
     override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {}
     override fun drawText(text: String, position: Vec2, size: Float, color: Color) {}
+    override fun measureText(text: String, size: Float): Vec2 = Vec2.ZERO
 }
 
 class GameLoopTest {
@@ -68,6 +69,7 @@ class GameLoopTest {
             override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean, thickness: Float) {}
             override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {}
             override fun drawText(text: String, position: Vec2, size: Float, color: Color) {}
+            override fun measureText(text: String, size: Float): Vec2 = Vec2.ZERO
         }
         // Inject a render-time recording node.
         val recorder = object : Node() {

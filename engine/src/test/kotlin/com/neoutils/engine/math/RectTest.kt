@@ -46,4 +46,20 @@ class RectTest {
         val r = Rect(Vec2(0f, 0f), Vec2(10f, 10f))
         assertFalse(r.contains(Vec2(15f, 5f)))
     }
+
+    @Test
+    fun `contains is inclusive on origin edges`() {
+        val r = Rect(Vec2(10f, 20f), Vec2(30f, 40f))
+        assertTrue(r.contains(Vec2(10f, 20f)))
+        assertTrue(r.contains(Vec2(10f, 30f)))
+        assertTrue(r.contains(Vec2(20f, 20f)))
+    }
+
+    @Test
+    fun `contains is exclusive on far edges`() {
+        val r = Rect(Vec2(10f, 20f), Vec2(30f, 40f))
+        assertFalse(r.contains(Vec2(40f, 30f)))
+        assertFalse(r.contains(Vec2(20f, 60f)))
+        assertFalse(r.contains(Vec2(40f, 60f)))
+    }
 }

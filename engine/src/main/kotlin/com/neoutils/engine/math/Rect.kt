@@ -12,5 +12,6 @@ data class Rect(val origin: Vec2, val size: Vec2) {
             top < other.bottom && bottom > other.top
 
     fun contains(point: Vec2): Boolean =
-        point.x in left..right && point.y in top..bottom
+        point.x >= left && point.x < right &&
+            point.y >= top && point.y < bottom
 }

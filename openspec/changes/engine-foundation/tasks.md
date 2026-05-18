@@ -82,4 +82,4 @@
 - [x] 11.2 Run `./gradlew :games:pong:run`; confirm Pong opens, runs at ~60fps, is fully playable.
 - [x] 11.3 Manually walk the Pong source against the `engine-core` and `compose-runtime` capability lists; confirm every feature is exercised at least once.
 - [x] 11.4 Run `openspec validate engine-foundation --strict` (or equivalent) and resolve any reported gaps.
-- [ ] 11.5 Run `/opsx:verify engine-foundation` to confirm implementation matches the change artifacts before archiving.
+- [x] 11.5 Run `/opsx:verify engine-foundation` to confirm implementation matches the change artifacts before archiving.

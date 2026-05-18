@@ -1,4 +1,4 @@
-# engine
+# nengine
 
 2D game engine code-only com scene graph estilo Godot, escrita em Kotlin. Primeiro runtime: Compose Multiplatform Desktop (JVM).
 

@@ -4,7 +4,7 @@ Orientação perene para contribuidores (humanos ou agentes). Mantenha este arqu
 
 ## Purpose
 
-`engine` é uma 2D game engine **construída para aprender arquitetura de engine**. Começa em modo code-only com jogos de exemplo (Pong é o primeiro) e evolui em direção a um editor visual. A meta é clareza didática e evolução incremental — não performance prematura.
+`nengine` é uma 2D game engine **construída para aprender arquitetura de engine**. Começa em modo code-only com jogos de exemplo (Pong é o primeiro) e evolui em direção a um editor visual. A meta é clareza didática e evolução incremental — não performance prematura.
 
 Stack: Kotlin + Compose Multiplatform Desktop (JVM). Compose entra como **primeiro backend** da engine, não como modelo de programação.
 

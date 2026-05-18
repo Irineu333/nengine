@@ -1,4 +1,4 @@
-rootProject.name = "engine-root"
+rootProject.name = "nengine"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

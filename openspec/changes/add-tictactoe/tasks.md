@@ -8,7 +8,7 @@
 
 ## 2. Compose backend implementation
 
-- [ ] 2.1 Extend `ComposeInput` with `downButtons`, `pendingButtonPresses`, `pressedButtonsThisTick` sets mirroring the key-state pattern
+- [x] 2.1 Extend `ComposeInput` with `downButtons`, `pendingButtonPresses`, `pressedButtonsThisTick` sets mirroring the key-state pattern
 - [ ] 2.2 Add `ComposeInput.onPointerButton(buttonId, pressed)` (or equivalent) called from `GameSurface`'s `pointerInput` block on `PointerEventType.Press`/`Release`
 - [ ] 2.3 Extend `ComposeInput.beginTick()` to swap pending button presses into the per-tick snapshot
 - [ ] 2.4 Implement `Input.isMouseDown` and `Input.wasMouseClicked` on `ComposeInput`

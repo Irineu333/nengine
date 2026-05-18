@@ -7,6 +7,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.input.Key
+import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Vec2
 
 class ComposeInput : Input {
@@ -14,6 +15,10 @@ class ComposeInput : Input {
     private val downKeys: MutableSet<Key> = java.util.concurrent.ConcurrentHashMap.newKeySet()
     private val pressedThisTick: MutableSet<Key> = java.util.concurrent.ConcurrentHashMap.newKeySet()
     private val pendingPresses: MutableSet<Key> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    private val downButtons: MutableSet<MouseButton> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+    private val pressedButtonsThisTick: MutableSet<MouseButton> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+    private val pendingButtonPresses: MutableSet<MouseButton> = java.util.concurrent.ConcurrentHashMap.newKeySet()
 
     override var pointerPosition: Vec2 = Vec2.ZERO
         internal set

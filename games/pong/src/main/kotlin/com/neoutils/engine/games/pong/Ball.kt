@@ -7,7 +7,9 @@ import com.neoutils.engine.physics.Collider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
-import kotlin.math.sign
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.random.Random
 
 class Ball(
@@ -20,7 +22,7 @@ class Ball(
     private val onScore: (Goal.Side) -> Unit = {},
 ) : Node2D() {
 
-    var velocity: Vec2 = randomVelocity(initialSpeed, random)
+    var velocity: Vec2 = Vec2.ZERO
         private set
 
     val collider: BoxCollider = object : BoxCollider(Vec2(size, size)) {
@@ -60,11 +62,11 @@ class Ball(
 
                 val newSpeed = (velocity.length * speedupPerHit).coerceAtMost(maxSpeed)
                 val horizontalSign = if (velocity.x > 0f) -1f else 1f
-                val maxAngleRad = (kotlin.math.PI / 3f).toFloat() // ±60°
+                val maxAngleRad = (PI / 3f).toFloat() // ±60°
                 val angle = relative * maxAngleRad
                 velocity = Vec2(
-                    horizontalSign * newSpeed * kotlin.math.cos(angle),
-                    newSpeed * kotlin.math.sin(angle),
+                    horizontalSign * newSpeed * cos(angle),
+                    newSpeed * sin(angle),
                 )
 
                 // Nudge ball out of paddle to prevent re-collision next tick.
@@ -85,22 +87,8 @@ class Ball(
         val angle = (random.nextFloat() - 0.5f) * 1.4f // ~ ±0.7 rad (~40deg)
         val sx = if (serveToward >= 0f) 1f else -1f
         velocity = Vec2(
-            sx * initialSpeed * kotlin.math.cos(angle),
-            initialSpeed * kotlin.math.sin(angle),
+            sx * initialSpeed * cos(angle),
+            initialSpeed * sin(angle),
         )
     }
-
-    private fun clampSpeed(v: Vec2, max: Float): Vec2 {
-        val l = v.length
-        if (l <= max) return v
-        val s = max / l
-        return Vec2(v.x * s, v.y * s)
-    }
-}
-
-private fun randomVelocity(speed: Float, random: Random): Vec2 {
-    val angle = (random.nextFloat() - 0.5f) * 0.6f
-    val sx = if (random.nextBoolean()) 1f else -1f
-    return Vec2(sx * speed * kotlin.math.cos(angle), speed * kotlin.math.sin(angle))
-        .let { Vec2(sign(it.x).let { s -> if (s == 0f) 1f else s } * kotlin.math.abs(it.x), it.y) }
 }

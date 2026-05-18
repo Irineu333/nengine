@@ -1,23 +1,17 @@
 package com.neoutils.engine.games.pong
 
-import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Text
 
 class Score(
-    position: Vec2 = Vec2.ZERO,
     val textSize: Float = 48f,
     val color: Color = Color.WHITE,
 ) : Node2D() {
 
     var value: Int = 0
         private set
-
-    init {
-        transform = transform.copy(position = position)
-    }
 
     private val label: Text = Text(text = "0", size = textSize, color = color)
 

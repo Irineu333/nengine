@@ -7,11 +7,7 @@ import com.neoutils.engine.scene.Node2D
 
 open class BoxCollider(var size: Vec2) : Collider() {
 
-    override fun bounds(): Rect {
-        val world = worldPosition()
-        val scaled = Vec2(size.x, size.y)
-        return Rect(world, scaled)
-    }
+    override fun bounds(): Rect = Rect(worldPosition(), size)
 
     private fun worldPosition(): Vec2 {
         var p: Node? = this

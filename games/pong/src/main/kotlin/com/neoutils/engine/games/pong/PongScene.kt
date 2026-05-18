@@ -12,8 +12,8 @@ class PongScene(
     defaultHeight: Float = 600f,
 ) : Scene() {
 
-    val leftScore: Score = Score(position = Vec2.ZERO)
-    val rightScore: Score = Score(position = Vec2.ZERO)
+    val leftScore: Score = Score()
+    val rightScore: Score = Score()
 
     val leftPaddle: Paddle = Paddle(
         playFieldHeight = defaultHeight,

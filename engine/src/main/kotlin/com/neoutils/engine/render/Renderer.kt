@@ -9,7 +9,7 @@ interface Renderer {
 
     fun drawRect(rect: Rect, color: Color, filled: Boolean = true)
 
-    fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean = true)
+    fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean = true, thickness: Float = 1f)
 
     fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color)
 

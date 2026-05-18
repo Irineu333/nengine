@@ -56,13 +56,13 @@ class ComposeRenderer(
         )
     }
 
-    override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean) {
+    override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean, thickness: Float) {
         val s = required()
         s.drawCircle(
             color = color.toUi(),
             center = Offset(center.x, center.y),
             radius = radius,
-            style = if (filled) Fill else Stroke(width = 1f),
+            style = if (filled) Fill else Stroke(width = thickness),
         )
     }
 

@@ -143,7 +143,7 @@ class NodeTest {
 private object NoopRenderer : com.neoutils.engine.render.Renderer {
     override fun clear(color: com.neoutils.engine.render.Color) {}
     override fun drawRect(rect: com.neoutils.engine.math.Rect, color: com.neoutils.engine.render.Color, filled: Boolean) {}
-    override fun drawCircle(center: Vec2, radius: Float, color: com.neoutils.engine.render.Color, filled: Boolean) {}
+    override fun drawCircle(center: Vec2, radius: Float, color: com.neoutils.engine.render.Color, filled: Boolean, thickness: Float) {}
     override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: com.neoutils.engine.render.Color) {}
     override fun drawText(text: String, position: Vec2, size: Float, color: com.neoutils.engine.render.Color) {}
 }

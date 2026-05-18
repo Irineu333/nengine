@@ -39,7 +39,8 @@ class Ball(
     }
 
     override fun onRender(renderer: Renderer) {
-        renderer.drawRect(Rect(transform.position, Vec2(size, size)), Color.WHITE, filled = true)
+        val center = transform.position + Vec2(size / 2f, size / 2f)
+        renderer.drawCircle(center, radius = size / 2f, color = Color.WHITE, filled = true)
     }
 
     private fun handleCollision(other: Collider) {

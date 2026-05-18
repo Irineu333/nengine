@@ -1,6 +1,5 @@
 package com.neoutils.engine.games.pong
 
-import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.physics.Collider
@@ -36,7 +35,10 @@ class Ball(
         reset(serveToward = if (random.nextBoolean()) 1f else -1f)
     }
 
+    private var scoredThisTick: Boolean = false
+
     override fun onUpdate(dt: Float) {
+        scoredThisTick = false
         transform = transform.copy(position = transform.position + velocity * dt)
     }
 
@@ -46,14 +48,16 @@ class Ball(
     }
 
     private fun handleCollision(other: Collider) {
-        when {
-            other is Goal -> {
+        if (scoredThisTick) return
+        when (other) {
+            is Goal -> {
                 val scorer = if (other.side == Goal.Side.Left) Goal.Side.Right else Goal.Side.Left
                 onScore(scorer)
                 reset(serveToward = if (other.side == Goal.Side.Left) 1f else -1f)
+                scoredThisTick = true
             }
-            other is Wall -> velocity = velocity.copy(y = -velocity.y)
-            other is PaddleCollider -> {
+            is Wall -> velocity = velocity.copy(y = -velocity.y)
+            is PaddleCollider -> {
                 val paddleBounds = other.bounds()
                 val paddleCenterY = paddleBounds.top + paddleBounds.size.y / 2f
                 val ballCenterY = transform.position.y + size / 2f

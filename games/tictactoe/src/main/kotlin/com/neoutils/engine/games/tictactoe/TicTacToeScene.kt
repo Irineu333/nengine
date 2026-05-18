@@ -31,6 +31,7 @@ class TicTacToeScene(
 
     override fun onUpdate(dt: Float) {
         status.text = statusFor(board)
+        centerStatus()
     }
 
     private fun layout(width: Float, height: Float) {
@@ -41,16 +42,23 @@ class TicTacToeScene(
         val originX = (width - boardSide) / 2f
         val originY = STATUS_RESERVED + (availableHeight - boardSide) / 2f
         board.origin = Vec2(originX, originY)
+        centerStatus()
+    }
+
+    // Approximates the rendered width because Renderer doesn't expose text
+    // measurement; 0.55 is the mean glyph-width factor for the default font.
+    private fun centerStatus() {
+        val approxWidth = status.text.length * STATUS_TEXT_SIZE * CHAR_WIDTH_FACTOR
         status.transform = status.transform.copy(
-            position = Vec2(width / 2f - STATUS_TEXT_OFFSET_X, STATUS_BASELINE_Y)
+            position = Vec2((width - approxWidth) / 2f, STATUS_BASELINE_Y)
         )
     }
 
     companion object {
         private const val STATUS_TEXT_SIZE: Float = 22f
         private const val STATUS_RESERVED: Float = 60f
-        private const val STATUS_TEXT_OFFSET_X: Float = 180f
         private const val STATUS_BASELINE_Y: Float = 16f
+        private const val CHAR_WIDTH_FACTOR: Float = 0.55f
     }
 }
 

@@ -57,8 +57,8 @@
 
 ## 7. Encerramento
 
-- [ ] 7.1 Pedir a um humano para revisar a change e os jogos.
-- [ ] 7.2 Após aprovação, executar `/opsx:verify engine-consistency` para checagem cruzada com os artefatos.
+- [x] 7.1 Pedir a um humano para revisar a change e os jogos.
+- [x] 7.2 Após aprovação, executar `/opsx:verify engine-consistency` para checagem cruzada com os artefatos.
 - [ ] 7.3 Executar `/opsx:archive engine-consistency` para sincronizar specs principais e mover a change para `archive/`.
 
 ## 8. Módulo `:games:demos` (validação visual das melhorias)

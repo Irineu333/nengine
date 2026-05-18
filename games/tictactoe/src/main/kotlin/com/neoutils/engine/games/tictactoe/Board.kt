@@ -89,6 +89,14 @@ class Board : Node2D() {
         if (!gameOver && hovered != null && cells[hovered] == null) {
             drawMark(renderer, hovered, currentPlayer, GHOST_COLOR)
         }
+        winningLine?.let { drawWinningLine(renderer, it) }
+    }
+
+    private fun drawWinningLine(renderer: Renderer, line: Triple<Int, Int, Int>) {
+        val from = cellRect(line.first).let { Vec2(it.origin.x + it.size.x / 2f, it.origin.y + it.size.y / 2f) }
+        val to = cellRect(line.third).let { Vec2(it.origin.x + it.size.x / 2f, it.origin.y + it.size.y / 2f) }
+        val thickness = (cellSize * WIN_THICKNESS_RATIO).coerceAtLeast(2f)
+        renderer.drawLine(from, to, thickness, WIN_COLOR)
     }
 
     private fun drawMark(renderer: Renderer, index: Int, mark: Mark, color: Color) {
@@ -155,5 +163,7 @@ class Board : Node2D() {
         private const val MARK_THICKNESS_RATIO: Float = 0.08f
         private val MARK_COLOR: Color = Color.WHITE
         private val GHOST_COLOR: Color = Color(1f, 1f, 1f, 0.3f)
+        private const val WIN_THICKNESS_RATIO: Float = 0.12f
+        private val WIN_COLOR: Color = Color(1f, 0.85f, 0.15f, 0.9f)
     }
 }

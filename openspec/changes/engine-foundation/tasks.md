@@ -1,11 +1,11 @@
 ## 1. Module scaffolding
 
-- [ ] 1.1 Update `settings.gradle.kts`: remove `:shared` and `:desktopApp`; add `:engine`, `:engine-compose`, `:games:pong`.
-- [ ] 1.2 Create `:engine` module (`engine/build.gradle.kts`) as Kotlin JVM library; depend only on Kotlin stdlib. Apply package `com.neoutils.engine`.
-- [ ] 1.3 Create `:engine-compose` module (`engine-compose/build.gradle.kts`) as Kotlin JVM library; depend on `:engine` and Compose Multiplatform (desktop). Apply package `com.neoutils.engine.compose`.
-- [ ] 1.4 Create `:games:pong` module (`games/pong/build.gradle.kts`) as Kotlin JVM application; depend on `:engine` and `:engine-compose`. Configure `application` plugin with `mainClass` and Compose Desktop launcher. Apply package `com.neoutils.engine.games.pong`.
-- [ ] 1.5 Delete legacy template directories `shared/` and `desktopApp/` (and their build artifacts) once new modules compile clean.
-- [ ] 1.6 Update root `README.md` to reflect the new module layout and the `./gradlew :games:pong:run` command.
+- [x] 1.1 Update `settings.gradle.kts`: remove `:shared` and `:desktopApp`; add `:engine`, `:engine-compose`, `:games:pong`.
+- [x] 1.2 Create `:engine` module (`engine/build.gradle.kts`) as Kotlin JVM library; depend only on Kotlin stdlib. Apply package `com.neoutils.engine`.
+- [x] 1.3 Create `:engine-compose` module (`engine-compose/build.gradle.kts`) as Kotlin JVM library; depend on `:engine` and Compose Multiplatform (desktop). Apply package `com.neoutils.engine.compose`.
+- [x] 1.4 Create `:games:pong` module (`games/pong/build.gradle.kts`) as Kotlin JVM application; depend on `:engine` and `:engine-compose`. Configure `application` plugin with `mainClass` and Compose Desktop launcher. Apply package `com.neoutils.engine.games.pong`.
+- [x] 1.5 Delete legacy template directories `shared/` and `desktopApp/` (and their build artifacts) once new modules compile clean.
+- [x] 1.6 Update root `README.md` to reflect the new module layout and the `./gradlew :games:pong:run` command.
 
 ## 2. Engine math primitives
 

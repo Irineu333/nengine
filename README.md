@@ -1,22 +1,19 @@
-This is a Kotlin Multiplatform project targeting Desktop (JVM).
+# engine
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
+2D game engine code-only com scene graph estilo Godot, escrita em Kotlin. Primeiro runtime: Compose Multiplatform Desktop (JVM).
 
-### Running the apps
+## Módulos
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
+- `:engine` — núcleo da engine em Kotlin puro (sem dependência de Compose). Scene graph, lifecycle, math, SPI de `Renderer`/`Input`, `Collider`/`PhysicsSystem`, `GameLoop`.
+- `:engine-compose` — backend Compose Multiplatform da engine: `ComposeRenderer`, `ComposeInput`, composable `GameSurface` que dirige o loop via `withFrameNanos`.
+- `:games:pong` — jogo Pong executável (humano vs IA), usado como prova de aceitação da fundação.
 
-- Desktop app:
-  - Hot reload: `./gradlew :desktopApp:hotRun --auto`
-  - Standard run: `./gradlew :desktopApp:run`
+## Como rodar
 
----
+```sh
+./gradlew :games:pong:run
+```
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Documentação
+
+Veja [`CLAUDE.md`](./CLAUDE.md) para propósito do projeto, invariantes arquiteturais, convenções, workflow OpenSpec e roadmap.

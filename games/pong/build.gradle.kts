@@ -7,21 +7,20 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.shared)
+    implementation(projects.engine)
+    implementation(projects.engineCompose)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)
-
-    implementation(libs.compose.uiToolingPreview)
 }
 
 compose.desktop {
     application {
-        mainClass = "com.neoutils.engine.MainKt"
+        mainClass = "com.neoutils.engine.games.pong.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.neoutils.engine"
+            packageName = "com.neoutils.engine.games.pong"
             packageVersion = "1.0.0"
         }
     }

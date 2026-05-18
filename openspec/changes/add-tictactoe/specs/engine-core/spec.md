@@ -32,7 +32,7 @@ The engine SHALL provide value-type math primitives sufficient for 2D gameplay: 
 
 ### Requirement: Renderer SPI
 
-The engine SHALL define a `Renderer` interface used by `onRender` hooks. The interface MUST cover the operations needed by the sample games in this change: clearing the surface, drawing filled and outlined rectangles, drawing filled and outlined circles, drawing line segments, and drawing text. The interface MUST NOT expose types from `androidx.compose.*` or any backend-specific package. The interface MUST be implementable without reflection or service loaders. The `drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color)` operation MUST draw a straight segment between the two world-space points with the given stroke thickness.
+The engine SHALL define a `Renderer` interface used by `onRender` hooks. The interface MUST cover the operations needed by the sample games in this change: clearing the surface, drawing filled and outlined rectangles, drawing filled and outlined circles, drawing line segments, drawing text, and measuring text. The interface MUST NOT expose types from `androidx.compose.*` or any backend-specific package. The interface MUST be implementable without reflection or service loaders. The `drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color)` operation MUST draw a straight segment between the two world-space points with the given stroke thickness. The `measureText(text: String, size: Float): Vec2` operation MUST return the bounding box (`Vec2(width, height)`) that `drawText` would produce for the same text and size, allowing callers to align text without backend-specific measurement.
 
 #### Scenario: Engine module has no Compose dependency
 
@@ -48,6 +48,11 @@ The engine SHALL define a `Renderer` interface used by `onRender` hooks. The int
 
 - **WHEN** a node calls `renderer.drawLine(Vec2(0f, 0f), Vec2(100f, 100f), thickness = 2f, color = Color.WHITE)`
 - **THEN** the backend draws a diagonal stroke between the two points with the requested thickness and color
+
+#### Scenario: measureText reports the bounding box
+
+- **WHEN** a node calls `renderer.measureText("hello", size = 22f)`
+- **THEN** the result is a `Vec2` whose `x` is the rendered width and `y` is the rendered height of `drawText("hello", _, 22f, _)` in the same frame
 
 ### Requirement: Input SPI
 

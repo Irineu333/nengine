@@ -65,3 +65,10 @@
 - [x] 9.3 Resize window mid-partida — verify board recenters and remains fully visible; state preserved
 - [x] 9.4 Run `./gradlew :games:pong:run` — verify Pong still works (no regression from SPI changes)
 - [x] 9.5 Run `openspec validate add-tictactoe --strict` (or `openspec verify`) — passes
+
+## 10. Text measurement on Renderer SPI
+
+- [x] 10.1 Extend the engine-core and compose-runtime spec deltas to require `Renderer.measureText(text, size): Vec2`
+- [ ] 10.2 Add `measureText(text: String, size: Float): Vec2` to the `Renderer` interface in `:engine`
+- [ ] 10.3 Implement `ComposeRenderer.measureText` using the existing `TextMeasurer`
+- [ ] 10.4 Replace the approximation in `TicTacToeScene.centerStatus` with `renderer.measureText` (drop `CHAR_WIDTH_FACTOR`)

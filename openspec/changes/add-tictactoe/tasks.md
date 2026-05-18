@@ -1,7 +1,7 @@
 ## 1. Engine SPI evolution
 
 - [x] 1.1 Add `MouseButton` enum (`Left`, `Right`, `Middle`) under `com.neoutils.engine.input`
-- [ ] 1.2 Extend `Input` interface with `isMouseDown(button: MouseButton): Boolean` and `wasMouseClicked(button: MouseButton): Boolean`
+- [x] 1.2 Extend `Input` interface with `isMouseDown(button: MouseButton): Boolean` and `wasMouseClicked(button: MouseButton): Boolean`
 - [ ] 1.3 Add `drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color)` to `Renderer` interface
 - [ ] 1.4 Add `Rect.contains(point: Vec2): Boolean` (inclusive at origin, exclusive at far edges)
 - [ ] 1.5 Unit-test `Rect.contains` for inside/outside/edge points in `RectTest.kt`

@@ -2,6 +2,7 @@ package com.neoutils.engine.loop
 
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.input.Key
+import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.BoxCollider
@@ -19,6 +20,8 @@ private object NoopInput : Input {
     override val pointerPosition: Vec2 = Vec2.ZERO
     override fun isKeyDown(key: Key): Boolean = false
     override fun wasKeyPressed(key: Key): Boolean = false
+    override fun isMouseDown(button: MouseButton): Boolean = false
+    override fun wasMouseClicked(button: MouseButton): Boolean = false
 }
 
 private class CountingRenderer : Renderer {

@@ -9,4 +9,8 @@ interface Input {
     fun isKeyDown(key: Key): Boolean
 
     fun wasKeyPressed(key: Key): Boolean
+
+    fun isMouseDown(button: MouseButton): Boolean
+
+    fun wasMouseClicked(button: MouseButton): Boolean
 }

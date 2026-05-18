@@ -21,7 +21,7 @@
 - [x] 3.3 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Node2D.kt`, adicionar `fun worldTransform(): Transform` que coleta os ancestrais `Node2D` (incluindo `this`) em ordem topo→base e dobra via `Transform.compose`.
 - [x] 3.4 Reescrever `worldPosition()` como `return worldTransform().position`.
 - [x] 3.5 Confirmar que `WorldTransformTest` (tarefa 1.2) passa.
-- [ ] 3.6 Em `engine/src/main/kotlin/com/neoutils/engine/physics/BoxCollider.kt`, reescrever `bounds()` para usar `worldTransform()`. Se `worldTransform().rotation == 0f`, devolver `Rect(worldTransform().position, size * worldTransform().scale)`. Se for ≠ 0, calcular os 4 cantos do OBB e devolver o AABB que os envolve.
+- [x] 3.6 Em `engine/src/main/kotlin/com/neoutils/engine/physics/BoxCollider.kt`, reescrever `bounds()` para usar `worldTransform()`. Se `worldTransform().rotation == 0f`, devolver `Rect(worldTransform().position, size * worldTransform().scale)`. Se for ≠ 0, calcular os 4 cantos do OBB e devolver o AABB que os envolve.
 - [ ] 3.7 Adicionar cenários de regressão em `PhysicsSystemTest`: collider com pai escalado, collider com pai rotacionado a 45°.
 - [ ] 3.8 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Shape.kt`, atualizar `onRender` para usar `worldTransform()` em vez de `worldPosition()` + `transform.scale`. Adicionar KDoc no topo da classe documentando que rotação **não** é aplicada visualmente até a futura change `Renderer.withTransform`.
 - [ ] 3.9 Rodar `./gradlew :engine:test :games:pong:run` (manual). Pong deve se comportar idêntico (zero rotação na cena).

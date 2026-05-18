@@ -27,6 +27,10 @@ class ComposeInput : Input {
 
     override fun wasKeyPressed(key: Key): Boolean = key in pressedThisTick
 
+    override fun isMouseDown(button: MouseButton): Boolean = button in downButtons
+
+    override fun wasMouseClicked(button: MouseButton): Boolean = button in pressedButtonsThisTick
+
     fun onKeyEvent(event: KeyEvent): Boolean {
         val mapped = event.key.toEngineKey() ?: return false
         when (event.type) {

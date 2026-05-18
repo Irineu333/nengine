@@ -56,6 +56,10 @@ class ComposeInput : Input {
         pressedThisTick.clear()
         pressedThisTick.addAll(pendingPresses)
         pendingPresses.clear()
+
+        pressedButtonsThisTick.clear()
+        pressedButtonsThisTick.addAll(pendingButtonPresses)
+        pendingButtonPresses.clear()
     }
 }
 

@@ -66,6 +66,16 @@ class ComposeRenderer(
         )
     }
 
+    override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {
+        val s = required()
+        s.drawLine(
+            color = color.toUi(),
+            start = Offset(from.x, from.y),
+            end = Offset(to.x, to.y),
+            strokeWidth = thickness,
+        )
+    }
+
     override fun drawText(text: String, position: Vec2, size: Float, color: Color) {
         val s = required()
         val style = TextStyle(

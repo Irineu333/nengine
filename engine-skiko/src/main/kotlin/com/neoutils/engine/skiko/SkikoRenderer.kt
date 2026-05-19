@@ -18,12 +18,19 @@ import org.jetbrains.skia.Typeface
  * `Renderer` backed by a Skia `Canvas`. Bound per frame via [bind] so the same
  * instance can be reused without allocation. Text uses Skia's `Font` +
  * `TextLine` so `measureText` and `drawText` agree on the rasterized size.
+ *
+ * `Paint` and `TextLine` are pooled because both wrap native handles —
+ * allocating one per `draw*` call dominated the per-frame cost on Pong (10 %
+ * FPS gap vs Compose). See change `add-skiko-runtime` section 12 for the
+ * measurement that motivated this.
  */
 class SkikoRenderer : Renderer {
 
     private var canvas: Canvas? = null
     private val defaultTypeface: Typeface = resolveDefaultTypeface()
     private val fontCache: HashMap<Float, Font> = HashMap()
+    private val textLineCache: HashMap<TextLineKey, TextLine> = HashMap()
+    private val sharedPaint: Paint = Paint().apply { isAntiAlias = true }
 
     fun bind(canvas: Canvas) {
         this.canvas = canvas
@@ -39,11 +46,15 @@ class SkikoRenderer : Renderer {
 
     private fun fontOf(size: Float): Font = fontCache.getOrPut(size) { Font(defaultTypeface, size) }
 
-    private fun paint(color: Color, filled: Boolean, thickness: Float): Paint = Paint().apply {
-        this.color = color.toSkiaArgb()
-        mode = if (filled) PaintMode.FILL else PaintMode.STROKE
-        strokeWidth = thickness
-        isAntiAlias = true
+    private fun textLineOf(text: String, font: Font, size: Float): TextLine =
+        textLineCache.getOrPut(TextLineKey(text, size)) { TextLine.make(text, font) }
+
+    private fun configurePaint(color: Color, filled: Boolean, thickness: Float): Paint {
+        val p = sharedPaint
+        p.color = color.toSkiaArgb()
+        p.mode = if (filled) PaintMode.FILL else PaintMode.STROKE
+        p.strokeWidth = thickness
+        return p
     }
 
     override fun clear(color: Color) {
@@ -53,36 +64,38 @@ class SkikoRenderer : Renderer {
     override fun drawRect(rect: Rect, color: Color, filled: Boolean) {
         val c = required()
         val skRect = SkRect.makeXYWH(rect.origin.x, rect.origin.y, rect.size.x, rect.size.y)
-        c.drawRect(skRect, paint(color, filled, thickness = 1f))
+        c.drawRect(skRect, configurePaint(color, filled, thickness = 1f))
     }
 
     override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean, thickness: Float) {
         val c = required()
-        c.drawCircle(center.x, center.y, radius, paint(color, filled, thickness))
+        c.drawCircle(center.x, center.y, radius, configurePaint(color, filled, thickness))
     }
 
     override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {
         val c = required()
-        c.drawLine(from.x, from.y, to.x, to.y, paint(color, filled = false, thickness))
+        c.drawLine(from.x, from.y, to.x, to.y, configurePaint(color, filled = false, thickness))
     }
 
     override fun drawText(text: String, position: Vec2, size: Float, color: Color) {
         val c = required()
         val font = fontOf(size)
-        val line = TextLine.make(text, font)
+        val line = textLineOf(text, font, size)
         // `position` is the top-left baseline anchor the engine expects.
         // Skia's `drawTextLine(x, y, …)` treats `y` as the baseline, so we
         // shift down by the ascent so the visual top edge matches `position.y`.
         val baselineY = position.y + (-font.metrics.ascent)
-        c.drawTextLine(line, position.x, baselineY, paint(color, filled = true, thickness = 1f))
+        c.drawTextLine(line, position.x, baselineY, configurePaint(color, filled = true, thickness = 1f))
     }
 
     override fun measureText(text: String, size: Float): Vec2 {
         val font = fontOf(size)
-        val line = TextLine.make(text, font)
+        val line = textLineOf(text, font, size)
         return Vec2(line.width, font.metrics.height)
     }
 }
+
+private data class TextLineKey(val text: String, val size: Float)
 
 // `FontMgr.default.matchFamilyStyle(null, ...)` may return an empty typeface on
 // some platforms (its docs warn that "most systems don't have a default system

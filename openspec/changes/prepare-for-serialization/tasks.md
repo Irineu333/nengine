@@ -63,7 +63,7 @@
 - [x] 9.4 Implementar `SceneLoader.load(json: String): Scene` parseando, criando nodes via `NodeRegistry`, populando propriedades, e anexando children por `addChild`
 - [x] 9.5 Garantir que `load` retorna scene detached (`isLive == false`)
 - [x] 9.6 Garantir que `onEnter` só corre após `Scene.start()` posterior ao load
-- [ ] 9.7 Testes `SceneLoaderTest`: save produz JSON válido com `version`/`root`; load preserva ordem e propriedades; round-trip estável; `onEnter` não roda no load
+- [x] 9.7 Testes `SceneLoaderTest`: save produz JSON válido com `version`/`root`; load preserva ordem e propriedades; round-trip estável; `onEnter` não roda no load
 
 ## 10. Refactor :games:pong
 

@@ -54,10 +54,10 @@
 
 ## 8. CLAUDE.md updates
 
-- [ ] 8.1 Reword invariant 4: "`Renderer`, `Input` and `GameHost` são SPIs. Skiko é o backend padrão (`:engine-skiko`); Compose é o segundo backend (`:engine-compose`). Jogos novos devem usar Skiko por default."
-- [ ] 8.2 Update the "Module Structure & How to Run" section: add `:engine-skiko` between `:engine-compose` and `:games:pong`; explain that Pong and Demos run on Skiko, Tic Tac Toe on Compose
-- [ ] 8.3 Update the F1/F2 documentation in each game's "Durante o jogo" block to clarify the toggles now come from `GameHost`, not from a window-level `onKeyEvent` handler
-- [ ] 8.4 Add a new row to the Roadmap table: `add-skiko-runtime | Archived | Runtime Skiko puro (sem Compose) como backend padrão; ComposeHost/SkikoHost implementando o novo GameHost SPI; overlay de debug unificado.`
+- [x] 8.1 Reword invariant 4: "`Renderer`, `Input` and `GameHost` são SPIs. Skiko é o backend padrão (`:engine-skiko`); Compose é o segundo backend (`:engine-compose`). Jogos novos devem usar Skiko por default."
+- [x] 8.2 Update the "Module Structure & How to Run" section: add `:engine-skiko` between `:engine-compose` and `:games:pong`; explain that Pong and Demos run on Skiko, Tic Tac Toe on Compose
+- [x] 8.3 Update the F1/F2 documentation in each game's "Durante o jogo" block to clarify the toggles now come from `GameHost`, not from a window-level `onKeyEvent` handler
+- [x] 8.4 Add a new row to the Roadmap table: `add-skiko-runtime | Archived | Runtime Skiko puro (sem Compose) como backend padrão; ComposeHost/SkikoHost implementando o novo GameHost SPI; overlay de debug unificado.`
 
 ## 9. Manual validation (macOS)
 

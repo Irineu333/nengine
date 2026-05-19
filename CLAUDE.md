@@ -6,7 +6,7 @@ Orientação perene para contribuidores (humanos ou agentes). Mantenha este arqu
 
 `nengine` é uma 2D game engine **construída para aprender arquitetura de engine**. Começa em modo code-only com jogos de exemplo (Pong é o primeiro) e evolui em direção a um editor visual. A meta é clareza didática e evolução incremental — não performance prematura.
 
-Stack: Kotlin + Compose Multiplatform Desktop (JVM). Compose entra como **primeiro backend** da engine, não como modelo de programação.
+Stack: Kotlin + Skiko (JVM Desktop). Skiko é o **backend padrão** da engine; Compose Multiplatform é o **segundo backend**, mantido vivo via `:games:tictactoe`.
 
 ## Architectural Invariants
 
@@ -15,16 +15,17 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 1. **Scene graph estilo Godot, por herança.** Comportamento de gameplay é adicionado por subclasses de `Node` / `Node2D`. **Sem** `List<Component>` ou ECS. Cada Node tem sua identidade de tipo (`class Paddle : Node2D()`).
 2. **`:engine` não depende de Compose.** O módulo `:engine` não declara nenhum artefato `org.jetbrains.compose.*` ou `androidx.compose.*`, direta ou transitivamente. Quem precisa de Compose é o `:engine-compose`.
 3. **Colisão via `Collider`-como-Node + `PhysicsSystem` central.** `Collider` é um tipo de `Node`; o `PhysicsSystem.step(scene)` enumera todos os colliders ativos, testa pares e invoca `onCollide`. Broad phase é O(N²) intencionalmente.
-4. **`Renderer` e `Input` são SPIs.** Definidos como interfaces em `:engine`. Compose é apenas o primeiro backend. Nós nunca tocam tipos de backend; usam só a interface.
+4. **`Renderer`, `Input` e `GameHost` são SPIs.** Skiko é o backend padrão (`:engine-skiko`); Compose é o segundo backend (`:engine-compose`). Jogos novos devem usar Skiko por default.
 
 ## Module Structure & How to Run
 
 ```
-:engine            ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX)
-:engine-compose    ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface)
-:games:pong        ← jogo Pong executável (humano vs IA) — prova viva da fundação
-:games:tictactoe   ← jogo Velha (humano vs humano) — prova de interação discreta / hit-test
-:games:demos       ← cenas de demonstração visual das melhorias da engine (não é um jogo)
+:engine            ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX, GameHost SPI)
+:engine-compose    ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface, ComposeHost) — segundo backend
+:engine-skiko      ← backend Skiko puro sobre SkiaLayer + JFrame (SkikoRenderer, SkikoInput, SkikoHost) — backend padrão
+:games:pong        ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
+:games:tictactoe   ← jogo Velha (humano vs humano), roda em Compose — sentinela do segundo backend
+:games:demos       ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
 ```
 
 Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durante a change `engine-foundation`.
@@ -38,8 +39,8 @@ Para rodar Pong:
 Durante o jogo:
 
 - `W`/`S` movem o paddle esquerdo
-- `F1` liga/desliga overlay de FPS
-- `F2` liga/desliga visualização de colliders
+- `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
+- `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 
 Para rodar Velha:
 
@@ -51,8 +52,8 @@ Durante o jogo:
 
 - Clique esquerdo numa célula vazia faz a jogada do jogador atual (X começa, depois alterna O)
 - Quando a partida termina (vitória ou empate), o próximo clique esquerdo em qualquer lugar reinicia (esse clique só reinicia — não joga)
-- `F1` liga/desliga overlay de FPS
-- `F2` liga/desliga visualização de colliders (Velha não usa colliders, mas o overlay continua disponível)
+- `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
+- `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`; Velha não usa colliders, mas o overlay continua disponível)
 
 Para rodar Demos:
 
@@ -64,9 +65,9 @@ Durante a execução:
 
 - `1` Transform orbit — pai rotacionando faz os filhos orbitarem (composição de rotação sobre posição, A1)
 - `2` Scale hierarchy — pai com `scale` oscilando faz o filho crescer e encolher (composição de scale via `Shape.onRender`, A1)
-- `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameSurface` (A2)
-- `F1` liga/desliga overlay de FPS
-- `F2` liga/desliga visualização de colliders
+- `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2)
+- `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
+- `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 
 ## Coding Conventions
 
@@ -97,6 +98,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | `engine-foundation`   | Archived | Scene graph, math, SPIs, física O(N²), game loop, Compose runtime, Pong, DX e CLAUDE.md. |
 | `add-tictactoe`       | Archived | Mouse buttons na SPI de `Input`, `drawLine` e `measureText` no `Renderer`, `Rect.contains`, e jogo da Velha humano vs humano em `:games:tictactoe`. |
 | `engine-consistency`  | Archived | Composição de `Transform` por ancestralidade, cache de `Scene` em `Node`, mutação segura durante traversal, overlay de colliders migrado de `Scene` para `GameSurface`. Inclui `:games:demos` para validação visual. |
+| `add-skiko-runtime`   | Archived | Runtime Skiko puro (sem Compose) como backend padrão; `ComposeHost`/`SkikoHost` implementando o novo `GameHost` SPI; overlay de debug unificado. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.

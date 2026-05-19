@@ -168,15 +168,22 @@ The `properties` map MUST contain exactly the values of the node's `@Inspect`-an
 
 ### Requirement: Pong scene file ships as proof of concept
 
-The `:games:pong` module SHALL include `pong.scene.json` under `src/main/resources/` containing the serialized initial state of `PongScene`. The module SHALL provide a secondary entry point (e.g. `MainFromFile.kt`) that loads this resource via `SceneLoader.load`, starts the resulting scene, and runs it via the Skiko host. The resulting gameplay MUST be indistinguishable from running the code-only `Main.kt`: same paddles, same ball start, same colliders, same HUD layout.
+The `:games:pong` module SHALL include `pong.scene.json` under `src/main/resources/` containing the serialized initial state of `PongScene`. The module's single entry point `Main.kt` SHALL load this resource via `SceneLoader.load` and run the resulting scene via the Skiko host; no code-only construction path SHALL ship as a parallel entry point. The resulting gameplay MUST be indistinguishable from the previous code-only build of `PongScene`: same paddles, same ball start, same colliders, same HUD layout.
 
 #### Scenario: pong.scene.json exists and parses
 
 - **WHEN** the file `:games:pong/src/main/resources/pong.scene.json` is read at runtime
 - **THEN** `SceneLoader.load` returns a `Scene` whose root is a `PongScene`
 
-#### Scenario: Loaded Pong runs identically to code-only
+#### Scenario: Pong's Main loads the scene file
 
-- **WHEN** the user runs `:games:pong:run` for both entrypoints (code-only and from-file)
-- **THEN** both windows display the same initial scene layout
-- **AND** both respond identically to the same input sequence
+- **WHEN** the user runs `./gradlew :games:pong:run`
+- **THEN** `Main.kt` reads `pong.scene.json` from the classpath
+- **AND** calls `SceneLoader.load` to build the scene
+- **AND** hands the scene to `SkikoHost` for execution
+
+#### Scenario: Loaded Pong matches the previous code-only behavior
+
+- **WHEN** the Pong window is launched
+- **THEN** the initial scene layout (paddles, ball, walls, goals, HUD) matches the layout produced by the prior code-only `PongScene` construction
+- **AND** input response is identical to the prior code-only build

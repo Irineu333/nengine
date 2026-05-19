@@ -9,7 +9,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private class RecordingBox(size: Vec2) : BoxCollider(size) {
+private class RecordingBox(boxSize: Vec2) : BoxCollider() {
+    init { size = boxSize }
     val partners: MutableList<Collider> = mutableListOf()
     override fun onCollide(other: Collider) { partners += other }
 }
@@ -19,7 +20,8 @@ class PhysicsSystemTest {
     @Test
     fun `bounds derived from transform position`() {
         val scene = Scene()
-        val box = BoxCollider(Vec2(10f, 20f)).apply {
+        val box = BoxCollider().apply {
+            size = Vec2(10f, 20f)
             transform = Transform(position = Vec2(5f, 7f))
         }
         scene.addChild(box)
@@ -61,7 +63,7 @@ class PhysicsSystemTest {
         val parent = com.neoutils.engine.scene.Node2D().apply {
             transform = Transform(scale = Vec2(2f, 3f))
         }
-        val box = BoxCollider(Vec2(10f, 20f))
+        val box = BoxCollider().apply { size = Vec2(10f, 20f) }
         parent.addChild(box)
         scene.addChild(parent)
         scene.start()
@@ -75,7 +77,7 @@ class PhysicsSystemTest {
         val parent = com.neoutils.engine.scene.Node2D().apply {
             transform = Transform(rotation = (PI / 4.0).toFloat())
         }
-        val box = BoxCollider(Vec2(10f, 10f))
+        val box = BoxCollider().apply { size = Vec2(10f, 10f) }
         parent.addChild(box)
         scene.addChild(parent)
         scene.start()
@@ -91,7 +93,10 @@ class PhysicsSystemTest {
         val parent = com.neoutils.engine.scene.Node2D().apply {
             transform = Transform(position = Vec2(100f, 50f))
         }
-        val box = BoxCollider(Vec2(10f, 10f)).apply { transform = Transform(position = Vec2(5f, 5f)) }
+        val box = BoxCollider().apply {
+            size = Vec2(10f, 10f)
+            transform = Transform(position = Vec2(5f, 5f))
+        }
         parent.addChild(box)
         scene.addChild(parent)
         scene.start()

@@ -86,7 +86,7 @@ class DebugOverlayTest {
 
     private fun sceneWithCollider(count: Int = 1): Scene {
         val scene = Scene()
-        repeat(count) { scene.addChild(BoxCollider(Vec2(10f, 10f))) }
+        repeat(count) { scene.addChild(BoxCollider().apply { size = Vec2(10f, 10f) }) }
         scene.start()
         return scene
     }

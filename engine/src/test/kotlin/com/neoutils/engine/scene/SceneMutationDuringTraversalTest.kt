@@ -69,7 +69,7 @@ class SceneMutationDuringTraversalTest {
         val scene = Scene()
         val log = mutableListOf<String>()
         val spawned = LifecycleSpy("spawn", log)
-        val a = object : BoxCollider(Vec2(10f, 10f)) {
+        val a = object : BoxCollider() {
             var didSpawn = false
             override fun onCollide(other: Collider) {
                 if (!didSpawn) {
@@ -78,7 +78,7 @@ class SceneMutationDuringTraversalTest {
                 }
             }
         }
-        val b = BoxCollider(Vec2(10f, 10f))
+        val b = BoxCollider().apply { size = Vec2(10f, 10f) }
         scene.addChild(a)
         scene.addChild(b)
         scene.start()
@@ -97,10 +97,10 @@ class SceneMutationDuringTraversalTest {
         val log = mutableListOf<String>()
         val victim = LifecycleSpy("victim", log)
         scene.addChild(victim)
-        val a = object : BoxCollider(Vec2(10f, 10f)) {
+        val a = object : BoxCollider() {
             override fun onCollide(other: Collider) { scene.removeChild(victim) }
         }
-        val b = BoxCollider(Vec2(10f, 10f))
+        val b = BoxCollider().apply { size = Vec2(10f, 10f) }
         scene.addChild(a)
         scene.addChild(b)
         scene.start()

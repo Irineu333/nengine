@@ -46,7 +46,7 @@
 - [x] 7.5 `BoxCollider`: construtor no-args; `size` vira `@Inspect var = Vec2(10f, 10f)`
 - [x] 7.6 `Collider` (abstrato) anotado `@Serializable` para permitir polimorfismo das subclasses
 - [x] 7.7 `Scene` ganha `@Serializable`; `width`, `height` ficam `@Transient` (vão ser recalculados no `resize`); `input` continua `@Transient`
-- [ ] 7.8 Garantir que todos os testes existentes de `Node`/`Scene`/`Shape`/`Text`/`Collider` ainda passam após mudança de construtores
+- [x] 7.8 Garantir que todos os testes existentes de `Node`/`Scene`/`Shape`/`Text`/`Collider` ainda passam após mudança de construtores
 
 ## 8. NodeRegistry
 

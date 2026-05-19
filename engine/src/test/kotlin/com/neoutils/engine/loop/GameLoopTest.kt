@@ -55,10 +55,10 @@ class GameLoopTest {
         // Sensor collider records onCollide ordering relative to update.
         val node = object : Node() { override fun onUpdate(dt: Float) { order += "update" } }
         scene.addChild(node)
-        val a = object : BoxCollider(Vec2(10f, 10f)) {
+        val a = object : BoxCollider() {
             override fun onCollide(other: Collider) { order += "physics" }
         }
-        val b = object : BoxCollider(Vec2(10f, 10f)) {
+        val b = object : BoxCollider() {
             override fun onCollide(other: Collider) { /* not recorded */ }
         }
         scene.addChild(a)

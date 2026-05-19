@@ -4,13 +4,24 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
-class StatusText(
-    var text: String = "",
-    var size: Float = 22f,
-    var color: Color = Color.WHITE,
-    var baselineY: Float = 0f,
-) : Node() {
+@Serializable
+class StatusText : Node() {
+
+    @Transient
+    var text: String = ""
+
+    @Inspect
+    var size: Float = 22f
+
+    @Inspect
+    var color: Color = Color.WHITE
+
+    @Inspect
+    var baselineY: Float = 0f
 
     override fun onRender(renderer: Renderer) {
         val scene = rootScene() ?: return

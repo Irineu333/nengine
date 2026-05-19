@@ -88,9 +88,9 @@
 
 ## 12. Ajustes mínimos em :games:tictactoe
 
-- [ ] 12.1 Anotar `Board`, `StatusText`, `TicTacToeScene` com `@Serializable`. Construtores no-args. Estado runtime (`cells`, `currentPlayer`, `winner`, `winningLine`, `isDraw`, `hoveredCell`) marcado como `@Transient`
-- [ ] 12.2 Propriedades configuráveis (`textSize` se existir, dimensões iniciais) viram `@Inspect var`
-- [ ] 12.3 Rodar `./gradlew :games:tictactoe:run` e verificar comportamento idêntico
+- [x] 12.1 Anotar `Board`, `StatusText`, `TicTacToeScene` com `@Serializable`. Construtores no-args. Estado runtime (`cells`, `currentPlayer`, `winner`, `winningLine`, `isDraw`, `hoveredCell`) marcado como `@Transient`
+- [x] 12.2 Propriedades configuráveis (`textSize` se existir, dimensões iniciais) viram `@Inspect var`
+- [x] 12.3 Rodar `./gradlew :games:tictactoe:run` e verificar comportamento idêntico
 
 ## 13. Pong file end-to-end
 

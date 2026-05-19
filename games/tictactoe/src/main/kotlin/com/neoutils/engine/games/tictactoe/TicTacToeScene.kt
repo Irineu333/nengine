@@ -3,26 +3,24 @@ package com.neoutils.engine.games.tictactoe
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Scene
+import kotlinx.serialization.Serializable
 
-class TicTacToeScene(
-    defaultWidth: Float = 800f,
-    defaultHeight: Float = 600f,
-) : Scene() {
-
-    val board: Board = Board().apply { name = "board" }
-
-    val status: StatusText = StatusText(
-        text = statusFor(board),
-        size = STATUS_TEXT_SIZE,
-        color = Color.WHITE,
-        baselineY = STATUS_BASELINE_Y,
-    ).apply { name = "status" }
+@Serializable
+class TicTacToeScene : Scene() {
 
     init {
         name = "TicTacToeScene"
-        addChild(board)
-        addChild(status)
-        layout(defaultWidth, defaultHeight)
+        if (children.isEmpty()) {
+            addChild(Board().apply { name = "board" })
+            addChild(
+                StatusText().apply {
+                    name = "status"
+                    size = STATUS_TEXT_SIZE
+                    color = Color.WHITE
+                    baselineY = STATUS_BASELINE_Y
+                }
+            )
+        }
     }
 
     override fun onResize(width: Float, height: Float) {
@@ -30,10 +28,13 @@ class TicTacToeScene(
     }
 
     override fun onUpdate(dt: Float) {
+        val board = findChild("board") as? Board ?: return
+        val status = findChild("status") as? StatusText ?: return
         status.text = statusFor(board)
     }
 
     private fun layout(width: Float, height: Float) {
+        val board = findChild("board") as? Board ?: return
         val availableHeight = (height - STATUS_RESERVED).coerceAtLeast(0f)
         val side = minOf(width, availableHeight).coerceAtLeast(0f)
         board.cellSize = side / 3f
@@ -44,9 +45,9 @@ class TicTacToeScene(
     }
 
     companion object {
-        private const val STATUS_TEXT_SIZE: Float = 22f
-        private const val STATUS_RESERVED: Float = 60f
-        private const val STATUS_BASELINE_Y: Float = 16f
+        const val STATUS_TEXT_SIZE: Float = 22f
+        const val STATUS_RESERVED: Float = 60f
+        const val STATUS_BASELINE_Y: Float = 16f
     }
 }
 

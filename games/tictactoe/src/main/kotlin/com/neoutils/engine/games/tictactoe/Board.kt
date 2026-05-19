@@ -6,27 +6,40 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
+@Serializable
 class Board : Node2D() {
 
+    @Transient
     var hoveredCell: Int? = null
         private set
 
+    @Transient
     val cells: Array<Mark?> = arrayOfNulls(9)
 
+    @Transient
     var currentPlayer: Mark = Mark.X
         private set
 
+    @Transient
     var winner: Mark? = null
         private set
 
+    @Transient
     var isDraw: Boolean = false
         private set
 
+    @Transient
     var winningLine: Triple<Int, Int, Int>? = null
         private set
 
+    @Inspect
     var origin: Vec2 = Vec2.ZERO
+
+    @Inspect
     var cellSize: Float = 100f
 
     val gameOver: Boolean get() = winner != null || isDraw
@@ -151,9 +164,9 @@ class Board : Node2D() {
 
     companion object {
         private val WINNING_LINES: List<Triple<Int, Int, Int>> = listOf(
-            Triple(0, 1, 2), Triple(3, 4, 5), Triple(6, 7, 8), // rows
-            Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8), // cols
-            Triple(0, 4, 8), Triple(2, 4, 6), // diagonals
+            Triple(0, 1, 2), Triple(3, 4, 5), Triple(6, 7, 8),
+            Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8),
+            Triple(0, 4, 8), Triple(2, 4, 6),
         )
 
         private const val GRID_THICKNESS_RATIO: Float = 0.04f

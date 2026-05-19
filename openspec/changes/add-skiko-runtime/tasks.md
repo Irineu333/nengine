@@ -68,5 +68,5 @@
 
 ## 10. Final cleanup
 
-- [ ] 10.1 Run `./gradlew build` from the repo root; all tests pass and all modules compile
-- [ ] 10.2 Run `openspec validate add-skiko-runtime --strict` and resolve any reported issues
+- [x] 10.1 Run `./gradlew build` from the repo root; all tests pass and all modules compile
+- [x] 10.2 Run `openspec validate add-skiko-runtime --strict` and resolve any reported issues

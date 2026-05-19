@@ -33,10 +33,10 @@
 
 ## 5. Migrate `:games:pong` to Skiko
 
-- [ ] 5.1 Replace plugins in `games/pong/build.gradle.kts` with `plugins { alias(libs.plugins.kotlinJvm); application }`. Drop `composeMultiplatform`, `composeCompiler`, the `compose.desktop {}` block, and the `compose.desktop.currentOs` + `kotlinx-coroutines-swing` dependencies
-- [ ] 5.2 Add `application { mainClass.set("com.neoutils.engine.games.pong.MainKt") }` and `dependencies { implementation(projects.engine); implementation(projects.engineSkiko) }`
-- [ ] 5.3 Rewrite `games/pong/src/main/kotlin/com/neoutils/engine/games/pong/Main.kt` to: `fun main() { SkikoHost().run(PongScene(), GameConfig("Pong", 800, 600)) }`. Remove all Compose imports
-- [ ] 5.4 Verify `./gradlew :games:pong:dependencies | grep compose` returns empty
+- [x] 5.1 Replace plugins in `games/pong/build.gradle.kts` with `plugins { alias(libs.plugins.kotlinJvm); application }`. Drop `composeMultiplatform`, `composeCompiler`, the `compose.desktop {}` block, and the `compose.desktop.currentOs` + `kotlinx-coroutines-swing` dependencies
+- [x] 5.2 Add `application { mainClass.set("com.neoutils.engine.games.pong.MainKt") }` and `dependencies { implementation(projects.engine); implementation(projects.engineSkiko) }`
+- [x] 5.3 Rewrite `games/pong/src/main/kotlin/com/neoutils/engine/games/pong/Main.kt` to: `fun main() { SkikoHost().run(PongScene(), GameConfig("Pong", 800, 600)) }`. Remove all Compose imports
+- [x] 5.4 Verify `./gradlew :games:pong:dependencies | grep compose` returns empty
 - [ ] 5.5 Verify `./gradlew :games:pong:run` launches the game
 
 ## 6. Migrate `:games:demos` to Skiko

@@ -50,10 +50,10 @@
 
 ## 8. NodeRegistry
 
-- [ ] 8.1 Criar `com.neoutils.engine.serialization.NodeRegistry` objeto/singleton com `register(KClass<out Node>, () -> Node)` e `create(typeName: String): Node`
-- [ ] 8.2 Criar `UnknownNodeTypeException` carregando o nome do tipo desconhecido
-- [ ] 8.3 Pré-registrar tipos do `:engine` em uma chamada `NodeRegistry.registerEngineTypes()` documentada (jogos chamam isso + os seus próprios)
-- [ ] 8.4 Testes `NodeRegistryTest`: registro + criação, tipo não registrado lança exceção com mensagem útil
+- [x] 8.1 Criar `com.neoutils.engine.serialization.NodeRegistry` objeto/singleton com `register(KClass<out Node>, () -> Node)` e `create(typeName: String): Node`
+- [x] 8.2 Criar `UnknownNodeTypeException` carregando o nome do tipo desconhecido
+- [x] 8.3 Pré-registrar tipos do `:engine` em uma chamada `NodeRegistry.registerEngineTypes()` documentada (jogos chamam isso + os seus próprios)
+- [x] 8.4 Testes `NodeRegistryTest`: registro + criação, tipo não registrado lança exceção com mensagem útil
 
 ## 9. SceneLoader
 

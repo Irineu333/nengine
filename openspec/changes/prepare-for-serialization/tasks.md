@@ -7,7 +7,7 @@
 ## 2. Math and render primitives become @Serializable
 
 - [x] 2.1 Anotar `Vec2`, `Rect`, `Transform` com `@Serializable`
-- [ ] 2.2 Anotar `Color` com `@Serializable`
+- [x] 2.2 Anotar `Color` com `@Serializable`
 - [ ] 2.3 Adicionar teste `MathSerializationTest`: round-trip JSON dos quatro tipos confere equality
 - [ ] 2.4 Garantir que testes existentes (`Vec2Test`, `RectTest`, `TransformComposeTest`) continuam passando
 

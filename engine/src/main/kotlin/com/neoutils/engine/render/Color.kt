@@ -1,5 +1,8 @@
 package com.neoutils.engine.render
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Color(val r: Float, val g: Float, val b: Float, val a: Float = 1f) {
 
     companion object {

@@ -2,13 +2,19 @@ package com.neoutils.engine.physics
 
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-open class BoxCollider(var size: Vec2) : Collider() {
+@Serializable
+open class BoxCollider : Collider() {
+
+    @Inspect
+    var size: Vec2 = Vec2(10f, 10f)
 
     override fun bounds(): Rect {
         val world = worldTransform()

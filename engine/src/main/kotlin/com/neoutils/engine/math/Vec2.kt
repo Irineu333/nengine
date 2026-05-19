@@ -1,7 +1,9 @@
 package com.neoutils.engine.math
 
+import kotlinx.serialization.Serializable
 import kotlin.math.sqrt
 
+@Serializable
 data class Vec2(val x: Float, val y: Float) {
 
     operator fun plus(other: Vec2): Vec2 = Vec2(x + other.x, y + other.y)

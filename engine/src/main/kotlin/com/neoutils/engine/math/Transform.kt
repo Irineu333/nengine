@@ -1,8 +1,10 @@
 package com.neoutils.engine.math
 
+import kotlinx.serialization.Serializable
 import kotlin.math.cos
 import kotlin.math.sin
 
+@Serializable
 data class Transform(
     val position: Vec2 = Vec2.ZERO,
     val scale: Vec2 = Vec2.ONE,

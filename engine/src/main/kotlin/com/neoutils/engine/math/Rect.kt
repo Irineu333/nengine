@@ -1,5 +1,8 @@
 package com.neoutils.engine.math
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Rect(val origin: Vec2, val size: Vec2) {
 
     val left: Float get() = origin.x

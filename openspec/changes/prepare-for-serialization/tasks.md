@@ -21,8 +21,8 @@
 
 ## 4. Signal primitive
 
-- [ ] 4.1 Criar `com.neoutils.engine.serialization.Signal<T>` com `plusAssign`, `minusAssign`, `emit`
-- [ ] 4.2 Implementar `emit` iterando sobre snapshot da lista (tolerar mutação durante emissão)
+- [x] 4.1 Criar `com.neoutils.engine.serialization.Signal<T>` com `plusAssign`, `minusAssign`, `emit`
+- [x] 4.2 Implementar `emit` iterando sobre snapshot da lista (tolerar mutação durante emissão)
 - [ ] 4.3 Adicionar testes `SignalTest`: registro/desregistro, ordem de invocação, registro durante emit só vale na próxima, remoção durante emit não afeta o snapshot atual
 
 ## 5. NodeRef primitive

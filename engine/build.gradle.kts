@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    api(libs.kotlinx.serializationJson)
+
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.junit)

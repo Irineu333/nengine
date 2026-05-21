@@ -20,12 +20,12 @@
 
 ## 3. SceneLoader routing (E1)
 
-- [ ] 3.1 Modify `SceneLoader.entryToNode` to inspect `entry.type` and route to `ScriptHosts.current()?.factoryFor(type)` when `type.endsWith(".kts")`, otherwise keep the current `NodeRegistry.create(type)` path.
-- [ ] 3.2 When `type` ends with `.kts` and no `ScriptHost` is registered, throw an exception whose message names the offending path and explains that no `ScriptHost` is registered.
-- [ ] 3.3 Modify `SceneLoader.nodeToEntry` to consult `ScriptHosts.current()?.pathFor(node::class)` first, falling back to `node::class.qualifiedName` only when the reverse lookup returns `null`.
-- [ ] 3.4 Add `SceneLoaderTest` cases that exercise both routing paths using a mock `ScriptHost` that returns a hand-rolled class for a `.kts` path.
-- [ ] 3.5 Add `SceneLoaderTest` cases for the save side: a scene whose root was produced by a mock `ScriptHost` saves with the script path as `type`, not the runtime FQN.
-- [ ] 3.6 **GATE E1**: Run `./gradlew :engine:test :engine-scripting:test`. Run `./gradlew :games:pong:run` and manually verify Pong is unchanged. Manual verification by the user before proceeding.
+- [x] 3.1 Modify `SceneLoader.entryToNode` to inspect `entry.type` and route to `ScriptHosts.current()?.factoryFor(type)` when `type.endsWith(".kts")`, otherwise keep the current `NodeRegistry.create(type)` path.
+- [x] 3.2 When `type` ends with `.kts` and no `ScriptHost` is registered, throw an exception whose message names the offending path and explains that no `ScriptHost` is registered.
+- [x] 3.3 Modify `SceneLoader.nodeToEntry` to consult `ScriptHosts.current()?.pathFor(node::class)` first, falling back to `node::class.qualifiedName` only when the reverse lookup returns `null`.
+- [x] 3.4 Add `SceneLoaderTest` cases that exercise both routing paths using a mock `ScriptHost` that returns a hand-rolled class for a `.kts` path.
+- [x] 3.5 Add `SceneLoaderTest` cases for the save side: a scene whose root was produced by a mock `ScriptHost` saves with the script path as `type`, not the runtime FQN.
+- [x] 3.6 **GATE E1**: Run `./gradlew :engine:test :engine-scripting:test`. Run `./gradlew :games:pong:run` and manually verify Pong is unchanged. Manual verification by the user before proceeding.
 
 ## 4. Pong wiring (E2-prep)
 

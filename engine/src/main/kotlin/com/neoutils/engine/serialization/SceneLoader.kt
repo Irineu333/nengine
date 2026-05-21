@@ -9,6 +9,7 @@ import kotlinx.serialization.serializer
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
+import com.neoutils.engine.scripting.ScriptHosts
 
 /**
  * Saves a scene tree to and loads it from a JSON document. The serialized
@@ -42,7 +43,8 @@ object SceneLoader {
     }
 
     private fun nodeToEntry(node: Node): NodeEntry {
-        val typeName = node::class.qualifiedName
+        val typeName = ScriptHosts.current()?.pathFor(node::class)
+            ?: node::class.qualifiedName
             ?: error("Node type has no qualified name (anonymous?): ${node::class}")
         val children = node.children.map(::nodeToEntry)
         return NodeEntry(
@@ -69,7 +71,13 @@ object SceneLoader {
     }
 
     private fun entryToNode(entry: NodeEntry): Node {
-        val node = NodeRegistry.create(entry.type)
+        val node = if (entry.type.endsWith(".kts")) {
+            val host = ScriptHosts.current()
+                ?: throw IllegalStateException("No ScriptHost is registered to handle script path: ${entry.type}")
+            host.factoryFor(entry.type)()
+        } else {
+            NodeRegistry.create(entry.type)
+        }
         node.name = entry.name
         applyProperties(node, entry.properties)
         for (child in entry.children) {

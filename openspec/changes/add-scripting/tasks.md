@@ -9,12 +9,12 @@
 
 - [x] 2.1 Create the `:engine-scripting` Gradle module with `build.gradle.kts` depending on `:engine` and `org.jetbrains.kotlin:kotlin-scripting-jvm-host` (pinned version aligned with the project's Kotlin version).
 - [x] 2.2 Register the module in `settings.gradle.kts`.
-- [ ] 2.3 Implement `KotlinScriptingHost(manifest: List<String>, cacheDir: File)` implementing `ScriptHost`.
-- [ ] 2.4 Define a custom `ScriptDefinition` for the `.nengine.kts` extension with default imports for `com.neoutils.engine.scene.*`, `math.*`, `render.*`, `input.*`, `serialization.*`, `physics.*`.
-- [ ] 2.5 Implement compilation that fails fast when the script contains zero or more than one top-level class extending `Node`.
-- [ ] 2.6 Implement disk cache keyed by `sha256(scriptSource) + engineScriptingVersion`, persisted under the configured `cacheDir`.
-- [ ] 2.7 Implement manifest-ordered compilation: pre-compile every script listed in `manifest` (in order) so each later script sees earlier ones on its classpath.
-- [ ] 2.8 Implement reverse mapping `pathFor(klass)`, populated as each script compiles.
+- [x] 2.3 Implement `KotlinScriptingHost(manifest: List<String>, cacheDir: File)` implementing `ScriptHost`.
+- [x] 2.4 Define a custom `ScriptDefinition` for the `.nengine.kts` extension with default imports for `com.neoutils.engine.scene.*`, `math.*`, `render.*`, `input.*`, `serialization.*`, `physics.*`.
+- [x] 2.5 Implement compilation that fails fast when the script contains zero or more than one top-level class extending `Node`.
+- [x] 2.6 Implement disk cache keyed by `sha256(scriptSource) + engineScriptingVersion`, persisted under the configured `cacheDir`.
+- [x] 2.7 Implement manifest-ordered compilation: pre-compile every script listed in `manifest` (in order) so each later script sees earlier ones on its classpath.
+- [x] 2.8 Implement reverse mapping `pathFor(klass)`, populated as each script compiles.
 - [ ] 2.9 Add a smoke test that compiles a trivial `Hello : Node()` script, verifies the returned `KClass`, instantiates it, and asserts it is assignable to `Node`.
 - [ ] 2.10 Add tests covering: missing script throws, syntax error throws, zero-class throws, two-class throws, non-Node top-level throws, cache hit avoids recompile, cache deletion forces recompile, manifest order makes earlier scripts visible to later ones.
 

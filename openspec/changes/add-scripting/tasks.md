@@ -29,10 +29,10 @@
 
 ## 4. Pong wiring (E2-prep)
 
-- [ ] 4.1 Add `:engine-scripting` as a dependency of `:games:pong`.
-- [ ] 4.2 In `:games:pong/Main.kt`, instantiate `KotlinScriptingHost` with an initially empty manifest and `cacheDir = File("build/scripting-cache").absoluteFile`, then call `ScriptHosts.register(host)` before `SceneLoader.load`.
-- [ ] 4.3 Create the empty `:games:pong/src/main/resources/scripts/` directory and ensure Gradle bundles it.
-- [ ] 4.4 **GATE E2-prep**: Run `./gradlew :games:pong:run`. Manual verification by the user that Pong still behaves identically (no scripts loaded yet).
+- [x] 4.1 Add `:engine-scripting` as a dependency of `:games:pong`.
+- [x] 4.2 In `:games:pong/Main.kt`, instantiate `KotlinScriptingHost` with an initially empty manifest and `cacheDir = File("build/scripting-cache").absoluteFile`, then call `ScriptHosts.register(host)` before `SceneLoader.load`.
+- [x] 4.3 Create the empty `:games:pong/src/main/resources/scripts/` directory and ensure Gradle bundles it.
+- [x] 4.4 **GATE E2-prep**: Run `./gradlew :games:pong:run`. Manual verification by the user that Pong still behaves identically (no scripts loaded yet).
 
 ## 5. Migrate CenterLine (E2)
 

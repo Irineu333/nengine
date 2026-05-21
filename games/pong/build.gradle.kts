@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(projects.engine)
     implementation(projects.engineSkiko)
+    implementation(projects.engineScripting)
 }
 
 application {

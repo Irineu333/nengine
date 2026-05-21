@@ -5,11 +5,18 @@ import com.neoutils.engine.scene.Scene
 import com.neoutils.engine.serialization.NodeRegistry
 import com.neoutils.engine.serialization.SceneLoader
 import com.neoutils.engine.skiko.SkikoHost
+import com.neoutils.engine.scripting.KotlinScriptingHost
+import com.neoutils.engine.scripting.ScriptHosts
 
 private const val SCENE_RESOURCE = "pong.scene.json"
 
 fun main() {
     registerPongTypes()
+    val scriptingHost = KotlinScriptingHost(
+        manifest = emptyList(),
+        cacheDir = java.io.File("build/scripting-cache").absoluteFile
+    )
+    ScriptHosts.register(scriptingHost)
     val scene = loadScene()
     SkikoHost().run(scene, GameConfig(title = "Pong", width = 800, height = 600))
 }

@@ -114,5 +114,5 @@
 
 ## 14. Verify and archive
 
-- [ ] 14.1 Run `/opsx:verify add-scripting` to confirm implementation matches specs.
+- [x] 14.1 Run `/opsx:verify add-scripting` to confirm implementation matches specs.
 - [ ] 14.2 Run `/opsx:archive add-scripting` to freeze the change and sync main specs.

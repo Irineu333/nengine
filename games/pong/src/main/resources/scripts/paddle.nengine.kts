@@ -1,4 +1,4 @@
-import com.neoutils.engine.games.pong.PaddleCollider
+import scripts.PaddleCollider
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 

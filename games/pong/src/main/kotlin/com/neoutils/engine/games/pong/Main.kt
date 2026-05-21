@@ -19,6 +19,7 @@ fun main() {
             "scripts/center-line.nengine.kts",
             "scripts/score.nengine.kts",
             "scripts/ball.nengine.kts",
+            "scripts/paddle-collider.nengine.kts",
             "scripts/paddle.nengine.kts"
         ),
         cacheDir = java.io.File("build/scripting-cache").absoluteFile
@@ -38,5 +39,4 @@ private fun loadScene(): Scene {
 internal fun registerPongTypes() {
     NodeRegistry.registerEngineTypes()
     NodeRegistry.register(PongScene::class) { PongScene() }
-    NodeRegistry.register(PaddleCollider::class) { PaddleCollider() }
 }

@@ -35,7 +35,7 @@ class PongScene : Scene() {
         val leftPaddle = findChild("left") as? Paddle ?: return
         val rightPaddle = findChild("right") as? Paddle ?: return
         val ball = findChild("Ball") as? Ball ?: return
-        val centerLine = findChild("centerLine") as? CenterLine ?: return
+        val centerLine = findChild("centerLine") ?: return
 
         topWall.size = Vec2(width, WALL_THICKNESS)
         topWall.transform = topWall.transform.copy(position = Vec2(0f, 0f))
@@ -62,8 +62,9 @@ class PongScene : Scene() {
         if (isLive) {
             ball.reset(serveToward = if (ball.velocity.x >= 0f) 1f else -1f)
         }
-        centerLine.x = width / 2f
-        centerLine.height = height
+        val clClass = centerLine::class.java
+        clClass.methods.firstOrNull { it.name == "setX" }?.invoke(centerLine, width / 2f)
+        clClass.methods.firstOrNull { it.name == "setHeight" }?.invoke(centerLine, height)
 
         val leftScore = findChild("leftScore") as? Score ?: return
         val rightScore = findChild("rightScore") as? Score ?: return

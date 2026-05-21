@@ -6,7 +6,7 @@
     "properties": {},
     "children": [
       {
-        "type": "com.neoutils.engine.games.pong.CenterLine",
+        "type": "scripts/center-line.nengine.kts",
         "name": "centerLine",
         "properties": {
           "x": 400.0,

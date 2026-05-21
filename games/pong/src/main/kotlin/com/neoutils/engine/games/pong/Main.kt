@@ -13,7 +13,7 @@ private const val SCENE_RESOURCE = "pong.scene.json"
 fun main() {
     registerPongTypes()
     val scriptingHost = KotlinScriptingHost(
-        manifest = emptyList(),
+        manifest = listOf("scripts/center-line.nengine.kts"),
         cacheDir = java.io.File("build/scripting-cache").absoluteFile
     )
     ScriptHosts.register(scriptingHost)
@@ -37,5 +37,4 @@ internal fun registerPongTypes() {
     NodeRegistry.register(Wall::class) { Wall() }
     NodeRegistry.register(Goal::class) { Goal() }
     NodeRegistry.register(Score::class) { Score() }
-    NodeRegistry.register(CenterLine::class) { CenterLine() }
 }

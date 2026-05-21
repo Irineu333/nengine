@@ -117,7 +117,8 @@ class KotlinScriptingHost(
         val source = prependedContent.toScriptSource(path)
 
         val config = ScriptCompilationConfiguration(NEngineScriptCompilationConfiguration) {
-            defaultImports(wrapperClasses.map { "$it.*" })
+            val baseImports = NEngineScriptCompilationConfiguration[ScriptCompilationConfiguration.defaultImports] ?: emptyList()
+            defaultImports(baseImports + wrapperClasses.map { "$it.*" })
             jvm {
                 dependenciesFromCurrentContext(wholeClasspath = true)
                 val classpathStr = System.getProperty("java.class.path") ?: ""

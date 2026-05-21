@@ -36,12 +36,12 @@
 
 ## 5. Migrate CenterLine (E2)
 
-- [ ] 5.1 Create `scripts/center-line.nengine.kts` declaring a single top-level class equivalent to the current `CenterLine` Kotlin class.
-- [ ] 5.2 Add the script path to the Pong manifest in `Main.kt`.
-- [ ] 5.3 Update `pong.scene.json` so the entry that previously referenced `com.neoutils.engine.games.pong.CenterLine` now uses `"type": "scripts/center-line.nengine.kts"`.
-- [ ] 5.4 Delete `:games:pong/src/main/kotlin/com/neoutils/engine/games/pong/CenterLine.kt`.
-- [ ] 5.5 Remove the `CenterLine` registration from `NodeRegistry` (if any) in `Main.kt`.
-- [ ] 5.6 **GATE E2**: Run `./gradlew :games:pong:run`. Manual verification by the user that the center dashed line still renders identically.
+- [x] 5.1 Create `scripts/center-line.nengine.kts` declaring a single top-level class equivalent to the current `CenterLine` Kotlin class.
+- [x] 5.2 Add the script path to the Pong manifest in `Main.kt`.
+- [x] 5.3 Update `pong.scene.json` so the entry that previously referenced `com.neoutils.engine.games.pong.CenterLine` now uses `"type": "scripts/center-line.nengine.kts"`.
+- [x] 5.4 Delete `:games:pong/src/main/kotlin/com/neoutils/engine/games/pong/CenterLine.kt`.
+- [x] 5.5 Remove the `CenterLine` registration from `NodeRegistry` (if any) in `Main.kt`.
+- [x] 5.6 **GATE E2**: Run `./gradlew :games:pong:run`. Manual verification by the user that the center dashed line still renders identically.
 
 ## 6. Migrate Score (E2-bis)
 

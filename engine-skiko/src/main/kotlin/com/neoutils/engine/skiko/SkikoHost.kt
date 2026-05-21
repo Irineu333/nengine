@@ -76,6 +76,7 @@ class SkikoHost : GameHost {
                 skiaLayer.needRedraw()
             }
 
+            skiaLayer.isFocusable = true
             frame.contentPane.add(skiaLayer, BorderLayout.CENTER)
 
             val keyListener = object : KeyAdapter() {
@@ -85,7 +86,10 @@ class SkikoHost : GameHost {
             frame.addKeyListener(keyListener)
             skiaLayer.addKeyListener(keyListener)
             skiaLayer.addMouseListener(object : MouseAdapter() {
-                override fun mousePressed(e: MouseEvent) = input.onAwtMouseButton(e, pressed = true)
+                override fun mousePressed(e: MouseEvent) {
+                    skiaLayer.requestFocusInWindow()
+                    input.onAwtMouseButton(e, pressed = true)
+                }
                 override fun mouseReleased(e: MouseEvent) = input.onAwtMouseButton(e, pressed = false)
             })
             skiaLayer.addMouseMotionListener(object : MouseMotionAdapter() {
@@ -104,7 +108,8 @@ class SkikoHost : GameHost {
             frame.pack()
             frame.setLocationRelativeTo(null)
             frame.isVisible = true
-            frame.requestFocusInWindow()
+            frame.requestFocus()
+            skiaLayer.requestFocusInWindow()
             skiaLayer.needRedraw()
         }
 

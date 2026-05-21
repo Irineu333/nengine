@@ -11,8 +11,8 @@
 
 ## 3. Remover scripts redundantes
 
-- [ ] 3.1 Apagar `games/pong/src/main/resources/scripts/paddle-collider.nengine.kts`.
-- [ ] 3.2 Apagar `games/pong/src/main/resources/scripts/walls.nengine.kts`.
+- [x] 3.1 Apagar `games/pong/src/main/resources/scripts/paddle-collider.nengine.kts`.
+- [x] 3.2 Apagar `games/pong/src/main/resources/scripts/walls.nengine.kts`.
 
 ## 4. Atualizar o pong.scene.json
 

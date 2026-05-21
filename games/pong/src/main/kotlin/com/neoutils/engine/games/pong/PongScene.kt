@@ -10,6 +10,16 @@ class PongScene : Scene() {
 
     override fun onEnter() {
         wireScoring()
+        try {
+            val left = findChild("left")
+            if (left != null) {
+                val upKeyVal = left::class.java.getMethod("getUpKey").invoke(left)
+                val downKeyVal = left::class.java.getMethod("getDownKey").invoke(left)
+                println("DEBUG: left paddle upKey=$upKeyVal, downKey=$downKeyVal")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun wireScoring() {
@@ -48,8 +58,8 @@ class PongScene : Scene() {
         val bottomWall = findChild("bottomWall") as? BoxCollider ?: return
         val leftGoal = findChild("leftGoal") as? BoxCollider ?: return
         val rightGoal = findChild("rightGoal") as? BoxCollider ?: return
-        val leftPaddle = findChild("left") as? Paddle ?: return
-        val rightPaddle = findChild("right") as? Paddle ?: return
+        val leftPaddle = findChild("left") as? com.neoutils.engine.scene.Node2D ?: return
+        val rightPaddle = findChild("right") as? com.neoutils.engine.scene.Node2D ?: return
         val ball = findChild("Ball") ?: return
         val centerLine = findChild("centerLine") ?: return
 
@@ -65,13 +75,19 @@ class PongScene : Scene() {
         rightGoal.size = Vec2(GOAL_THICKNESS, height)
         rightGoal.transform = rightGoal.transform.copy(position = Vec2(width, 0f))
 
-        leftPaddle.playFieldHeight = height
+        val paddleWidth = 16f
+        val paddleHeight = 96f
+        try {
+            leftPaddle::class.java.getMethod("setPlayFieldHeight", Float::class.java).invoke(leftPaddle, height)
+            rightPaddle::class.java.getMethod("setPlayFieldHeight", Float::class.java).invoke(rightPaddle, height)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         leftPaddle.transform = leftPaddle.transform.copy(
-            position = Vec2(PADDLE_MARGIN, height / 2f - Paddle.HEIGHT / 2f)
+            position = Vec2(PADDLE_MARGIN, height / 2f - paddleHeight / 2f)
         )
-        rightPaddle.playFieldHeight = height
         rightPaddle.transform = rightPaddle.transform.copy(
-            position = Vec2(width - PADDLE_MARGIN - Paddle.WIDTH, height / 2f - Paddle.HEIGHT / 2f)
+            position = Vec2(width - PADDLE_MARGIN - paddleWidth, height / 2f - paddleHeight / 2f)
         )
 
         try {

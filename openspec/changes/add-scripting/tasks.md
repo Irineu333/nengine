@@ -69,11 +69,11 @@
 
 ## 9. Migrate Paddle (E4)
 
-- [ ] 9.1 Create `scripts/paddle.nengine.kts` equivalent to the current `Paddle.kt`. Note: this script still references `PaddleCollider` which remains a Kotlin class, on the `:games:pong` classpath.
-- [ ] 9.2 Add to manifest after `ball` (`Paddle.target: NodeRef<Node2D>` resolves at runtime so manifest order does not require `Ball` first, but place it after for clarity).
-- [ ] 9.3 Update `pong.scene.json` paddle entries to reference the script.
-- [ ] 9.4 Delete `Paddle.kt` and remove its `NodeRegistry` registration.
-- [ ] 9.5 **GATE E4**: Run `./gradlew :games:pong:run`. Manual verification: W/S move the left paddle; AI paddle tracks the ball; collisions trigger ball reflection.
+- [x] 9.1 Create `scripts/paddle.nengine.kts` equivalent to the current `Paddle.kt`. Note: this script still references `PaddleCollider` which remains a Kotlin class, on the `:games:pong` classpath.
+- [x] 9.2 Add to manifest after `ball` (`Paddle.target: NodeRef<Node2D>` resolves at runtime so manifest order does not require `Ball` first, but place it after for clarity).
+- [x] 9.3 Update `pong.scene.json` paddle entries to reference the script.
+- [x] 9.4 Delete `Paddle.kt` and remove its `NodeRegistry` registration.
+- [x] 9.5 **GATE E4**: Run `./gradlew :games:pong:run`. Manual verification: W/S move the left paddle; AI paddle tracks the ball; collisions trigger ball reflection.
 
 ## 10. Migrate PaddleCollider (E5 — first script-to-script reference)
 

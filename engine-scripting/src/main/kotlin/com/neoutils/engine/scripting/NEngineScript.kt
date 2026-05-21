@@ -3,6 +3,7 @@ package com.neoutils.engine.scripting
 import kotlin.script.experimental.annotations.KotlinScript
 import kotlin.script.experimental.api.ScriptCompilationConfiguration
 import kotlin.script.experimental.api.defaultImports
+import kotlin.script.experimental.api.compilerOptions
 import kotlin.script.experimental.jvm.dependenciesFromCurrentContext
 import kotlin.script.experimental.jvm.jvm
 
@@ -22,6 +23,7 @@ object NEngineScriptCompilationConfiguration : ScriptCompilationConfiguration({
         "com.neoutils.engine.serialization.*",
         "com.neoutils.engine.physics.*"
     )
+    compilerOptions.append("-jvm-target=21")
     jvm {
         dependenciesFromCurrentContext(wholeClasspath = true)
     }

@@ -21,6 +21,7 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 
 ```
 :engine            ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX, GameHost SPI)
+:engine-scripting  ← compilador e cache de scripts Kotlin (.nengine.kts) baseado em kotlin-scripting
 :engine-compose    ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface, ComposeHost) — segundo backend
 :engine-skiko      ← backend Skiko puro sobre SkiaLayer + JFrame (SkikoRenderer, SkikoInput, SkikoHost) — backend padrão
 :games:pong        ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
@@ -102,6 +103,15 @@ class Paddle : Node2D() {
 }
 ```
 
+### Scripting contract (`.nengine.kts`)
+
+A engine suporta scripts Kotlin para definir comportamento de gameplay sob demanda, sem necessidade de recompilar a engine ou o launcher do jogo:
+
+- Todo script deve ter a extensão `.nengine.kts` e declarar **exatamente uma** classe pública que herda de `Node` (ou subclasses como `Node2D`, `BoxCollider`).
+- Os scripts são compilados sequencialmente na inicialização de acordo com o `manifest` configurado no `KotlinScriptingHost`. Cada script na lista tem visibilidade das classes declaradas nos scripts anteriores (referenciadas por seus nomes simples, importados automaticamente pelo host).
+- Pacotes padrão importados implicitamente em todo script: `com.neoutils.engine.scene.*`, `math.*`, `render.*`, `input.*`, `serialization.*`, `physics.*`.
+- O cache de compilação fica em disco na pasta especificada (e.g. `build/scripting-cache/`), usando SHA-256 do código-fonte para evitar re-compilações se o conteúdo não mudou.
+
 ## OpenSpec Workflow
 
 Mudanças materiais (arquitetura, API pública, novos módulos, novas capabilities) **passam por uma change OpenSpec antes da implementação**. Roteiro padrão:
@@ -123,6 +133,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | `engine-consistency`  | Archived | Composição de `Transform` por ancestralidade, cache de `Scene` em `Node`, mutação segura durante traversal, overlay de colliders migrado de `Scene` para `GameSurface`. Inclui `:games:demos` para validação visual. |
 | `add-skiko-runtime`   | Archived | Runtime Skiko puro (sem Compose) como backend padrão; `ComposeHost`/`SkikoHost` implementando o novo `GameHost` SPI; overlay de debug unificado. |
 | `prepare-for-serialization` | Archived | Primitivas `NodeRef`/`Signal`/`@Inspect`, `NodeRegistry`, `SceneLoader` (`save`/`load` JSON via `kotlinx.serialization`); refactor de Pong/Demos/Velha para construtores no-args + `@Inspect` var; `pong.scene.json` como entry point principal de Pong. |
+| `add-scripting`       | Archived | Compilador e cache de scripts Kotlin `.nengine.kts` via Kotlin Scripting, e migração completa de Pong para scripts. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.

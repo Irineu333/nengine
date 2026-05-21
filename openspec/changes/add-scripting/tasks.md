@@ -77,22 +77,22 @@
 
 ## 10. Migrate PaddleCollider (E5 — first script-to-script reference)
 
-- [ ] 10.1 Create `scripts/paddle-collider.nengine.kts` equivalent to `PaddleCollider.kt` (if it exists as a separate file) or extracted from `Paddle.kt`.
-- [ ] 10.2 Add `paddle-collider` to the manifest **before** `paddle` to satisfy compilation order.
-- [ ] 10.3 Update `paddle.nengine.kts` to reference the script-defined `PaddleCollider` class. This is the first time a script references a class from another script.
-- [ ] 10.4 Delete `PaddleCollider.kt` and remove any `NodeRegistry` registration.
-- [ ] 10.5 If applicable, update `pong.scene.json` to reference the script (collider may be added programmatically in `Paddle.onEnter`, in which case no JSON change is needed — verify).
-- [ ] 10.6 Reorder the manifest so it always lists every dependency before its dependents (paddle-collider, walls, goal, score, center-line, ball, paddle, pong-scene).
-- [ ] 10.7 **GATE E5**: Run `./gradlew :games:pong:run`. Manual verification: gameplay is identical, no collision regressions.
+- [x] 10.1 Create `scripts/paddle-collider.nengine.kts` equivalent to `PaddleCollider.kt` (if it exists as a separate file) or extracted from `Paddle.kt`.
+- [x] 10.2 Add `paddle-collider` to the manifest **before** `paddle` to satisfy compilation order.
+- [x] 10.3 Update `paddle.nengine.kts` to reference the script-defined `PaddleCollider` class. This is the first time a script references a class from another script.
+- [x] 10.4 Delete `PaddleCollider.kt` and remove any `NodeRegistry` registration.
+- [x] 10.5 If applicable, update `pong.scene.json` to reference the script (collider may be added programmatically in `Paddle.onEnter`, in which case no JSON change is needed — verify).
+- [x] 10.6 Reorder the manifest so it always lists every dependency before its dependents (paddle-collider, walls, goal, score, center-line, ball, paddle, pong-scene).
+- [x] 10.7 **GATE E5**: Run `./gradlew :games:pong:run`. Manual verification: gameplay is identical, no collision regressions.
 
 ## 11. Migrate PongScene (E6 — final boss)
 
-- [ ] 11.1 Create `scripts/pong-scene.nengine.kts` equivalent to `PongScene.kt`. The script's class extends `Scene` (or whatever Pong currently uses as the root type) and constructs the tree in `onEnter`/`init` if any — or, more cleanly, leaves all child wiring to the JSON.
-- [ ] 11.2 Add `pong-scene` as the **last** entry in the manifest.
-- [ ] 11.3 Update `pong.scene.json` so its top-level `root.type` is `"scripts/pong-scene.nengine.kts"`.
-- [ ] 11.4 Delete `PongScene.kt` and remove its `NodeRegistry` registration.
-- [ ] 11.5 Verify that `:games:pong/src/main/kotlin/com/neoutils/engine/games/pong/` contains only `Main.kt` (and any non-Node helper, e.g. `Goal.Side` enum if used; consider relocating the enum into the engine or into a script).
-- [ ] 11.6 **GATE E6**: Run `./gradlew :games:pong:run`. Manual verification: full Pong session — human vs AI, scoring, debug toggles (F1/F2), all behave identically to the pre-migration build.
+- [x] 11.1 Create `scripts/pong-scene.nengine.kts` equivalent to `PongScene.kt`. The script's class extends `Scene` (or whatever Pong currently uses as the root type) and constructs the tree in `onEnter`/`init` if any — or, more cleanly, leaves all child wiring to the JSON.
+- [x] 11.2 Add `pong-scene` as the **last** entry in the manifest.
+- [x] 11.3 Update `pong.scene.json` so its top-level `root.type` is `"scripts/pong-scene.nengine.kts"`.
+- [x] 11.4 Delete `PongScene.kt` and remove its `NodeRegistry` registration.
+- [x] 11.5 Verify that `:games:pong/src/main/kotlin/com/neoutils/engine/games/pong/` contains only `Main.kt` (and any non-Node helper, e.g. `Goal.Side` enum if used; consider relocating the enum into the engine or into a script).
+- [x] 11.6 **GATE E6**: Run `./gradlew :games:pong:run`. Manual verification: full Pong session — human vs AI, scoring, debug toggles (F1/F2), all behave identically to the pre-migration build.
 
 ## 12. Documentation and bookkeeping (E7)
 

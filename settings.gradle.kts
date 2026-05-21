@@ -33,6 +33,7 @@ plugins {
 }
 
 include(":engine")
+include(":engine-scripting")
 include(":engine-compose")
 include(":engine-skiko")
 include(":games:pong")

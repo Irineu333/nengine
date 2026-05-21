@@ -83,17 +83,18 @@ class KotlinScriptingHostTest {
         // Compile first time
         val host1 = KotlinScriptingHost(emptyList(), tempCacheDir)
         val klass1 = host1.compile("scripts/hello.nengine.kts")
+        assertEquals(1, host1.compilationCount)
         
         // Find cache file
         val cacheFiles = tempCacheDir.listFiles { _, name -> name.endsWith(".bin") }
         assertNotNull(cacheFiles)
         assertEquals(1, cacheFiles.size)
-        val cacheFile = cacheFiles[0]
         
         // Compile second time using another host and cache
         val host2 = KotlinScriptingHost(emptyList(), tempCacheDir)
         val klass2 = host2.compile("scripts/hello.nengine.kts")
         assertEquals(klass1.simpleName, klass2.simpleName)
+        assertEquals(0, host2.compilationCount)
     }
 
     @Test

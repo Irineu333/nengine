@@ -1,4 +1,7 @@
-import com.neoutils.engine.games.pong.GoalSide
+enum class GoalSide {
+    Left,
+    Right
+}
 
 class Goal : BoxCollider() {
     @Inspect

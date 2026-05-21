@@ -1,4 +1,3 @@
-import com.neoutils.engine.games.pong.GoalSide
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin

@@ -1,21 +1,9 @@
-import com.neoutils.engine.games.pong.GoalSide
 import kotlinx.serialization.Serializable
 
 class PongScene : Scene() {
 
     override fun onEnter() {
         wireScoring()
-        try {
-            val left = findChild("left") as? Paddle
-            if (left != null) {
-                val up = left.upKey
-                val upClass = if (up != null) up::class.qualifiedName else "null"
-                println("DEBUG: left paddle upKey=$up ($upClass), downKey=${left.downKey}")
-                println("DEBUG: is upKey a Key? ${up is com.neoutils.engine.input.Key}")
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     private fun wireScoring() {

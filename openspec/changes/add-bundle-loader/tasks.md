@@ -75,7 +75,7 @@
 - [x] 8.3 Move `games/pong/src/main/resources/scripts/` to `games/pong/src/main/resources/pong/scripts/`.
 - [x] 8.4 Verify the `"type"` strings inside `scene.json` are already bundle-relative (`scripts/foo.nengine.kts`) — no change to JSON content needed.
 - [x] 8.5 Rewrite `games/pong/src/main/kotlin/com/neoutils/engine/games/pong/Main.kt`: only `val scene = BundleLoader.fromResources("pong")` and `SkikoHost().run(scene, GameConfig(...))`. Remove `registerPongTypes`, `KotlinScriptingHost`, `ScriptHosts.register`, manifest, and `loadScene` helper.
-- [ ] 8.6 Run `./gradlew :games:pong:run` end-to-end and verify gameplay matches behavior pre-change (paddles, ball, walls, goals, HUD, AI, scoring).
+- [x] 8.6 Run `./gradlew :games:pong:run` end-to-end and verify gameplay matches behavior pre-change (paddles, ball, walls, goals, HUD, AI, scoring).
 
 ## 9. Update conventions and documentation
 
@@ -86,8 +86,8 @@
 
 ## 10. Final validation
 
-- [ ] 10.1 Run `./gradlew clean build` and confirm the whole project builds.
-- [ ] 10.2 Run `./gradlew :engine-bundle:test :engine:test` and confirm all unit tests pass.
-- [ ] 10.3 Run `./gradlew :games:pong:run`, play a brief match (or simulate one), and confirm gameplay matches the pre-change behavior.
-- [ ] 10.4 Confirm `:games:tictactoe` and `:games:demos` still build and run (no regression from the registry refactor).
+- [x] 10.1 Run `./gradlew clean build` and confirm the whole project builds.
+- [x] 10.2 Run `./gradlew :engine-bundle:test :engine:test` and confirm all unit tests pass.
+- [x] 10.3 Run `./gradlew :games:pong:run`, play a brief match (or simulate one), and confirm gameplay matches the pre-change behavior.
+- [x] 10.4 Confirm `:games:tictactoe` and `:games:demos` still build and run (no regression from the registry refactor).
 - [x] 10.5 Run `openspec validate add-bundle-loader --strict` and address any reported issues.

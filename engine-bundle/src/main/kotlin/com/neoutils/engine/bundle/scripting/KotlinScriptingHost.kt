@@ -182,13 +182,17 @@ internal class KotlinScriptingHost(
 
             fun allUnresolvedAndPending(pendingClassNames: Set<String>): Boolean {
                 if (rawDiagnostics.isEmpty()) return false
-                var sawPendingReference = false
+                // Lenient: defer as soon as any unresolved reference points at a
+                // pending script's top-level class. Other diagnostics (cascade
+                // "cannot infer type", "needs opt-in", member references on the
+                // unresolved class) are treated as downstream noise — once the
+                // pending class resolves, the script is retried and any
+                // remaining real errors propagate on the next iteration.
                 for (diag in rawDiagnostics) {
-                    val symbol = unresolvedReferenceSymbol(diag.message)
-                        ?: return false
-                    if (symbol in pendingClassNames) sawPendingReference = true
+                    val symbol = unresolvedReferenceSymbol(diag.message) ?: continue
+                    if (symbol in pendingClassNames) return true
                 }
-                return sawPendingReference
+                return false
             }
         }
     }

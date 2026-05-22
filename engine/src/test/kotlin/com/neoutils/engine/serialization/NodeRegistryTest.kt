@@ -1,15 +1,18 @@
 package com.neoutils.engine.serialization
 
 import com.neoutils.engine.scene.Node
+import com.neoutils.engine.scene.Scene
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
 private class Sample : Node()
+private class Other : Node()
 
 class NodeRegistryTest {
 
@@ -17,13 +20,31 @@ class NodeRegistryTest {
     @AfterTest fun tearDown() { NodeRegistry.clear() }
 
     @Test
-    fun `register and create round-trip`() {
+    fun `register by class derives identifier from qualified name`() {
         NodeRegistry.register(Sample::class) { Sample() }
         val typeName = Sample::class.qualifiedName!!
         val first = NodeRegistry.create(typeName)
         val second = NodeRegistry.create(typeName)
         assertTrue(first is Sample)
         assertNotSame(first, second)
+    }
+
+    @Test
+    fun `register with explicit identifier resolves by that identifier`() {
+        NodeRegistry.register("scripts/sample.nengine.kts", Sample::class) { Sample() }
+        val instance = NodeRegistry.create("scripts/sample.nengine.kts")
+        assertTrue(instance is Sample)
+    }
+
+    @Test
+    fun `identifierFor returns the identifier under which a class was registered`() {
+        NodeRegistry.register("scripts/sample.nengine.kts", Sample::class) { Sample() }
+        assertEquals("scripts/sample.nengine.kts", NodeRegistry.identifierFor(Sample::class))
+    }
+
+    @Test
+    fun `identifierFor returns null for unregistered classes`() {
+        assertNull(NodeRegistry.identifierFor(Other::class))
     }
 
     @Test
@@ -45,5 +66,16 @@ class NodeRegistryTest {
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Shape"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Text"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.physics.BoxCollider"))
+    }
+
+    @Test
+    fun `registerEngineTypes is idempotent`() {
+        NodeRegistry.registerEngineTypes()
+        // Second call must not throw nor duplicate; we observe equivalence by
+        // confirming the engine identifiers still resolve.
+        NodeRegistry.registerEngineTypes()
+        val scene = NodeRegistry.create("com.neoutils.engine.scene.Scene")
+        assertTrue(scene is Scene)
+        assertEquals("com.neoutils.engine.scene.Scene", NodeRegistry.identifierFor(Scene::class))
     }
 }

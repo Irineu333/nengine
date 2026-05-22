@@ -9,38 +9,50 @@ import com.neoutils.engine.scene.Text
 import kotlin.reflect.KClass
 
 /**
- * Maps fully-qualified Kotlin class names to no-args factories so the
- * scene loader can rebuild a tree without reflection on the JVM.
- *
- * Game modules must call [register] for every `Node` subclass they intend
- * to appear in a serialized scene file before invoking the loader. Engine
- * built-ins are registered together via [registerEngineTypes].
+ * Maps node identifiers (strings used in scene files) to a `(KClass, factory)`
+ * pair, with a reverse map from class back to identifier. The identifier is the
+ * value that appears in the `type` field of a serialized scene entry: for
+ * compiled Kotlin types it is typically the FQN; for scripts it is the script
+ * path relative to its bundle (e.g. `scripts/paddle.nengine.kts`).
  */
 object NodeRegistry {
 
-    private val factories: MutableMap<String, () -> Node> = mutableMapOf()
+    private data class Entry(val klass: KClass<out Node>, val factory: () -> Node)
 
-    fun register(type: KClass<out Node>, factory: () -> Node) {
-        val name = type.qualifiedName
-            ?: error("Cannot register a node type with no qualified name: $type")
-        factories[name] = factory
+    private val byIdentifier: MutableMap<String, Entry> = mutableMapOf()
+    private val identifierByClass: MutableMap<KClass<out Node>, String> = mutableMapOf()
+
+    fun register(identifier: String, klass: KClass<out Node>, factory: () -> Node) {
+        byIdentifier[identifier] = Entry(klass, factory)
+        identifierByClass[klass] = identifier
     }
 
-    fun create(typeName: String): Node {
-        val factory = factories[typeName] ?: throw UnknownNodeTypeException(typeName)
-        return factory()
+    fun register(klass: KClass<out Node>, factory: () -> Node) {
+        val identifier = klass.qualifiedName
+            ?: error("Cannot register a node type with no qualified name: $klass")
+        register(identifier, klass, factory)
     }
 
-    fun isRegistered(typeName: String): Boolean = typeName in factories
+    fun create(identifier: String): Node {
+        val entry = byIdentifier[identifier] ?: throw UnknownNodeTypeException(identifier)
+        return entry.factory()
+    }
+
+    fun identifierFor(klass: KClass<out Node>): String? = identifierByClass[klass]
+
+    fun isRegistered(identifier: String): Boolean = identifier in byIdentifier
 
     /** Drops every registration. Intended for tests; production code typically
      *  registers once at startup and never clears. */
     fun clear() {
-        factories.clear()
+        byIdentifier.clear()
+        identifierByClass.clear()
     }
 
-    /** Registers every concrete `Node` subclass shipped by `:engine`. */
+    /** Registers every concrete `Node` subclass shipped by `:engine`. Idempotent:
+     *  re-entry is a no-op when the engine types are already registered. */
     fun registerEngineTypes() {
+        if (identifierByClass.containsKey(Scene::class)) return
         register(Scene::class) { Scene() }
         register(Node2D::class) { Node2D() }
         register(Shape::class) { Shape() }

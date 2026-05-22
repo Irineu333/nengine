@@ -14,11 +14,11 @@
 
 ## 3. Refactor NodeRegistry to bidirectional
 
-- [ ] 3.1 In `:engine`, change `NodeRegistry` to store `(identifier, KClass, factory)` triples in a single internal map keyed by identifier, plus a reverse map `KClass -> identifier`.
-- [ ] 3.2 Replace the existing `register(type: KClass, factory)` with the explicit `register(identifier: String, klass: KClass<out Node>, factory: () -> Node)` overload. Keep a `register(klass, factory)` convenience overload that derives `identifier = klass.qualifiedName`.
-- [ ] 3.3 Add `identifierFor(klass: KClass<out Node>): String?` that returns the identifier under which `klass` is registered (or null).
-- [ ] 3.4 Make `registerEngineTypes()` idempotent (no-op on re-entry).
-- [ ] 3.5 Update `NodeRegistryTest.kt` and add cases for: identifier-explicit register, bidirectional lookup, idempotent `registerEngineTypes`.
+- [x] 3.1 In `:engine`, change `NodeRegistry` to store `(identifier, KClass, factory)` triples in a single internal map keyed by identifier, plus a reverse map `KClass -> identifier`.
+- [x] 3.2 Replace the existing `register(type: KClass, factory)` with the explicit `register(identifier: String, klass: KClass<out Node>, factory: () -> Node)` overload. Keep a `register(klass, factory)` convenience overload that derives `identifier = klass.qualifiedName`.
+- [x] 3.3 Add `identifierFor(klass: KClass<out Node>): String?` that returns the identifier under which `klass` is registered (or null).
+- [x] 3.4 Make `registerEngineTypes()` idempotent (no-op on re-entry).
+- [x] 3.5 Update `NodeRegistryTest.kt` and add cases for: identifier-explicit register, bidirectional lookup, idempotent `registerEngineTypes`.
 
 ## 4. Strip script awareness from SceneLoader
 

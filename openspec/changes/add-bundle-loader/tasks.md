@@ -43,17 +43,17 @@
 
 ## 6. Implement BundleLoader
 
-- [ ] 6.1 Add `BundleLoader` object in `:engine-bundle` (package `com.neoutils.engine.bundle`) with `fromResources(name: String, types: List<KClass<out Node>> = emptyList())` and `fromPath(bundleDir: File, types: List<KClass<out Node>> = emptyList())`.
-- [ ] 6.2 Implement a private `load(source: ScriptSource, sceneJsonText: String, cacheDir: File, types: List<KClass<out Node>>): Scene` pivot used by both entry points.
-- [ ] 6.3 In the pivot: call `NodeRegistry.registerEngineTypes()` first.
-- [ ] 6.4 For each `KClass` in `types`, register it in `NodeRegistry` with identifier = FQN and factory built via `klass.java.getDeclaredConstructor().newInstance() as Node`. Surface a clear exception if the no-args constructor is missing.
-- [ ] 6.5 Tree-walk the parsed `SceneFile`: collect every `entry.type` ending with `.nengine.kts` into a set of script paths to compile.
-- [ ] 6.6 Construct a `KotlinScriptingHost(source, cacheDir)` and call `compileAll(scriptPaths)`. For each resolved `(path, klass)`, register in `NodeRegistry` with identifier = the path string and factory = no-args reflection on `klass`.
-- [ ] 6.7 Delegate to `SceneLoader.load(sceneJsonText)` and return the resulting scene.
-- [ ] 6.8 For `fromResources(name)`: read `scene.json` via `ClassLoader.getResource("$name/scene.json")`; cacheDir = `File("build/scripting-cache/$name").absoluteFile`; source = `ScriptSource.Classpath(bundleRoot = name)`.
-- [ ] 6.9 For `fromPath(bundleDir)`: validate the directory exists; read `File(bundleDir, "scene.json").readText()`; cacheDir = `File(bundleDir, ".nengine-cache")`; source = `ScriptSource.Directory(bundleDir)`.
-- [ ] 6.10 Validate missing `scene.json` and missing bundle dir both raise exceptions whose messages name the offending argument.
-- [ ] 6.11 Ensure `NodeRegistry.clear()` is NOT called automatically (multiple bundles in the same JVM are not a use case, but tests need explicit clearing between cases).
+- [x] 6.1 Add `BundleLoader` object in `:engine-bundle` (package `com.neoutils.engine.bundle`) with `fromResources(name: String, types: List<KClass<out Node>> = emptyList())` and `fromPath(bundleDir: File, types: List<KClass<out Node>> = emptyList())`.
+- [x] 6.2 Implement a private `load(source: ScriptSource, sceneJsonText: String, cacheDir: File, types: List<KClass<out Node>>): Scene` pivot used by both entry points.
+- [x] 6.3 In the pivot: call `NodeRegistry.registerEngineTypes()` first.
+- [x] 6.4 For each `KClass` in `types`, register it in `NodeRegistry` with identifier = FQN and factory built via `klass.java.getDeclaredConstructor().newInstance() as Node`. Surface a clear exception if the no-args constructor is missing.
+- [x] 6.5 Tree-walk the parsed `SceneFile`: collect every `entry.type` ending with `.nengine.kts` into a set of script paths to compile.
+- [x] 6.6 Construct a `KotlinScriptingHost(source, cacheDir)` and call `compileAll(scriptPaths)`. For each resolved `(path, klass)`, register in `NodeRegistry` with identifier = the path string and factory = no-args reflection on `klass`.
+- [x] 6.7 Delegate to `SceneLoader.load(sceneJsonText)` and return the resulting scene.
+- [x] 6.8 For `fromResources(name)`: read `scene.json` via `ClassLoader.getResource("$name/scene.json")`; cacheDir = `File("build/scripting-cache/$name").absoluteFile`; source = `ScriptSource.Classpath(bundleRoot = name)`.
+- [x] 6.9 For `fromPath(bundleDir)`: validate the directory exists; read `File(bundleDir, "scene.json").readText()`; cacheDir = `File(bundleDir, ".nengine-cache")`; source = `ScriptSource.Directory(bundleDir)`.
+- [x] 6.10 Validate missing `scene.json` and missing bundle dir both raise exceptions whose messages name the offending argument.
+- [x] 6.11 Ensure `NodeRegistry.clear()` is NOT called automatically (multiple bundles in the same JVM are not a use case, but tests need explicit clearing between cases).
 
 ## 7. Author BundleLoaderTest
 

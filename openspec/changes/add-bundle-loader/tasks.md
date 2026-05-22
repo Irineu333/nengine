@@ -31,15 +31,15 @@
 
 ## 5. Refactor KotlinScriptingHost: ScriptSource, round-robin, cache
 
-- [ ] 5.1 Introduce internal `sealed interface ScriptSource { fun read(relativePath: String): String }` with `Classpath(bundleRoot: String)` and `Directory(bundleDir: File)` variants.
-- [ ] 5.2 Replace the `manifest: List<String>` constructor parameter with `source: ScriptSource` and `cacheDir: File`. Drop manifest-driven compilation in the constructor.
-- [ ] 5.3 Add a public-internal method `compileAll(paths: Set<String>): Map<String, KClass<out Node>>` that runs the round-robin / fixed-point algorithm.
-- [ ] 5.4 Inside `compileAll`, extract top-level class names per script source via a regex on `^\s*(?:public\s+|open\s+|abstract\s+|sealed\s+)?class\s+(\w+)`. Use this set to distinguish "unresolved-because-pending" from real author errors.
-- [ ] 5.5 If a full pass through pending scripts makes no progress, throw `CyclicScriptDependencyError` (new exception in the same module) listing the offending paths.
-- [ ] 5.6 Change the cache key to `SHA256(source || delimiter || sortedImportSet.joinToString || delimiter || engineVersion)`. Read `engineVersion` from a classpath resource `META-INF/nengine.version` packaged with `:engine`; if absent, fall back to a constant default.
-- [ ] 5.7 Add `META-INF/nengine.version` under `:engine/src/main/resources/` containing the current engine version string.
-- [ ] 5.8 At bootstrap, rebuild `classesDir` from scratch (delete contents) and only restore bytecode for the script paths that were requested in the current run, using their valid cache files. Bytecode for paths not requested must NOT remain in `classesDir`.
-- [ ] 5.9 Update `KotlinScriptingHostTest.kt` accordingly: add cases for (a) round-robin success with cross-refs in any input order, (b) genuine syntax error fails fast on first encounter, (c) `CyclicScriptDependencyError` raised on cycle, (d) cache invalidation when the import set changes, (e) cache invalidation when engineVersion changes, (f) orphan bytecode removed at bootstrap.
+- [x] 5.1 Introduce internal `sealed interface ScriptSource { fun read(relativePath: String): String }` with `Classpath(bundleRoot: String)` and `Directory(bundleDir: File)` variants.
+- [x] 5.2 Replace the `manifest: List<String>` constructor parameter with `source: ScriptSource` and `cacheDir: File`. Drop manifest-driven compilation in the constructor.
+- [x] 5.3 Add a public-internal method `compileAll(paths: Set<String>): Map<String, KClass<out Node>>` that runs the round-robin / fixed-point algorithm.
+- [x] 5.4 Inside `compileAll`, extract top-level class names per script source via a regex on `^\s*(?:public\s+|open\s+|abstract\s+|sealed\s+)?class\s+(\w+)`. Use this set to distinguish "unresolved-because-pending" from real author errors.
+- [x] 5.5 If a full pass through pending scripts makes no progress, throw `CyclicScriptDependencyError` (new exception in the same module) listing the offending paths.
+- [x] 5.6 Change the cache key to `SHA256(source || delimiter || sortedImportSet.joinToString || delimiter || engineVersion)`. Read `engineVersion` from a classpath resource `META-INF/nengine.version` packaged with `:engine`; if absent, fall back to a constant default.
+- [x] 5.7 Add `META-INF/nengine.version` under `:engine/src/main/resources/` containing the current engine version string.
+- [x] 5.8 At bootstrap, rebuild `classesDir` from scratch (delete contents) and only restore bytecode for the script paths that were requested in the current run, using their valid cache files. Bytecode for paths not requested must NOT remain in `classesDir`.
+- [x] 5.9 Update `KotlinScriptingHostTest.kt` accordingly: add cases for (a) round-robin success with cross-refs in any input order, (b) genuine syntax error fails fast on first encounter, (c) `CyclicScriptDependencyError` raised on cycle, (d) cache invalidation when the import set changes, (e) cache invalidation when engineVersion changes, (f) orphan bytecode removed at bootstrap.
 
 ## 6. Implement BundleLoader
 

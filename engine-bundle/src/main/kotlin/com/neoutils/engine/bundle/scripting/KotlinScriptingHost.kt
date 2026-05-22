@@ -19,54 +19,111 @@ import kotlin.script.experimental.jvm.updateClasspath
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 
 internal class KotlinScriptingHost(
-    private val manifest: List<String>,
-    private val cacheDir: File
+    private val source: ScriptSource,
+    private val cacheDir: File,
+    engineVersion: String? = null,
 ) {
 
-    private val version = "1.0"
-    private val classesDir = File(cacheDir, "classes").absoluteFile.apply { mkdirs() }
-    private val compiledClasses = mutableMapOf<String, KClass<out Node>>()
-    private val reverseMapping = mutableMapOf<KClass<out Node>, String>()
-    private val compiledWrapperClasses = mutableListOf<String>()
-    private val classLoader: URLClassLoader
+    private val engineVersion: String = engineVersion ?: loadEngineVersionFromResource()
+    private val classesDir: File = File(cacheDir, "classes").absoluteFile
+
     var compilationCount = 0
         private set
 
     init {
-        classLoader = URLClassLoader(arrayOf(classesDir.toURI().toURL()), this::class.java.classLoader)
-        for (scriptPath in manifest) {
-            compileScript(scriptPath)
+        cacheDir.mkdirs()
+    }
+
+    /**
+     * Compile every script path in [paths] using the round-robin / fixed-point
+     * algorithm. Returns a map from path to its top-level Node subclass.
+     *
+     * Each call rebuilds [classesDir] from scratch so bytecode from prior
+     * runs of unrelated scripts cannot leak into the resulting class loader.
+     */
+    fun compileAll(paths: Set<String>): Map<String, KClass<out Node>> {
+        classesDir.deleteRecursively()
+        classesDir.mkdirs()
+
+        val classLoader = URLClassLoader(
+            arrayOf(classesDir.toURI().toURL()),
+            this::class.java.classLoader
+        )
+
+        if (paths.isEmpty()) return emptyMap()
+
+        val sources: Map<String, String> = paths.associateWith { source.read(it) }
+        val topLevelByPath: Map<String, Set<String>> = sources
+            .mapValues { (_, src) -> extractTopLevelClassNames(src) }
+
+        val resolved = linkedMapOf<String, KClass<out Node>>()
+        val compiledWrapperClasses = mutableListOf<String>()
+        val pending = paths.toMutableSet()
+
+        while (pending.isNotEmpty()) {
+            var progressed = false
+            for (path in pending.toList()) {
+                val pendingOtherNames: Set<String> = pending
+                    .filter { it != path }
+                    .flatMap { topLevelByPath.getValue(it) }
+                    .toSet()
+
+                val klass = tryResolveOne(
+                    path = path,
+                    src = sources.getValue(path),
+                    wrapperClasses = compiledWrapperClasses,
+                    classLoader = classLoader,
+                    pendingClassNames = pendingOtherNames,
+                ) ?: continue
+
+                resolved[path] = klass
+                pending.remove(path)
+                progressed = true
+            }
+            if (!progressed) {
+                throw CyclicScriptDependencyError(pending.toSet())
+            }
         }
+
+        return resolved
     }
 
-    fun compile(path: String): KClass<out Node> {
-        return compiledClasses[path] ?: compileScript(path)
-    }
-
-    fun factoryFor(path: String): () -> Node {
-        val klass = compile(path)
-        val constructor = klass.java.getDeclaredConstructor()
-        constructor.isAccessible = true
-        return { constructor.newInstance() as Node }
-    }
-
-    fun pathFor(klass: KClass<out Node>): String? {
-        return reverseMapping[klass]
-    }
-
-    private fun compileScript(path: String): KClass<out Node> {
-        val resource = this::class.java.classLoader.getResource(path)
-            ?: throw IllegalArgumentException("Script not found: $path")
-        val scriptContent = resource.readText()
-        val cacheKey = sha256(scriptContent) + "_$version"
+    private fun tryResolveOne(
+        path: String,
+        src: String,
+        wrapperClasses: MutableList<String>,
+        classLoader: URLClassLoader,
+        pendingClassNames: Set<String>,
+    ): KClass<out Node>? {
+        val sortedImports = wrapperClasses.sorted()
+        val cacheKey = sha256(
+            buildString {
+                append(src)
+                append(CACHE_DELIMITER)
+                append(sortedImports.joinToString("\n"))
+                append(CACHE_DELIMITER)
+                append(engineVersion)
+            }
+        )
         val cacheFile = File(cacheDir, "$cacheKey.bin")
 
-        val filesMap = if (cacheFile.exists()) {
+        val filesMap: Map<String, ByteArray> = if (cacheFile.exists()) {
             loadFromCache(cacheFile)
         } else {
-            val compiledFiles = performCompilation(path, scriptContent, compiledWrapperClasses)
-            saveToCache(cacheFile, compiledFiles)
-            compiledFiles
+            when (val outcome = performCompilation(path, src, wrapperClasses)) {
+                is CompileOutcome.Success -> {
+                    saveToCache(cacheFile, outcome.files)
+                    outcome.files
+                }
+                is CompileOutcome.Failure -> {
+                    if (outcome.allUnresolvedAndPending(pendingClassNames)) {
+                        return null
+                    }
+                    throw IllegalStateException(
+                        "Compilation failed for script $path:\n${outcome.formattedMessages}"
+                    )
+                }
+            }
         }
 
         for ((name, bytes) in filesMap) {
@@ -81,21 +138,19 @@ internal class KotlinScriptingHost(
             ?.replace('/', '.')
             ?: throw IllegalStateException("No wrapper class found in compiled files for script $path")
 
-        compiledWrapperClasses.add(wrapperClassName)
+        wrapperClasses.add(wrapperClassName)
 
         val nodeClasses = mutableListOf<Class<*>>()
         for (filename in filesMap.keys) {
-            if (filename.endsWith(".class")) {
-                val className = filename.removeSuffix(".class").replace('/', '.')
-                val prefix = "$wrapperClassName$"
-                val isDirectNested = className.startsWith(prefix) &&
-                                     !className.substring(prefix.length).contains("$")
-                if (isDirectNested) {
-                    val loaded = classLoader.loadClass(className)
-                    if (Node::class.java.isAssignableFrom(loaded)) {
-                        nodeClasses.add(loaded)
-                    }
-                }
+            if (!filename.endsWith(".class")) continue
+            val className = filename.removeSuffix(".class").replace('/', '.')
+            val prefix = "$wrapperClassName$"
+            val isDirectNested = className.startsWith(prefix) &&
+                !className.substring(prefix.length).contains("$")
+            if (!isDirectNested) continue
+            val loaded = classLoader.loadClass(className)
+            if (Node::class.java.isAssignableFrom(loaded)) {
+                nodeClasses.add(loaded)
             }
         }
 
@@ -103,17 +158,45 @@ internal class KotlinScriptingHost(
             throw IllegalStateException("Script $path contains zero top-level classes extending Node")
         }
         if (nodeClasses.size > 1) {
-            throw IllegalStateException("Script $path contains more than one top-level class extending Node: ${nodeClasses.map { it.simpleName }}")
+            throw IllegalStateException(
+                "Script $path contains more than one top-level class extending Node: " +
+                    nodeClasses.map { it.simpleName }
+            )
         }
 
         @Suppress("UNCHECKED_CAST")
-        val nodeKClass = nodeClasses[0].kotlin as KClass<out Node>
-        compiledClasses[path] = nodeKClass
-        reverseMapping[nodeKClass] = path
-        return nodeKClass
+        return nodeClasses[0].kotlin as KClass<out Node>
     }
 
-    private fun performCompilation(path: String, scriptContent: String, wrapperClasses: List<String>): Map<String, ByteArray> {
+    private sealed class CompileOutcome {
+        data class Success(val files: Map<String, ByteArray>) : CompileOutcome()
+        data class Failure(
+            val rawDiagnostics: List<ScriptDiagnostic>,
+            val path: String,
+        ) : CompileOutcome() {
+            val formattedMessages: String
+                get() = rawDiagnostics.joinToString("\n") { d ->
+                    val loc = d.location
+                    "[${d.severity}] ${d.sourcePath ?: path}:${loc?.start?.line ?: "?"}:${loc?.start?.col ?: "?"}: ${d.message}"
+                }
+
+            fun allUnresolvedAndPending(pendingClassNames: Set<String>): Boolean {
+                if (rawDiagnostics.isEmpty()) return false
+                for (diag in rawDiagnostics) {
+                    val symbol = unresolvedReferenceSymbol(diag.message)
+                        ?: return false
+                    if (symbol !in pendingClassNames) return false
+                }
+                return true
+            }
+        }
+    }
+
+    private fun performCompilation(
+        path: String,
+        scriptContent: String,
+        wrapperClasses: List<String>,
+    ): CompileOutcome {
         compilationCount++
         val host = BasicJvmScriptingHost()
         val prependedContent = "package scripts\n\n$scriptContent"
@@ -133,12 +216,10 @@ internal class KotlinScriptingHost(
             }
         }
 
-
         val result = runBlocking { host.compiler(source, config) }
         val errors = result.reports.filter { it.severity == ScriptDiagnostic.Severity.ERROR }
         if (errors.isNotEmpty()) {
-            val message = errors.joinToString("\n") { "[${it.severity}] ${it.sourcePath ?: path}:${it.location?.start?.line ?: "?"}:${it.location?.start?.col ?: "?"}: ${it.message}" }
-            throw IllegalStateException("Compilation failed for script $path:\n$message")
+            return CompileOutcome.Failure(errors, path)
         }
 
         val compiled = result.valueOrNull() as? KJvmCompiledScript
@@ -155,7 +236,7 @@ internal class KotlinScriptingHost(
         val files = getCompilerOutputFilesMethod.invoke(module) as? Map<String, ByteArray>
             ?: throw IllegalStateException("Failed to retrieve compiler output files for $path")
 
-        return files
+        return CompileOutcome.Success(files)
     }
 
     private fun sha256(input: String): String {
@@ -184,6 +265,36 @@ internal class KotlinScriptingHost(
         } catch (e: Exception) {
             tempFile.delete()
             throw e
+        }
+    }
+
+    private companion object {
+        private const val CACHE_DELIMITER = "\n---\n"
+        private const val DEFAULT_ENGINE_VERSION = "0.0.0-default"
+
+        private val TOP_LEVEL_CLASS_REGEX = Regex(
+            """^\s*(?:public\s+|open\s+|abstract\s+|sealed\s+)?class\s+(\w+)""",
+            RegexOption.MULTILINE
+        )
+
+        private val UNRESOLVED_REFERENCE_REGEX = Regex(
+            """unresolved reference[:\s]+'?([A-Za-z_]\w*)'?""",
+            RegexOption.IGNORE_CASE
+        )
+
+        fun extractTopLevelClassNames(src: String): Set<String> =
+            TOP_LEVEL_CLASS_REGEX.findAll(src).map { it.groupValues[1] }.toSet()
+
+        fun unresolvedReferenceSymbol(message: String?): String? {
+            if (message == null) return null
+            return UNRESOLVED_REFERENCE_REGEX.find(message)?.groupValues?.getOrNull(1)
+        }
+
+        fun loadEngineVersionFromResource(): String {
+            val resource = KotlinScriptingHost::class.java.classLoader
+                .getResource("META-INF/nengine.version")
+                ?: return DEFAULT_ENGINE_VERSION
+            return resource.readText().trim().ifEmpty { DEFAULT_ENGINE_VERSION }
         }
     }
 }

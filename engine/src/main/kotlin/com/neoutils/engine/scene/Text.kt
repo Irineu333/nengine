@@ -19,5 +19,6 @@ class Text : Node2D() {
 
     override fun onRender(renderer: Renderer) {
         renderer.drawText(text, worldPosition(), size, color)
+        super.onRender(renderer)
     }
 }

@@ -44,6 +44,9 @@ abstract class Node {
         private set
 
     @Transient
+    internal var scriptInstance: ScriptInstanceContract? = null
+
+    @Transient
     private val pendingAdd: MutableList<Node> = mutableListOf()
 
     @Transient
@@ -150,9 +153,18 @@ abstract class Node {
      */
     fun findChild(name: String): Node? = _children.firstOrNull { it.name == name }
 
-    open fun onEnter() {}
-    open fun onUpdate(dt: Float) {}
-    open fun onRender(renderer: Renderer) {}
+    open fun onEnter() {
+        scriptInstance?.onEnter()
+    }
+
+    open fun onUpdate(dt: Float) {
+        scriptInstance?.onUpdate(dt)
+    }
+
+    open fun onRender(renderer: Renderer) {
+        scriptInstance?.onRender(renderer)
+    }
+
     open fun onExit() {}
 
     companion object {

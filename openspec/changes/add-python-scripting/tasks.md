@@ -4,19 +4,19 @@
 - [x] 1.2 Add `include(":engine-bundle-python")` to `settings.gradle.kts`.
 - [x] 1.3 Add a smoke test `engine-bundle-python/src/test/kotlin/.../GraalPySmokeTest.kt` that builds a `Context.newBuilder("python").build()`, evaluates `1 + 1`, and asserts the result is `2`. This validates that the GraalPy runtime is on the classpath and bootable.
 - [x] 1.4 Run `./gradlew :engine-bundle-python:test` and confirm the smoke test passes.
-- [ ] 1.5 **Gate**: run `./gradlew :games:pong:run` and confirm Pong still works exactly as before (it still uses the old Kotlin Scripting path; `:engine-bundle-python` is not wired in yet). Measure the JAR size delta on `:engine-bundle-python` and note it in the change folder for future reference.
+- [x] 1.5 **Gate**: run `./gradlew :games:pong:run` and confirm Pong still works exactly as before (it still uses the old Kotlin Scripting path; `:engine-bundle-python` is not wired in yet). Measure the JAR size delta on `:engine-bundle-python` and note it in the change folder for future reference.
 
 ## 2. E1 — Introduce ScriptHost SPI in :engine-bundle
 
-- [ ] 2.1 Create package `com.neoutils.engine.bundle.script` in `:engine-bundle`.
-- [ ] 2.2 Define interface `BundleSource` with `fun read(path: String): String` and `fun exists(path: String): Boolean`.
-- [ ] 2.3 Implement `ClasspathBundleSource(bundleRoot: String)` and `DirectoryBundleSource(bundleDir: File)` inside `:engine-bundle` (private to package). These replace the old `ScriptSource` variants.
-- [ ] 2.4 Define interfaces `ScriptHost`, `Script`, `ScriptInstance` and data class `ExportedProperty` per the `script-host` spec.
-- [ ] 2.5 Define `object ScriptHostRegistry` with `register`, `clear`, `hostFor`, and `loadAll`.
-- [ ] 2.6 In `:engine` module, add `internal var scriptInstance: ScriptInstance?` to `Node` and wire hook delegation in `onEnter`, `onUpdate`, `onRender`, `onCollide`. **Caveat**: `:engine` cannot reference `ScriptInstance` directly without a circular dep — introduce a tiny interface `com.neoutils.engine.scene.ScriptInstanceContract` in `:engine` with the same four methods, and have `ScriptInstance` in `:engine-bundle` extend it. The slot on `Node` is typed against the `:engine` contract.
-- [ ] 2.7 Write unit tests in `:engine-bundle` for `ScriptHostRegistry` (registration by extension, dispatch, unknown extension error).
-- [ ] 2.8 Write a unit test in `:engine` showing that `Node.onUpdate` with a mock `scriptInstance` correctly dispatches to it.
-- [ ] 2.9 Build the project and confirm no compile errors. Pong continues to run via the old path.
+- [x] 2.1 Create package `com.neoutils.engine.bundle.script` in `:engine-bundle`.
+- [x] 2.2 Define interface `BundleSource` with `fun read(path: String): String` and `fun exists(path: String): Boolean`.
+- [x] 2.3 Implement `ClasspathBundleSource(bundleRoot: String)` and `DirectoryBundleSource(bundleDir: File)` inside `:engine-bundle` (private to package). These replace the old `ScriptSource` variants.
+- [x] 2.4 Define interfaces `ScriptHost`, `Script`, `ScriptInstance` and data class `ExportedProperty` per the `script-host` spec.
+- [x] 2.5 Define `object ScriptHostRegistry` with `register`, `clear`, `hostFor`, and `loadAll`.
+- [x] 2.6 In `:engine` module, add `internal var scriptInstance: ScriptInstance?` to `Node` and wire hook delegation in `onEnter`, `onUpdate`, `onRender`, `onCollide`. **Caveat**: `:engine` cannot reference `ScriptInstance` directly without a circular dep — introduce a tiny interface `com.neoutils.engine.scene.ScriptInstanceContract` in `:engine` with the same four methods, and have `ScriptInstance` in `:engine-bundle` extend it. The slot on `Node` is typed against the `:engine` contract.
+- [x] 2.7 Write unit tests in `:engine-bundle` for `ScriptHostRegistry` (registration by extension, dispatch, unknown extension error).
+- [x] 2.8 Write a unit test in `:engine` showing that `Node.onUpdate` with a mock `scriptInstance` correctly dispatches to it.
+- [x] 2.9 Build the project and confirm no compile errors. Pong continues to run via the old path.
 
 ## 3. E2 — Implement PythonScriptHost
 

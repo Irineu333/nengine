@@ -9,5 +9,7 @@ abstract class Collider : Node2D() {
 
     abstract fun bounds(): Rect
 
-    open fun onCollide(other: Collider) {}
+    open fun onCollide(other: Collider) {
+        scriptInstance?.onCollide(other)
+    }
 }

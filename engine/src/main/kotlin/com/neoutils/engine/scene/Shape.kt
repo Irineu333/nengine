@@ -45,5 +45,6 @@ class Shape : Node2D() {
                 filled = filled,
             )
         }
+        super.onRender(renderer)
     }
 }

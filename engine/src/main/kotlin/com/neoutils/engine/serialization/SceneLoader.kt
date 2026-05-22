@@ -2,6 +2,7 @@ package com.neoutils.engine.serialization
 
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.scene.ScriptInstanceContract
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -34,9 +35,12 @@ object SceneLoader {
         return json.encodeToString(SceneFile.serializer(), SceneFile(root = root))
     }
 
-    fun load(text: String): Scene {
+    fun load(
+        text: String,
+        attachScript: ((node: Node, scriptPath: String, props: JsonObject?) -> ScriptInstanceContract?)? = null,
+    ): Scene {
         val file = json.decodeFromString(SceneFile.serializer(), text)
-        val root = entryToNode(file.root)
+        val root = entryToNode(file.root, attachScript)
         return root as? Scene
             ?: error("Root node is not a Scene: ${file.root.type}")
     }
@@ -69,12 +73,21 @@ object SceneLoader {
         return JsonObject(out)
     }
 
-    private fun entryToNode(entry: NodeEntry): Node {
+    private fun entryToNode(
+        entry: NodeEntry,
+        attachScript: ((node: Node, scriptPath: String, props: JsonObject?) -> ScriptInstanceContract?)?,
+    ): Node {
+        if (entry.props != null && entry.script == null) {
+            error("NodeEntry '${entry.name}': 'props' requires 'script' to be non-null")
+        }
         val node = NodeRegistry.create(entry.type)
         node.name = entry.name
         applyProperties(node, entry.properties)
+        entry.script?.let { scriptPath ->
+            node.scriptInstance = attachScript?.invoke(node, scriptPath, entry.props)
+        }
         for (child in entry.children) {
-            node.addChild(entryToNode(child))
+            node.addChild(entryToNode(child, attachScript))
         }
         return node
     }

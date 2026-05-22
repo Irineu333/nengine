@@ -10,6 +10,8 @@ data class NodeEntry(
     val name: String,
     val properties: JsonObject,
     val children: List<NodeEntry> = emptyList(),
+    val script: String? = null,
+    val props: JsonObject? = null,
 )
 
 /** Top-level wrapper around the root node entry. `version` lets future

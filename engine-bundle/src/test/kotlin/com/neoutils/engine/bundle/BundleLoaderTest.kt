@@ -1,35 +1,72 @@
 package com.neoutils.engine.bundle
 
-import com.neoutils.engine.physics.BoxCollider
+import com.neoutils.engine.bundle.script.*
+import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Scene
 import com.neoutils.engine.serialization.NodeRegistry
 import com.neoutils.engine.serialization.SceneLoader
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
+import kotlin.reflect.KClass
 import kotlin.test.*
 
-class TestCustomNode : Node() {
-    var counter: Int = 0
+// ── Fake ScriptHost infrastructure ──────────────────────────────────────────
+
+private class FakeScript(
+    override val path: String,
+    override val extendsType: KClass<out Node> = Node2D::class,
+    override val exports: List<ExportedProperty> = listOf(
+        ExportedProperty("value", Int::class, default = 0)
+    ),
+) : Script
+
+private class FakeScriptInstance : ScriptInstance {
+    val applied = mutableMapOf<String, Any?>()
+    var updateCallCount = 0
+
+    override fun setExport(name: String, value: Any?) { applied[name] = value }
+    override fun onEnter() {}
+    override fun onUpdate(dt: Float) { updateCallCount++ }
+    override fun onRender(renderer: Renderer) {}
+    override fun onCollide(other: Node) {}
 }
 
+private class FakeScriptHost : ScriptHost {
+    override val extension = ".py"
+    val loaded = mutableListOf<String>()
+    val instances = mutableListOf<FakeScriptInstance>()
+
+    override fun load(path: String, bundle: BundleSource): Script {
+        loaded += path
+        return FakeScript(path)
+    }
+
+    override fun attach(node: Node, script: Script): ScriptInstance {
+        val instance = FakeScriptInstance()
+        instances += instance
+        return instance
+    }
+}
+
+// ── Test class ──────────────────────────────────────────────────────────────
+
 class BundleLoaderTest {
+
+    private lateinit var fakeHost: FakeScriptHost
 
     @BeforeTest
     fun setUp() {
         NodeRegistry.clear()
-        File("build/scripting-cache").deleteRecursively()
+        ScriptHostRegistry.clear()
+        fakeHost = FakeScriptHost()
+        ScriptHostRegistry.register(fakeHost)
     }
 
     @AfterTest
     fun tearDown() {
         NodeRegistry.clear()
+        ScriptHostRegistry.clear()
     }
 
     @Test
@@ -41,10 +78,12 @@ class BundleLoaderTest {
 
         val foo = scene.children[0]
         assertEquals("fooScript", foo.name)
-        assertEquals("FooNode", foo::class.simpleName)
+        assertTrue(foo is Node2D)
+        // verify scriptInstance was attached: calling onUpdate propagates to the instance
+        foo.onUpdate(0f)
+        assertEquals(1, fakeHost.instances[0].updateCallCount)
 
         val collider = scene.children[1]
-        assertTrue(collider is BoxCollider)
         assertEquals("engineCollider", collider.name)
     }
 
@@ -57,7 +96,7 @@ class BundleLoaderTest {
             assertEquals("TestRoot", fromDisk.name)
             assertEquals(2, fromDisk.children.size)
             assertEquals("fooScript", fromDisk.children[0].name)
-            assertEquals("FooNode", fromDisk.children[0]::class.simpleName)
+            assertTrue(fromDisk.children[0] is Node2D)
         } finally {
             temp.deleteRecursively()
         }
@@ -70,6 +109,8 @@ class BundleLoaderTest {
         try {
             val fromResources = BundleLoader.fromResources("test-bundle")
             NodeRegistry.clear()
+            ScriptHostRegistry.clear()
+            ScriptHostRegistry.register(FakeScriptHost())
             val fromPath = BundleLoader.fromPath(temp)
             assertEquals(treeShape(fromResources), treeShape(fromPath))
         } finally {
@@ -78,20 +119,20 @@ class BundleLoaderTest {
     }
 
     @Test
-    fun `orphan script in scripts directory is not compiled`() {
+    fun `orphan script in scripts directory is not loaded`() {
         BundleLoader.fromResources("test-bundle")
-        val classesDir = File("build/scripting-cache/test-bundle/classes")
-        val orphanFiles = classesDir.walkTopDown()
-            .filter { it.isFile && it.name.contains("Orphan", ignoreCase = true) }
-            .toList()
+        assertFalse(
+            fakeHost.loaded.any { it.contains("orphan", ignoreCase = true) },
+            "Orphan script should not have been loaded; loaded: ${fakeHost.loaded}"
+        )
         assertTrue(
-            orphanFiles.isEmpty(),
-            "Found orphan bytecode: ${orphanFiles.joinToString { it.absolutePath }}"
+            fakeHost.loaded.any { it.contains("dummy", ignoreCase = true) },
+            "dummy.py should have been loaded"
         )
     }
 
     @Test
-    fun `same script referenced multiple times compiles once`() {
+    fun `same script referenced multiple times loads once`() {
         val temp = createTempDir("bundle-dup")
         try {
             materializeTestBundle(temp)
@@ -104,8 +145,10 @@ class BundleLoaderTest {
                     "name": "DupRoot",
                     "properties": {},
                     "children": [
-                      { "type": "scripts/foo.nengine.kts", "name": "first", "properties": {}, "children": [] },
-                      { "type": "scripts/foo.nengine.kts", "name": "second", "properties": {}, "children": [] }
+                      { "type": "com.neoutils.engine.scene.Node2D", "name": "first", "properties": {},
+                        "script": "scripts/dummy.py", "props": { "value": 1 }, "children": [] },
+                      { "type": "com.neoutils.engine.scene.Node2D", "name": "second", "properties": {},
+                        "script": "scripts/dummy.py", "props": { "value": 2 }, "children": [] }
                     ]
                   }
                 }
@@ -113,16 +156,10 @@ class BundleLoaderTest {
             )
             val scene = BundleLoader.fromPath(temp)
             assertEquals(2, scene.children.size)
-            val first = scene.children[0]
-            val second = scene.children[1]
-            assertEquals("first", first.name)
-            assertEquals("second", second.name)
-            assertSame(first::class, second::class)
-
-            val cacheBins = File(temp, ".nengine-cache")
-                .listFiles { _, n -> n.endsWith(".bin") }
-                ?: emptyArray()
-            assertEquals(1, cacheBins.size, "Expected a single compilation cache entry for the deduplicated script")
+            assertEquals("first", scene.children[0].name)
+            assertEquals("second", scene.children[1].name)
+            // same script path → loaded only once
+            assertEquals(1, fakeHost.loaded.count { it == "scripts/dummy.py" })
         } finally {
             temp.deleteRecursively()
         }
@@ -149,7 +186,8 @@ class BundleLoaderTest {
                     "name": "CustomRoot",
                     "properties": {},
                     "children": [
-                      { "type": "${TestCustomNode::class.qualifiedName}", "name": "custom", "properties": {}, "children": [] }
+                      { "type": "${TestCustomNode::class.qualifiedName}", "name": "custom",
+                        "properties": {}, "children": [] }
                     ]
                   }
                 }
@@ -193,19 +231,130 @@ class BundleLoaderTest {
             )
             val scene = BundleLoader.fromPath(temp)
             assertEquals(1, scene.children.size)
-            assertTrue(scene.children[0] is BoxCollider)
+            assertTrue(scene.children[0] is com.neoutils.engine.physics.BoxCollider)
         } finally {
             temp.deleteRecursively()
         }
     }
+
+    @Test
+    fun `node with script and props attaches scriptInstance and applies export`() {
+        val temp = createTempDir("bundle-script-props")
+        try {
+            File(temp, "scene.json").writeText(
+                """
+                {
+                  "version": 1,
+                  "root": {
+                    "type": "com.neoutils.engine.scene.Scene",
+                    "name": "Root",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "com.neoutils.engine.scene.Node2D",
+                        "name": "scripted",
+                        "properties": {},
+                        "script": "scripts/dummy.py",
+                        "props": { "value": 42 },
+                        "children": []
+                      }
+                    ]
+                  }
+                }
+                """.trimIndent()
+            )
+            File(temp, "scripts").mkdirs()
+            File(temp, "scripts/dummy.py").writeText("# extends Node2D\nvalue: int = 0\n")
+
+            val scene = BundleLoader.fromPath(temp)
+            val node = scene.children[0]
+            // calling onUpdate propagates iff scriptInstance was attached
+            node.onUpdate(0f)
+            assertEquals(1, fakeHost.instances[0].updateCallCount, "scriptInstance must be attached")
+            assertEquals(42, fakeHost.instances[0].applied["value"])
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `script with unknown extension fails fast`() {
+        val temp = createTempDir("bundle-bad-ext")
+        try {
+            File(temp, "scene.json").writeText(
+                """
+                {
+                  "version": 1,
+                  "root": {
+                    "type": "com.neoutils.engine.scene.Scene",
+                    "name": "Root",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "com.neoutils.engine.scene.Node2D",
+                        "name": "bad",
+                        "properties": {},
+                        "script": "scripts/thing.lua",
+                        "children": []
+                      }
+                    ]
+                  }
+                }
+                """.trimIndent()
+            )
+            File(temp, "scripts").mkdirs()
+            File(temp, "scripts/thing.lua").writeText("-- lua script")
+            assertFailsWith<UnsupportedScriptExtensionException> {
+                BundleLoader.fromPath(temp)
+            }
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `props without script fails fast`() {
+        val temp = createTempDir("bundle-props-no-script")
+        try {
+            File(temp, "scene.json").writeText(
+                """
+                {
+                  "version": 1,
+                  "root": {
+                    "type": "com.neoutils.engine.scene.Scene",
+                    "name": "Root",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "com.neoutils.engine.scene.Node2D",
+                        "name": "bad",
+                        "properties": {},
+                        "props": { "value": 1 },
+                        "children": []
+                      }
+                    ]
+                  }
+                }
+                """.trimIndent()
+            )
+            val ex = assertFailsWith<IllegalStateException> {
+                BundleLoader.fromPath(temp)
+            }
+            assertTrue(ex.message!!.contains("props"), "Error should mention 'props': ${ex.message}")
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
 
     private fun materializeTestBundle(target: File) {
         target.mkdirs()
         val sceneJson = readResource("test-bundle/scene.json")
         File(target, "scene.json").writeText(sceneJson)
         val scriptsDir = File(target, "scripts").apply { mkdirs() }
-        File(scriptsDir, "foo.nengine.kts").writeText(readResource("test-bundle/scripts/foo.nengine.kts"))
-        File(scriptsDir, "orphan.nengine.kts").writeText(readResource("test-bundle/scripts/orphan.nengine.kts"))
+        File(scriptsDir, "dummy.py").writeText(readResource("test-bundle/scripts/dummy.py"))
+        File(scriptsDir, "orphan.py").writeText(readResource("test-bundle/scripts/orphan.py"))
     }
 
     private fun readResource(path: String): String =
@@ -234,3 +383,5 @@ class BundleLoaderTest {
         return dir
     }
 }
+
+class TestCustomNode : Node()

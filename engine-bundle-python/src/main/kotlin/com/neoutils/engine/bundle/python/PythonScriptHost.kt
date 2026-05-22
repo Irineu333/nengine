@@ -80,7 +80,7 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
             val defaultRaw = entry.getMember("default")
             val kotlinType = kotlinTypeFor(typeName)
             val default = if (defaultRaw.isNull) null else valueToKotlin(defaultRaw, kotlinType)
-            result += ExportedProperty(name, kotlinType, default)
+            result += ExportedProperty(name, kotlinType, default, nullable)
         }
         return result
     }

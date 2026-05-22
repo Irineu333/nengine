@@ -6,4 +6,5 @@ data class ExportedProperty(
     val name: String,
     val type: KClass<*>,
     val default: Any?,
+    val nullable: Boolean = false,
 )

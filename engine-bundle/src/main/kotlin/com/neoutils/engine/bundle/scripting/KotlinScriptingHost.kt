@@ -182,12 +182,13 @@ internal class KotlinScriptingHost(
 
             fun allUnresolvedAndPending(pendingClassNames: Set<String>): Boolean {
                 if (rawDiagnostics.isEmpty()) return false
+                var sawPendingReference = false
                 for (diag in rawDiagnostics) {
                     val symbol = unresolvedReferenceSymbol(diag.message)
                         ?: return false
-                    if (symbol !in pendingClassNames) return false
+                    if (symbol in pendingClassNames) sawPendingReference = true
                 }
-                return true
+                return sawPendingReference
             }
         }
     }

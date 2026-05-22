@@ -1,9 +1,9 @@
 ## 1. E0 — Bootstrap :engine-bundle-python module
 
-- [ ] 1.1 Create `engine-bundle-python/` directory and `engine-bundle-python/build.gradle.kts` with `:engine` and `:engine-bundle` deps plus GraalPy 24.x (`org.graalvm.polyglot:polyglot` and `org.graalvm.polyglot:python`) — pin exact versions in `libs.versions.toml`.
-- [ ] 1.2 Add `include(":engine-bundle-python")` to `settings.gradle.kts`.
-- [ ] 1.3 Add a smoke test `engine-bundle-python/src/test/kotlin/.../GraalPySmokeTest.kt` that builds a `Context.newBuilder("python").build()`, evaluates `1 + 1`, and asserts the result is `2`. This validates that the GraalPy runtime is on the classpath and bootable.
-- [ ] 1.4 Run `./gradlew :engine-bundle-python:test` and confirm the smoke test passes.
+- [x] 1.1 Create `engine-bundle-python/` directory and `engine-bundle-python/build.gradle.kts` with `:engine` and `:engine-bundle` deps plus GraalPy 24.x (`org.graalvm.polyglot:polyglot` and `org.graalvm.polyglot:python`) — pin exact versions in `libs.versions.toml`.
+- [x] 1.2 Add `include(":engine-bundle-python")` to `settings.gradle.kts`.
+- [x] 1.3 Add a smoke test `engine-bundle-python/src/test/kotlin/.../GraalPySmokeTest.kt` that builds a `Context.newBuilder("python").build()`, evaluates `1 + 1`, and asserts the result is `2`. This validates that the GraalPy runtime is on the classpath and bootable.
+- [x] 1.4 Run `./gradlew :engine-bundle-python:test` and confirm the smoke test passes.
 - [ ] 1.5 **Gate**: run `./gradlew :games:pong:run` and confirm Pong still works exactly as before (it still uses the old Kotlin Scripting path; `:engine-bundle-python` is not wired in yet). Measure the JAR size delta on `:engine-bundle-python` and note it in the change folder for future reference.
 
 ## 2. E1 — Introduce ScriptHost SPI in :engine-bundle

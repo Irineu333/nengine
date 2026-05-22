@@ -1,4 +1,4 @@
-package com.neoutils.engine.scripting
+package com.neoutils.engine.bundle.scripting
 
 import com.neoutils.engine.scene.Node
 import java.io.File
@@ -84,12 +84,12 @@ class KotlinScriptingHostTest {
         val host1 = KotlinScriptingHost(emptyList(), tempCacheDir)
         val klass1 = host1.compile("scripts/hello.nengine.kts")
         assertEquals(1, host1.compilationCount)
-        
+
         // Find cache file
         val cacheFiles = tempCacheDir.listFiles { _, name -> name.endsWith(".bin") }
         assertNotNull(cacheFiles)
         assertEquals(1, cacheFiles.size)
-        
+
         // Compile second time using another host and cache
         val host2 = KotlinScriptingHost(emptyList(), tempCacheDir)
         val klass2 = host2.compile("scripts/hello.nengine.kts")
@@ -108,7 +108,7 @@ class KotlinScriptingHostTest {
 
         val factory = host.factoryFor("scripts/dep_b.nengine.kts")
         val instance = factory()
-        
+
         // Use reflection to invoke runTest() on DepB
         val method = instance.javaClass.getMethod("runTest")
         val result = method.invoke(instance) as Int

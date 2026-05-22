@@ -1,4 +1,4 @@
-package com.neoutils.engine.scripting
+package com.neoutils.engine.bundle.scripting
 
 import kotlin.script.experimental.annotations.KotlinScript
 import kotlin.script.experimental.api.ScriptCompilationConfiguration
@@ -12,9 +12,9 @@ import kotlin.script.experimental.jvm.jvm
     fileExtension = "nengine.kts",
     compilationConfiguration = NEngineScriptCompilationConfiguration::class
 )
-abstract class NEngineScript
+internal abstract class NEngineScript
 
-object NEngineScriptCompilationConfiguration : ScriptCompilationConfiguration({
+internal object NEngineScriptCompilationConfiguration : ScriptCompilationConfiguration({
     defaultImports(
         "com.neoutils.engine.scene.*",
         "com.neoutils.engine.math.*",

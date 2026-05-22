@@ -7,10 +7,10 @@
 
 ## 2. Move scripting backend into :engine-bundle
 
-- [ ] 2.1 Move `KotlinScriptingHost.kt` and `NEngineScript.kt` from `:engine-scripting` into `:engine-bundle` under `bundle/scripting/` and mark them `internal`.
-- [ ] 2.2 Move `KotlinScriptingHostTest.kt` from `:engine-scripting` into `:engine-bundle` test source set; adjust visibility helpers as needed.
-- [ ] 2.3 Delete the `engine-scripting/` directory in its entirety.
-- [ ] 2.4 Confirm `./gradlew :engine-bundle:build` compiles after the move (tests will still fail at this step — that's expected).
+- [x] 2.1 Move `KotlinScriptingHost.kt` and `NEngineScript.kt` from `:engine-scripting` into `:engine-bundle` under `bundle/scripting/` and mark them `internal`.
+- [x] 2.2 Move `KotlinScriptingHostTest.kt` from `:engine-scripting` into `:engine-bundle` test source set; adjust visibility helpers as needed.
+- [x] 2.3 Delete the `engine-scripting/` directory in its entirety.
+- [x] 2.4 Confirm `./gradlew :engine-bundle:build` compiles after the move (tests will still fail at this step — that's expected).
 
 ## 3. Refactor NodeRegistry to bidirectional
 

@@ -1,6 +1,7 @@
-package com.neoutils.engine.scripting
+package com.neoutils.engine.bundle.scripting
 
 import com.neoutils.engine.scene.Node
+import com.neoutils.engine.scripting.ScriptHost
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileInputStream
@@ -18,7 +19,7 @@ import kotlin.script.experimental.jvm.jvm
 import kotlin.script.experimental.jvm.updateClasspath
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 
-class KotlinScriptingHost(
+internal class KotlinScriptingHost(
     private val manifest: List<String>,
     private val cacheDir: File
 ) : ScriptHost {
@@ -88,7 +89,7 @@ class KotlinScriptingHost(
             if (filename.endsWith(".class")) {
                 val className = filename.removeSuffix(".class").replace('/', '.')
                 val prefix = "$wrapperClassName$"
-                val isDirectNested = className.startsWith(prefix) && 
+                val isDirectNested = className.startsWith(prefix) &&
                                      !className.substring(prefix.length).contains("$")
                 if (isDirectNested) {
                     val loaded = classLoader.loadClass(className)

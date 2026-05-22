@@ -70,11 +70,11 @@
 
 ## 8. Migrate :games:pong to bundle layout
 
-- [ ] 8.1 In `:games:pong/build.gradle.kts`, swap dependency `:engine-scripting` for `:engine-bundle`.
-- [ ] 8.2 Move `games/pong/src/main/resources/pong.scene.json` to `games/pong/src/main/resources/pong/scene.json`.
-- [ ] 8.3 Move `games/pong/src/main/resources/scripts/` to `games/pong/src/main/resources/pong/scripts/`.
-- [ ] 8.4 Verify the `"type"` strings inside `scene.json` are already bundle-relative (`scripts/foo.nengine.kts`) — no change to JSON content needed.
-- [ ] 8.5 Rewrite `games/pong/src/main/kotlin/com/neoutils/engine/games/pong/Main.kt`: only `val scene = BundleLoader.fromResources("pong")` and `SkikoHost().run(scene, GameConfig(...))`. Remove `registerPongTypes`, `KotlinScriptingHost`, `ScriptHosts.register`, manifest, and `loadScene` helper.
+- [x] 8.1 In `:games:pong/build.gradle.kts`, swap dependency `:engine-scripting` for `:engine-bundle`.
+- [x] 8.2 Move `games/pong/src/main/resources/pong.scene.json` to `games/pong/src/main/resources/pong/scene.json`.
+- [x] 8.3 Move `games/pong/src/main/resources/scripts/` to `games/pong/src/main/resources/pong/scripts/`.
+- [x] 8.4 Verify the `"type"` strings inside `scene.json` are already bundle-relative (`scripts/foo.nengine.kts`) — no change to JSON content needed.
+- [x] 8.5 Rewrite `games/pong/src/main/kotlin/com/neoutils/engine/games/pong/Main.kt`: only `val scene = BundleLoader.fromResources("pong")` and `SkikoHost().run(scene, GameConfig(...))`. Remove `registerPongTypes`, `KotlinScriptingHost`, `ScriptHosts.register`, manifest, and `loadScene` helper.
 - [ ] 8.6 Run `./gradlew :games:pong:run` end-to-end and verify gameplay matches behavior pre-change (paddles, ball, walls, goals, HUD, AI, scoring).
 
 ## 9. Update conventions and documentation

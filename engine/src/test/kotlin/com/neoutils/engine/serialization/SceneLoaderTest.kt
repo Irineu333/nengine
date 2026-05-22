@@ -8,16 +8,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.jsonArray
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.reflect.KClass
-import com.neoutils.engine.scripting.ScriptHost
-import com.neoutils.engine.scripting.ScriptHosts
 
 class SceneLoaderTest {
 
@@ -25,13 +21,11 @@ class SceneLoaderTest {
     fun setUp() {
         NodeRegistry.clear()
         NodeRegistry.registerEngineTypes()
-        ScriptHosts.clear()
     }
 
     @AfterTest
     fun tearDown() {
         NodeRegistry.clear()
-        ScriptHosts.clear()
     }
 
     @Test
@@ -116,13 +110,8 @@ class SceneLoaderTest {
     }
 
     @Test
-    fun `load with script path routes to ScriptHost`() {
-        val mockHost = MockScriptHost(
-            classToPath = mapOf(CounterNode::class to "scripts/counter.nengine.kts"),
-            pathToClass = mapOf("scripts/counter.nengine.kts" to CounterNode::class)
-        )
-        ScriptHosts.register(mockHost)
-
+    fun `script-path identifier resolves like any other identifier`() {
+        NodeRegistry.register("scripts/counter.nengine.kts", CounterNode::class) { CounterNode() }
         val jsonText = """
             {
               "version": 1,
@@ -149,8 +138,7 @@ class SceneLoaderTest {
     }
 
     @Test
-    fun `load with script path throws when no ScriptHost is registered`() {
-        ScriptHosts.clear()
+    fun `unknown type fails fast regardless of suffix`() {
         val jsonText = """
             {
               "version": 1,
@@ -160,8 +148,8 @@ class SceneLoaderTest {
                 "properties": {},
                 "children": [
                   {
-                    "type": "scripts/counter.nengine.kts",
-                    "name": "my_script",
+                    "type": "scripts/missing.nengine.kts",
+                    "name": "x",
                     "properties": {},
                     "children": []
                   }
@@ -169,48 +157,24 @@ class SceneLoaderTest {
               }
             }
         """.trimIndent()
-
-        val ex = kotlin.test.assertFailsWith<IllegalStateException> {
+        val ex = kotlin.test.assertFailsWith<UnknownNodeTypeException> {
             SceneLoader.load(jsonText)
         }
-        assertTrue(ex.message!!.contains("No ScriptHost is registered to handle script path: scripts/counter.nengine.kts"))
+        assertEquals("scripts/missing.nengine.kts", ex.typeName)
     }
 
     @Test
-    fun `save with script path uses script path instead of qualifiedName`() {
-        val mockHost = MockScriptHost(
-            classToPath = mapOf(CounterNode::class to "scripts/counter.nengine.kts"),
-            pathToClass = mapOf("scripts/counter.nengine.kts" to CounterNode::class)
-        )
-        ScriptHosts.register(mockHost)
-
+    fun `save uses identifierFor when class was registered under a custom identifier`() {
+        NodeRegistry.register("scripts/counter.nengine.kts", CounterNode::class) { CounterNode() }
         val scene = Scene().apply {
             name = "root"
-            addChild(CounterNode().apply {
-                name = "my_script"
-            })
+            addChild(CounterNode().apply { name = "my_script" })
         }
-
         val text = SceneLoader.save(scene)
         val obj = Json.parseToJsonElement(text).jsonObject
-        val root = obj["root"]!!.jsonObject
-        val child = root["children"]!!.jsonArray[0].jsonObject
+        val child = (obj["root"]!!.jsonObject["children"] as kotlinx.serialization.json.JsonArray)[0].jsonObject
         assertEquals("scripts/counter.nengine.kts", child["type"]!!.jsonPrimitive.content)
     }
-}
-
-private class MockScriptHost(
-    val classToPath: Map<KClass<out com.neoutils.engine.scene.Node>, String>,
-    val pathToClass: Map<String, KClass<out com.neoutils.engine.scene.Node>>
-) : ScriptHost {
-    override fun compile(path: String): KClass<out com.neoutils.engine.scene.Node> =
-        pathToClass[path] ?: throw IllegalArgumentException("Not found: $path")
-    override fun factoryFor(path: String): () -> com.neoutils.engine.scene.Node {
-        val klass = compile(path)
-        return { klass.java.getDeclaredConstructor().newInstance() }
-    }
-    override fun pathFor(klass: KClass<out com.neoutils.engine.scene.Node>): String? =
-        classToPath[klass]
 }
 
 class CounterNode : com.neoutils.engine.scene.Node() {

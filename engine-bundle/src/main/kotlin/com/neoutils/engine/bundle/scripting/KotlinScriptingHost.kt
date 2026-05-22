@@ -1,7 +1,6 @@
 package com.neoutils.engine.bundle.scripting
 
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scripting.ScriptHost
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileInputStream
@@ -22,7 +21,7 @@ import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 internal class KotlinScriptingHost(
     private val manifest: List<String>,
     private val cacheDir: File
-) : ScriptHost {
+) {
 
     private val version = "1.0"
     private val classesDir = File(cacheDir, "classes").absoluteFile.apply { mkdirs() }
@@ -40,18 +39,18 @@ internal class KotlinScriptingHost(
         }
     }
 
-    override fun compile(path: String): KClass<out Node> {
+    fun compile(path: String): KClass<out Node> {
         return compiledClasses[path] ?: compileScript(path)
     }
 
-    override fun factoryFor(path: String): () -> Node {
+    fun factoryFor(path: String): () -> Node {
         val klass = compile(path)
         val constructor = klass.java.getDeclaredConstructor()
         constructor.isAccessible = true
         return { constructor.newInstance() as Node }
     }
 
-    override fun pathFor(klass: KClass<out Node>): String? {
+    fun pathFor(klass: KClass<out Node>): String? {
         return reverseMapping[klass]
     }
 

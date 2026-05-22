@@ -22,12 +22,12 @@
 
 ## 4. Strip script awareness from SceneLoader
 
-- [ ] 4.1 Remove the `endsWith(".kts")` branch in `entryToNode`; route every entry through `NodeRegistry.create(entry.type)`.
-- [ ] 4.2 Remove the `ScriptHosts.current()` reach in `nodeToEntry`; use `NodeRegistry.identifierFor(node::class)` and fall back to `node::class.qualifiedName`.
-- [ ] 4.3 Remove the `com.neoutils.engine.scripting.ScriptHosts` import.
-- [ ] 4.4 Delete `engine/src/main/kotlin/com/neoutils/engine/scripting/ScriptHost.kt` and `ScriptHosts.kt`.
-- [ ] 4.5 Delete `engine/src/test/kotlin/com/neoutils/engine/scripting/ScriptHostsTest.kt`.
-- [ ] 4.6 Update `SceneLoaderTest.kt`: drop the script-routing scenarios; keep the structural ones. Verify the test suite still passes (locally compile-only is OK since pong tests will be broken until step 8).
+- [x] 4.1 Remove the `endsWith(".kts")` branch in `entryToNode`; route every entry through `NodeRegistry.create(entry.type)`.
+- [x] 4.2 Remove the `ScriptHosts.current()` reach in `nodeToEntry`; use `NodeRegistry.identifierFor(node::class)` and fall back to `node::class.qualifiedName`.
+- [x] 4.3 Remove the `com.neoutils.engine.scripting.ScriptHosts` import.
+- [x] 4.4 Delete `engine/src/main/kotlin/com/neoutils/engine/scripting/ScriptHost.kt` and `ScriptHosts.kt`.
+- [x] 4.5 Delete `engine/src/test/kotlin/com/neoutils/engine/scripting/ScriptHostsTest.kt`.
+- [x] 4.6 Update `SceneLoaderTest.kt`: drop the script-routing scenarios; keep the structural ones. Verify the test suite still passes (locally compile-only is OK since pong tests will be broken until step 8).
 
 ## 5. Refactor KotlinScriptingHost: ScriptSource, round-robin, cache
 

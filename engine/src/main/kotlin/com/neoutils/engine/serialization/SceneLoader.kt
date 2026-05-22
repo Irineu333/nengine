@@ -9,13 +9,12 @@ import kotlinx.serialization.serializer
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
-import com.neoutils.engine.scripting.ScriptHosts
 
 /**
  * Saves a scene tree to and loads it from a JSON document. The serialized
- * shape is `SceneFile` over `NodeEntry`: each node carries its
- * fully-qualified type name, its `name`, an `@Inspect` property map, and
- * its children in order.
+ * shape is `SceneFile` over `NodeEntry`: each node carries an identifier (the
+ * value registered in [NodeRegistry] for its class), its `name`, an `@Inspect`
+ * property map, and its children in order.
  *
  * Load does not invoke `Scene.start()` — the returned scene is detached and
  * `isLive == false`. The caller decides when to make it live so deferred
@@ -43,7 +42,7 @@ object SceneLoader {
     }
 
     private fun nodeToEntry(node: Node): NodeEntry {
-        val typeName = ScriptHosts.current()?.pathFor(node::class)
+        val typeName = NodeRegistry.identifierFor(node::class)
             ?: node::class.qualifiedName
             ?: error("Node type has no qualified name (anonymous?): ${node::class}")
         val children = node.children.map(::nodeToEntry)
@@ -71,13 +70,7 @@ object SceneLoader {
     }
 
     private fun entryToNode(entry: NodeEntry): Node {
-        val node = if (entry.type.endsWith(".kts")) {
-            val host = ScriptHosts.current()
-                ?: throw IllegalStateException("No ScriptHost is registered to handle script path: ${entry.type}")
-            host.factoryFor(entry.type)()
-        } else {
-            NodeRegistry.create(entry.type)
-        }
+        val node = NodeRegistry.create(entry.type)
         node.name = entry.name
         applyProperties(node, entry.properties)
         for (child in entry.children) {

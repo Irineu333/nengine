@@ -2,13 +2,20 @@
 
 ### Requirement: Pong is an executable standalone module
 
-O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engine-skiko` e `:engine-bundle`, e contém um entry point `main()` que abre uma janela hospedando Pong via `SkikoHost`. O módulo MUST ser executável via `./gradlew :games:pong:run`. O módulo MUST NOT depender de nenhum outro módulo de jogo. O `Main.kt` SHALL carregar a cena via `BundleLoader.fromResources("pong")` (ou equivalente) e NÃO SHALL instanciar manualmente nenhum host de scripting, nem registrar tipos da engine no `NodeRegistry`, nem declarar manifesto de scripts.
+O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engine-skiko` e `:engine-bundle`, e contém um entry point `main()` que abre uma janela hospedando Pong via `SkikoHost`. O módulo MUST ser executável via `./gradlew :games:pong:run`. O módulo MUST NOT depender de nenhum outro módulo de jogo. O `Main.kt` SHALL carregar a cena via `BundleLoader.fromResources("pong")` por padrão e MAY aceitar um path opcional via argumento de programa para carregar via `BundleLoader.fromPath(File(args[0]))` (cenário de editor / verificação de disco). O `Main.kt` NÃO SHALL instanciar manualmente nenhum host de scripting, nem registrar tipos da engine no `NodeRegistry`, nem declarar manifesto de scripts.
 
 #### Scenario: Pong runs from Gradle
 
 - **WHEN** um desenvolvedor executa `./gradlew :games:pong:run` da raiz do projeto
 - **THEN** uma janela desktop abre exibindo a cena Pong
 - **AND** o jogo é responsivo a input de teclado
+
+#### Scenario: Pong loads from a filesystem bundle when a path argument is provided
+
+- **GIVEN** uma pasta `<dir>` que é um bundle Pong válido (`scene.json` + `scripts/`)
+- **WHEN** um desenvolvedor executa `./gradlew :games:pong:run --args="<dir>"`
+- **THEN** o `Main.kt` resolve o bundle via `BundleLoader.fromPath(File(<dir>))`
+- **AND** o jogo abre com a mesma cena que `fromResources("pong")` produziria sobre o mesmo conteúdo
 
 #### Scenario: Pong uses only public engine API
 
@@ -25,8 +32,7 @@ O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engi
 #### Scenario: Main.kt is concise
 
 - **WHEN** o source de `:games:pong/src/main/kotlin/.../Main.kt` é inspecionado
-- **THEN** o corpo de `main()` contém uma única chamada a `BundleLoader.fromResources("pong")` (ou `fromPath(...)`)
-- **AND** uma única chamada a `SkikoHost().run(...)`
+- **THEN** o corpo de `main()` se resume a escolher entre `BundleLoader.fromResources("pong")` e `BundleLoader.fromPath(File(args[0]))` (a escolha é o único condicional admissível) seguido de uma única chamada a `SkikoHost().run(...)`
 - **AND** NÃO contém referência a `KotlinScriptingHost`, `ScriptHosts`, `NodeRegistry.registerEngineTypes()`, `classLoader.getResource`, nem manifesto de scripts
 
 ### Requirement: Pong ships gameplay nodes as scripts under resources

@@ -38,24 +38,30 @@ The `CLAUDE.md` SHALL list the architectural invariants that any change must res
 
 ### Requirement: CLAUDE.md describes module structure and how to run
 
-The `CLAUDE.md` SHALL describe the project's module layout (`:engine`, `:engine-compose`, `:engine-skiko`, `:games:<name>`) and the command to run a game module (`./gradlew :games:<name>:run`). The document MUST clarify which game runs on which backend after the migration to Skiko-as-default (Pong and Demos on Skiko; Tic Tac Toe on Compose). Removal of the template's `:desktopApp` and `:shared` modules MUST remain noted.
+O `CLAUDE.md` SHALL descrever o layout de módulos do projeto (`:engine`, `:engine-bundle`, `:engine-compose`, `:engine-skiko`, `:games:<name>`) e o comando para rodar um módulo de jogo (`./gradlew :games:<name>:run`). O documento MUST esclarecer qual jogo roda em qual backend após a migração para Skiko-as-default (Pong e Demos em Skiko; Tic Tac Toe em Compose). A remoção dos módulos `:desktopApp` e `:shared` do template MUST permanecer registrada. O módulo `:engine-scripting` MUST NÃO aparecer no documento — foi absorvido por `:engine-bundle`. A linha do `:engine-bundle` MUST mencionar que ele hospeda o `BundleLoader` e a compilação interna de scripts `.nengine.kts`.
 
 #### Scenario: Module structure section is accurate
 
-- **WHEN** a developer compares the section to `settings.gradle.kts`
-- **THEN** the listed modules match the actual project graph
-- **AND** `:engine-skiko` appears alongside `:engine` and `:engine-compose`
+- **WHEN** um desenvolvedor compara a seção com `settings.gradle.kts`
+- **THEN** os módulos listados batem com o grafo real do projeto
+- **AND** `:engine-bundle` aparece ao lado de `:engine`, `:engine-skiko`, `:engine-compose`
+- **AND** `:engine-scripting` NÃO aparece nem na seção de módulos nem no roadmap como módulo ativo
 
 #### Scenario: Backend per game is stated
 
-- **WHEN** `CLAUDE.md` is opened
-- **THEN** the module-structure section names Skiko as the backend used by `:games:pong` and `:games:demos`
-- **AND** names Compose as the backend used by `:games:tictactoe`
+- **WHEN** `CLAUDE.md` é aberto
+- **THEN** a seção de módulos nomeia Skiko como backend usado por `:games:pong` e `:games:demos`
+- **AND** nomeia Compose como backend usado por `:games:tictactoe`
+
+#### Scenario: engine-bundle responsibilities are described
+
+- **WHEN** `CLAUDE.md` é aberto
+- **THEN** a linha do `:engine-bundle` (ou seção equivalente) descreve sua responsabilidade como "carregar cena via bundle (scene.json + scripts/) e hospedar a compilação interna de scripts `.nengine.kts`"
 
 #### Scenario: Run instructions work as written
 
-- **WHEN** a developer runs the command shown for Pong
-- **THEN** the game starts without additional setup steps
+- **WHEN** um desenvolvedor executa o comando mostrado para Pong
+- **THEN** o jogo inicia sem passos adicionais
 
 ### Requirement: CLAUDE.md states coding conventions
 
@@ -68,15 +74,15 @@ The `CLAUDE.md` SHALL state the project's coding conventions, including at minim
 
 ### Requirement: CLAUDE.md describes the OpenSpec workflow and roadmap
 
-The `CLAUDE.md` SHALL explain that material changes (architecture, public API, new modules, new capabilities) go through OpenSpec change proposals before implementation, and SHALL include a visible roadmap pointing to the active and planned changes. The roadmap MUST list each archived change with status `Archived`, including `engine-foundation`, `add-tictactoe`, `engine-consistency`, and `add-skiko-runtime` after this change is archived. The roadmap MUST be updated when an active change advances.
+O `CLAUDE.md` SHALL explicar que mudanças materiais (arquitetura, API pública, novos módulos, novas capabilities) passam por proposta OpenSpec antes da implementação, e SHALL incluir um roadmap visível apontando para changes ativas e planejadas. O roadmap MUST listar cada change arquivada com status `Archived`, incluindo `engine-foundation`, `add-tictactoe`, `engine-consistency`, `add-skiko-runtime`, `prepare-for-serialization`, `add-scripting`, `drop-pong-tag-only-scripts`, e `add-bundle-loader` após esta change ser arquivada. O roadmap MUST ser atualizado quando uma change ativa avança.
 
 #### Scenario: Workflow section refers contributors to OpenSpec
 
-- **WHEN** a contributor wants to propose a feature
-- **THEN** the workflow section directs them to create an OpenSpec change rather than open a code PR directly
+- **WHEN** um contribuidor quer propor uma feature
+- **THEN** a seção de workflow direciona a criar uma change OpenSpec em vez de abrir um PR direto
 
 #### Scenario: Roadmap reflects current state
 
-- **WHEN** `CLAUDE.md` is read at the end of this change
-- **THEN** the roadmap includes a row for `add-skiko-runtime` with status `Archived`
-- **AND** the row's summary mentions that Skiko became the default backend and that `GameHost` was introduced as an SPI
+- **WHEN** `CLAUDE.md` é lido ao final desta change
+- **THEN** o roadmap inclui uma linha para `add-bundle-loader` com status `Archived`
+- **AND** o resumo da linha menciona que `:engine-bundle` substituiu `:engine-scripting` e que `BundleLoader.fromResources`/`fromPath` é a nova API de carregamento de cena

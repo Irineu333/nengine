@@ -105,37 +105,61 @@ The engine SHALL define an annotation `@Inspect` with `@Target(AnnotationTarget.
 
 ### Requirement: NodeRegistry maps type names to factories
 
-The engine SHALL provide a `NodeRegistry` object that maintains a registry from fully-qualified type names (as `String`) to factory functions of shape `() -> Node`. Game modules MUST register every compiled `Node` subclass that may appear in a serialized scene file by calling `NodeRegistry.register(KClass<out Node>, factory)` at startup, before any call to `SceneLoader.load`. A type whose string representation ends with `.kts` SHALL NOT be looked up in `NodeRegistry`; such types are routed to the active `ScriptHost` by `SceneLoader` instead. For non-script types, if the type is not registered, `NodeRegistry.create(type)` MUST throw `UnknownNodeTypeException` with the offending type name.
+A engine SHALL prover um `NodeRegistry` que mantém um mapeamento **bidirecional** entre um identificador `String` e o par `(KClass<out Node>, factory: () -> Node)`. O identificador é o que aparece no campo `type` do JSON: para tipos compilados em Kotlin, é o FQN; para scripts, é o path do script relativo ao bundle (ex.: `scripts/paddle.nengine.kts`). A API MUST incluir, no mínimo:
+
+- `register(identifier: String, klass: KClass<out Node>, factory: () -> Node)` — registro explícito do mapeamento bidirecional.
+- `create(identifier: String): Node` — invoca a factory; lança `UnknownNodeTypeException` se `identifier` não está registrado.
+- `identifierFor(klass: KClass<out Node>): String?` — devolve o identificador associado à classe, ou `null` se a classe nunca foi registrada.
+- `registerEngineTypes()` — idempotente; registra todos os tipos `Node` concretos publicados por `:engine` usando seus FQN.
+- `clear()` — descarta todos os registros (apenas para uso em testes).
+
+Tipos com identificador terminando em `.kts` MUST ser tratados pelo registry como qualquer outro tipo — não há mais ramo especial. O `BundleLoader` (em `:engine-bundle`) MUST popular o registry com mapeamentos `script-path → (class, factory)` antes de chamar `SceneLoader.load`.
 
 #### Scenario: Registered type is instantiable by name
 
-- **GIVEN** code has called `NodeRegistry.register(Paddle::class) { Paddle() }`
-- **WHEN** the loader encounters a node entry with `type = "com.neoutils.engine.games.pong.Paddle"`
-- **THEN** the registry returns a fresh `Paddle()` instance via the factory
+- **GIVEN** código chamou `NodeRegistry.register("com.foo.Paddle", Paddle::class) { Paddle() }`
+- **WHEN** o loader encontra uma entrada com `type = "com.foo.Paddle"`
+- **THEN** o registry devolve uma instância fresh de `Paddle` via a factory
 
-#### Scenario: Unknown compiled type fails loud
+#### Scenario: Unknown type fails loud
 
-- **GIVEN** no registration has been made for `com.example.Mystery`
-- **AND** the string does not end with `.kts`
-- **WHEN** the loader encounters a node entry with `type = "com.example.Mystery"`
-- **THEN** the loader throws `UnknownNodeTypeException` whose message names `com.example.Mystery`
+- **GIVEN** nenhum registro feito para `com.example.Mystery`
+- **WHEN** o loader encontra uma entrada com `type = "com.example.Mystery"`
+- **THEN** o loader lança `UnknownNodeTypeException` cuja mensagem nomeia `com.example.Mystery`
 
-#### Scenario: Script paths bypass NodeRegistry
+#### Scenario: Script path is a first-class identifier
 
-- **GIVEN** `NodeRegistry.register` has NEVER been called for the string `"scripts/paddle.nengine.kts"`
-- **WHEN** the loader encounters a node entry with `type = "scripts/paddle.nengine.kts"`
-- **THEN** `NodeRegistry.create` is NOT called for this type
-- **AND** the loader consults `ScriptHosts.current()` instead
+- **GIVEN** o `BundleLoader` registrou `NodeRegistry.register("scripts/paddle.nengine.kts", PaddleScriptClass::class) { ... }`
+- **WHEN** o loader encontra uma entrada com `type = "scripts/paddle.nengine.kts"`
+- **THEN** o registry devolve uma instância fresh via a factory
+- **AND** o `SceneLoader` não consulta nenhuma SPI externa (nenhum `ScriptHosts`)
+
+#### Scenario: identifierFor recovers the identifier from a KClass
+
+- **GIVEN** `NodeRegistry.register("scripts/paddle.nengine.kts", PaddleScriptClass::class) { ... }`
+- **WHEN** código chama `NodeRegistry.identifierFor(PaddleScriptClass::class)`
+- **THEN** o resultado é `"scripts/paddle.nengine.kts"`
+
+#### Scenario: identifierFor returns null for unregistered classes
+
+- **WHEN** código chama `NodeRegistry.identifierFor(Node2D::class)` e `Node2D::class` nunca foi registrado
+- **THEN** o resultado é `null`
+
+#### Scenario: registerEngineTypes is idempotent
+
+- **WHEN** código chama `NodeRegistry.registerEngineTypes()` duas vezes seguidas
+- **THEN** a segunda chamada não lança exceção
+- **AND** o estado do registry é equivalente ao de uma única chamada
 
 ### Requirement: SceneLoader round-trips a scene to JSON
 
-The engine SHALL provide a `SceneLoader` with two operations: `save(scene: Scene): String` returns the JSON representation of the scene; `load(json: String): Scene` parses JSON and returns a fresh, detached `Scene` instance whose tree mirrors the file. The JSON document MUST follow this shape:
+A engine SHALL prover um `SceneLoader` com duas operações: `save(scene: Scene): String` devolve a representação JSON da cena; `load(json: String): Scene` parseia JSON e devolve uma `Scene` destacada cujo árvore espelha o arquivo. O documento JSON MUST seguir esta forma:
 
 ```json
 {
   "version": 1,
   "root": {
-    "type": "<fully-qualified Kotlin class name OR classpath-relative .kts script path>",
+    "type": "<identificador registrado no NodeRegistry>",
     "name": "<string>",
     "properties": { "<inspect-property-name>": <value>, ... },
     "children": [ <node entry>, ... ]
@@ -143,104 +167,68 @@ The engine SHALL provide a `SceneLoader` with two operations: `save(scene: Scene
 }
 ```
 
-The `type` field MAY be either a fully-qualified Kotlin class name (existing behavior) or a classpath-relative path ending in `.kts` (new behavior). When loading, `SceneLoader` MUST route the type as follows:
+O campo `type` MUST ser **um identificador registrado em `NodeRegistry`** — seja um FQN (para tipos compilados) ou um path de script relativo ao bundle (para tipos de script). O `SceneLoader` MUST resolver o tipo exclusivamente por `NodeRegistry.create(type)`; ele MUST NOT discriminar `.kts` nem consultar qualquer SPI externa. Se o tipo não está registrado, o loader MUST lançar `UnknownNodeTypeException`.
 
-- If `type` ends with `.kts`, `SceneLoader` MUST obtain a factory via `ScriptHosts.current()?.factoryFor(type)`. If no `ScriptHost` is registered, the loader MUST throw an exception whose message names the offending type and explains that no `ScriptHost` is registered.
-- Otherwise, `SceneLoader` MUST obtain a factory via `NodeRegistry.create(type)`.
+A factory invocada produz a instância do nó, depois `name` e `properties` são aplicados via reflection como antes. O `properties` map MUST conter exatamente os valores das propriedades anotadas com `@Inspect`, serializadas via `kotlinx.serialization` JSON. O array `children` MUST preservar a ordem de `parent.children`. Carregar MUST instanciar cada nó, aplicar suas `properties`, e em seguida anexar seus filhos em ordem via `addChild`. Carregar MUST NOT chamar `Scene.start()`; o caller decide quando tornar a cena viva. Save/load do mesmo cena MUST ser idempotente: `save(load(save(scene)))` SHALL ser equivalente a `save(scene)` após canonicalização (whitespace-insensitive, key-ordered).
 
-The factory invocation produces the node instance, then `name` and `properties` are applied via reflection exactly as before. The `properties` map MUST contain exactly the values of the node's `@Inspect`-annotated properties, serialized via `kotlinx.serialization` JSON. The `children` array MUST preserve the order of `parent.children`. Loading MUST instantiate each node, apply its `properties`, then attach its children in order via `addChild`. Loading MUST NOT call `Scene.start()` on the resulting scene; the caller decides when to make it live. Saving and loading the same scene MUST be a round-trip: `save(load(save(scene)))` SHALL be byte-equal to `save(scene)` after canonicalization (whitespace-insensitive, key-ordered).
-
-When `SceneLoader.save` serializes a node whose class came from a script (i.e. was instantiated via `ScriptHost.factoryFor`), the saved `type` field MUST be the script path that produced the class, not the runtime FQN of the generated class. The mapping from class to source path is the responsibility of `ScriptHost`; `SceneLoader` MUST consult `ScriptHosts.current()?.pathFor(node::class)` and fall back to `node::class.qualifiedName` only when no mapping is found.
+Quando `SceneLoader.save` serializa um nó, o campo `type` salvo MUST ser obtido por `NodeRegistry.identifierFor(node::class)`. Se o registry não conhece a classe, `save` MUST cair de volta para `node::class.qualifiedName` como último recurso. `save` MUST NOT consultar nenhuma SPI externa.
 
 #### Scenario: save produces well-formed JSON with version and root
 
-- **WHEN** code calls `SceneLoader.save(scene)`
-- **THEN** the returned string parses as JSON
-- **AND** the top-level object has fields `version` (integer 1) and `root` (object)
-- **AND** `root` has fields `type`, `name`, `properties`, `children`
+- **WHEN** código chama `SceneLoader.save(scene)`
+- **THEN** a string devolvida parseia como JSON
+- **AND** o objeto top-level tem campos `version` (inteiro 1) e `root` (objeto)
+- **AND** `root` tem campos `type`, `name`, `properties`, `children`
 
 #### Scenario: load produces a detached scene
 
-- **WHEN** code calls `SceneLoader.load(json)`
-- **THEN** the returned `Scene`'s `isLive` property is `false`
-- **AND** the scene is not registered with any `GameLoop`
+- **WHEN** código chama `SceneLoader.load(json)`
+- **THEN** a `Scene` devolvida tem `isLive == false`
+- **AND** a cena não está registrada em nenhum `GameLoop`
 
 #### Scenario: load preserves tree shape and inspect properties
 
-- **GIVEN** a JSON document describing a `PongScene` with three children in a specific order, each with `@Inspect` properties set to specific values
-- **WHEN** code calls `SceneLoader.load(json)` followed by `Scene.start()`
-- **THEN** the loaded scene's children appear in the same order
-- **AND** each child's `@Inspect` properties hold the values from the JSON
+- **GIVEN** um documento JSON descrevendo uma cena com três filhos em ordem específica, cada com propriedades `@Inspect`
+- **WHEN** código chama `SceneLoader.load(json)` seguido de `Scene.start()`
+- **THEN** os filhos aparecem na mesma ordem
+- **AND** cada filho tem suas propriedades `@Inspect` com os valores do JSON
 
 #### Scenario: Round-trip is stable
 
-- **GIVEN** a scene `scene`
-- **WHEN** code computes `json1 = SceneLoader.save(scene)` then `scene2 = SceneLoader.load(json1)` then `json2 = SceneLoader.save(scene2)`
-- **THEN** `json1` and `json2` are equivalent JSON documents
+- **GIVEN** uma cena `scene`
+- **WHEN** código computa `json1 = SceneLoader.save(scene)` então `scene2 = SceneLoader.load(json1)` então `json2 = SceneLoader.save(scene2)`
+- **THEN** `json1` e `json2` são documentos JSON equivalentes
 
 #### Scenario: Loading does not invoke onEnter until start
 
-- **GIVEN** a node type whose `onEnter` increments a counter
-- **WHEN** code calls `SceneLoader.load(json)` on a scene containing that node
-- **THEN** the counter has NOT been incremented
-- **AND** after a subsequent `scene.start()`, the counter has been incremented exactly once
+- **GIVEN** um tipo de nó cujo `onEnter` incrementa um contador
+- **WHEN** código chama `SceneLoader.load(json)` em uma cena contendo esse nó
+- **THEN** o contador NÃO foi incrementado
+- **AND** após chamada subsequente de `scene.start()`, o contador foi incrementado exatamente uma vez
 
-#### Scenario: Script-typed entry routes to ScriptHost
+#### Scenario: SceneLoader does not discriminate .kts identifiers
 
-- **GIVEN** a registered `KotlinScriptingHost` and a JSON entry with `type = "scripts/paddle.nengine.kts"`
-- **WHEN** code calls `SceneLoader.load(json)`
-- **THEN** the host's `factoryFor("scripts/paddle.nengine.kts")` is invoked exactly once
-- **AND** the resulting node is an instance of the class defined in that script
-- **AND** the node's `@Inspect` properties hold the values from the JSON
+- **WHEN** o source de `SceneLoader.load` e `SceneLoader.save` é inspecionado
+- **THEN** não há checagem `endsWith(".kts")`
+- **AND** não há import de nenhuma SPI de scripting (`ScriptHost`, `ScriptHosts`)
 
-#### Scenario: Script-typed entry without registered host fails fast
+#### Scenario: Script-typed entry resolves via NodeRegistry
 
-- **GIVEN** a JSON entry with `type = "scripts/foo.nengine.kts"` and `ScriptHosts.current()` returns `null`
-- **WHEN** code calls `SceneLoader.load(json)`
-- **THEN** the call throws an exception
-- **AND** the exception message names the offending type and explains that no `ScriptHost` is registered
+- **GIVEN** o `NodeRegistry` foi previamente populado com `register("scripts/paddle.nengine.kts", ...)` pelo `BundleLoader`
+- **WHEN** código chama `SceneLoader.load(json)` para JSON que contém esse identificador
+- **THEN** o nó é instanciado via a factory registrada
+- **AND** o caminho de código é o mesmo de qualquer outro identificador
 
-#### Scenario: save round-trips script-typed nodes by script path
+#### Scenario: Unknown type fails fast regardless of suffix
 
-- **GIVEN** a live scene whose root is a node instantiated by `ScriptHost.factoryFor("scripts/pong.nengine.kts")`
-- **WHEN** code calls `SceneLoader.save(scene)`
-- **THEN** the returned JSON's root `type` is `"scripts/pong.nengine.kts"`
-- **AND** is NOT the runtime FQN of the script-generated class
+- **GIVEN** um JSON com `type = "scripts/foo.nengine.kts"` e nenhum registro prévio para esse identificador
+- **WHEN** código chama `SceneLoader.load(json)`
+- **THEN** o loader lança `UnknownNodeTypeException` cuja mensagem nomeia o identificador
 
-### Requirement: Pong scene file ships as proof of concept
+#### Scenario: save round-trips script-typed nodes by script path via identifierFor
 
-The `:games:pong` module SHALL include `pong.scene.json` under `src/main/resources/` containing the serialized initial state of `PongScene`. The module's single entry point `Main.kt` SHALL load this resource via `SceneLoader.load` and run the resulting scene via the Skiko host; no code-only construction path SHALL ship as a parallel entry point. The resulting gameplay MUST be indistinguishable from the previous code-only build of `PongScene`: same paddles, same ball start, same colliders, same HUD layout.
-
-#### Scenario: pong.scene.json exists and parses
-
-- **WHEN** the file `:games:pong/src/main/resources/pong.scene.json` is read at runtime
-- **THEN** `SceneLoader.load` returns a `Scene` whose root is a `PongScene`
-
-#### Scenario: Pong's Main loads the scene file
-
-- **WHEN** the user runs `./gradlew :games:pong:run`
-- **THEN** `Main.kt` reads `pong.scene.json` from the classpath
-- **AND** calls `SceneLoader.load` to build the scene
-- **AND** hands the scene to `SkikoHost` for execution
-
-#### Scenario: Loaded Pong matches the previous code-only behavior
-
-- **WHEN** the Pong window is launched
-- **THEN** the initial scene layout (paddles, ball, walls, goals, HUD) matches the layout produced by the prior code-only `PongScene` construction
-- **AND** input response is identical to the prior code-only build
-
-### Requirement: ScriptHost exposes a reverse path lookup for save
-
-`ScriptHost` SHALL expose `fun pathFor(klass: KClass<out Node>): String?` returning the script path that originally produced `klass`, or `null` if `klass` was not produced by this host. This operation MUST be the inverse of `compile`: for every path `p` such that `compile(p)` returns a class `K`, `pathFor(K)` MUST return `p`. The mapping MUST be populated lazily as scripts are compiled; classes never compiled by this host MUST NOT appear in the map.
-
-#### Scenario: pathFor recovers the source path
-
-- **GIVEN** `host.compile("scripts/foo.nengine.kts")` has returned class `Foo`
-- **WHEN** code calls `host.pathFor(Foo::class)`
-- **THEN** the result is `"scripts/foo.nengine.kts"`
-
-#### Scenario: pathFor returns null for non-script classes
-
-- **WHEN** code calls `host.pathFor(Node2D::class)` on a host that never compiled a script producing `Node2D`
-- **THEN** the result is `null`
+- **GIVEN** uma cena live cuja raiz é um nó cuja `KClass` foi registrada com identificador `"scripts/pong.nengine.kts"`
+- **WHEN** código chama `SceneLoader.save(scene)`
+- **THEN** o JSON devolvido tem `type = "scripts/pong.nengine.kts"` na raiz
+- **AND** NÃO o FQN runtime da classe gerada pelo script
 

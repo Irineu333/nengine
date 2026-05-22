@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "root": {
+    "type": "com.neoutils.engine.scene.Scene",
+    "name": "TestRoot",
+    "properties": {},
+    "children": [
+      {
+        "type": "scripts/foo.nengine.kts",
+        "name": "fooScript",
+        "properties": {
+          "transform": {
+            "position": { "x": 1.0, "y": 2.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "value": 7
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.physics.BoxCollider",
+        "name": "engineCollider",
+        "properties": {
+          "transform": {
+            "position": { "x": 5.0, "y": 6.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 20.0, "y": 30.0 }
+        },
+        "children": []
+      }
+    ]
+  }
+}

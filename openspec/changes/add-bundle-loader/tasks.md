@@ -57,16 +57,16 @@
 
 ## 7. Author BundleLoaderTest
 
-- [ ] 7.1 Add `BundleLoaderTest.kt` under `:engine-bundle/src/test/kotlin/.../bundle/`.
-- [ ] 7.2 Test fixture: a minimal bundle baked into `src/test/resources/test-bundle/` containing `scene.json` (root + one scripted child + one engine-typed child) and `scripts/foo.nengine.kts`.
-- [ ] 7.3 Case: `BundleLoader.fromResources("test-bundle")` returns a detached scene with the expected tree.
-- [ ] 7.4 Case: `BundleLoader.fromPath(File("..."))` against a temp directory created by the test (copy of the resources fixture) returns equivalent scene.
-- [ ] 7.5 Case: classpath bundle and disk bundle produce semantically equivalent scenes from the same JSON.
-- [ ] 7.6 Case: orphan script in `scripts/` that the JSON does NOT reference is not compiled (assert via inspection of `KotlinScriptingHost.compilationCount` or absence of class file).
-- [ ] 7.7 Case: same script path referenced multiple times in the tree compiles once.
-- [ ] 7.8 Case: missing `scene.json` in the bundle raises exception naming the bundle.
-- [ ] 7.9 Case: `types = listOf(SomeCustomNode::class)` makes a JSON entry referencing the FQN of `SomeCustomNode` resolve correctly.
-- [ ] 7.10 Case: engine types (e.g. `BoxCollider`) resolve without the caller having registered anything.
+- [x] 7.1 Add `BundleLoaderTest.kt` under `:engine-bundle/src/test/kotlin/.../bundle/`.
+- [x] 7.2 Test fixture: a minimal bundle baked into `src/test/resources/test-bundle/` containing `scene.json` (root + one scripted child + one engine-typed child) and `scripts/foo.nengine.kts`.
+- [x] 7.3 Case: `BundleLoader.fromResources("test-bundle")` returns a detached scene with the expected tree.
+- [x] 7.4 Case: `BundleLoader.fromPath(File("..."))` against a temp directory created by the test (copy of the resources fixture) returns equivalent scene.
+- [x] 7.5 Case: classpath bundle and disk bundle produce semantically equivalent scenes from the same JSON.
+- [x] 7.6 Case: orphan script in `scripts/` that the JSON does NOT reference is not compiled (assert via inspection of `KotlinScriptingHost.compilationCount` or absence of class file).
+- [x] 7.7 Case: same script path referenced multiple times in the tree compiles once.
+- [x] 7.8 Case: missing `scene.json` in the bundle raises exception naming the bundle.
+- [x] 7.9 Case: `types = listOf(SomeCustomNode::class)` makes a JSON entry referencing the FQN of `SomeCustomNode` resolve correctly.
+- [x] 7.10 Case: engine types (e.g. `BoxCollider`) resolve without the caller having registered anything.
 
 ## 8. Migrate :games:pong to bundle layout
 

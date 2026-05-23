@@ -140,8 +140,8 @@
 
 ## 12. Final verification
 
-- [ ] 12.1 Confirm `:games:tictactoe` and `:games:demos` still run unchanged via `./gradlew :games:tictactoe:run` and `./gradlew :games:demos:run`. Neither should depend transitively on `:engine-bundle-python`.
-- [ ] 12.2 Confirm `openspec validate add-python-scripting` reports the change as valid.
-- [ ] 12.3 Confirm no `*.nengine.kts` file remains anywhere in the repo under `games/`.
-- [ ] 12.4 Confirm `:engine-bundle` runtime classpath contains no `kotlin-scripting-*` artifact.
+- [x] 12.1 Confirm `:games:tictactoe` and `:games:demos` still run unchanged via `./gradlew :games:tictactoe:run` and `./gradlew :games:demos:run`. Neither should depend transitively on `:engine-bundle-python`.
+- [x] 12.2 Confirm `openspec validate add-python-scripting` reports the change as valid.
+- [x] 12.3 Confirm no `*.nengine.kts` file remains anywhere in the repo under `games/`.
+- [x] 12.4 Confirm `:engine-bundle` runtime classpath contains no `kotlin-scripting-*` artifact.
 - [ ] 12.5 Run `./gradlew :games:pong:run --args="<path-to-fs-copy-of-pong-bundle>"` to confirm the filesystem path of `BundleLoader.fromPath` also works with Python scripts.

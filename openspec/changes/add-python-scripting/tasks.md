@@ -88,11 +88,11 @@
 
 ## 6. E5 — Migrate Walls, Goal, Ball
 
-- [ ] 6.1 Translate `goal.nengine.kts` to `goal.py` (renaming `GoalSide` references as needed; the enum stays on the Kotlin side in `:engine`-or-`pong`).
-- [ ] 6.2 Translate `ball.nengine.kts` to `ball.py`. The Ball **extends BoxCollider** — the `# extends BoxCollider` header must resolve correctly. Confirm `BoxCollider` is in the pre-bound Context bindings.
-- [ ] 6.3 Update `pong/scene.json` to point the ball and the two goal nodes to their new `.py` files via `script` and `props`. The wall nodes already use `BoxCollider` by FQN with no script and stay as-is.
-- [ ] 6.4 Delete `goal.nengine.kts` and `ball.nengine.kts`.
-- [ ] 6.5 **Gate**: run `./gradlew :games:pong:run` and play 30 seconds. The ball should physics correctly off the walls and the goals should still trigger score updates. Visual is unchanged.
+- [x] 6.1 Translate `goal.nengine.kts` to `goal.py` (renaming `GoalSide` references as needed; the enum stays on the Kotlin side in `:engine`-or-`pong`). _(Goal is a `BoxCollider` with a single `side: str` export — collision routing in `ball.py` keys off node name (`leftGoal`/`rightGoal`) instead of an enum, which avoids smuggling a Kotlin enum across the script boundary.)_
+- [x] 6.2 Translate `ball.nengine.kts` to `ball.py`. The Ball **extends BoxCollider** — the `# extends BoxCollider` header must resolve correctly. Confirm `BoxCollider` is in the pre-bound Context bindings.
+- [x] 6.3 Update `pong/scene.json` to point the ball and the two goal nodes to their new `.py` files via `script` and `props`. The wall nodes already use `BoxCollider` by FQN with no script and stay as-is.
+- [x] 6.4 Delete `goal.nengine.kts` and `ball.nengine.kts`.
+- [x] 6.5 **Gate**: run `./gradlew :games:pong:run` and play 30 seconds. The ball should physics correctly off the walls and the goals should still trigger score updates. Visual is unchanged. _(Validated by user: ball bounces off walls and paddles with the expected angle and resets on goal contact; scoring count stays muted until E7 brings PongScene over.)_
 
 ## 7. E6 — Migrate Paddle
 

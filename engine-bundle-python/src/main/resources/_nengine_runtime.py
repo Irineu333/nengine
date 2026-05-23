@@ -16,6 +16,7 @@ def _nengine_load_module(source, path):
         'Vec2': Vec2,
         'Color': Color,
         'Rect': Rect,
+        'Transform': Transform,
         'NodeRef': NodeRef,
         'Key': Key,
         'BoxCollider': BoxCollider,

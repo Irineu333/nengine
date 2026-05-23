@@ -18,7 +18,11 @@ class PongScene : Scene() {
         val rightGoal = findChild("rightGoal") as? BoxCollider ?: return
         val leftPaddle = findChild("left") as? Paddle ?: return
         val rightPaddle = findChild("right") as? Paddle ?: return
-        val ball = findChild("Ball") as? Ball ?: return
+        // Ball moved to a Python script in E5 — it's now a BoxCollider whose
+        // behavior (movement, collisions, reset) lives in ball.py. Layout no
+        // longer pokes fieldCenter / reset() from here; both are owned by
+        // the Python ball and PongScene's migration in E7 will wire the
+        // resize handoff (defaults from scene.json cover 800x600).
 
         topWall.size = Vec2(width, WALL_THICKNESS)
         topWall.transform = topWall.transform.copy(position = Vec2(0f, 0f))
@@ -42,12 +46,6 @@ class PongScene : Scene() {
         rightPaddle.transform = rightPaddle.transform.copy(
             position = Vec2(width - PADDLE_MARGIN - paddleWidth, height / 2f - paddleHeight / 2f)
         )
-
-        ball.fieldCenter = Vec2(width / 2f, height / 2f)
-        if (isLive) {
-            val serveToward = if (ball.velocity.x >= 0f) 1f else -1f
-            ball.reset(serveToward)
-        }
 
         // centerLine is a Node (script-only) and exposes no Kotlin getters
         // we can drive from here — its x/height stay at scene.json defaults

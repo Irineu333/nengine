@@ -3,6 +3,7 @@ package com.neoutils.engine.bundle.python
 import com.neoutils.engine.bundle.script.*
 import com.neoutils.engine.input.Key
 import com.neoutils.engine.math.Rect
+import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.render.Color
@@ -49,6 +50,25 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
         })
         bindings.putMember("Rect", ProxyExecutable { args ->
             Rect(args[0].asHostObject(), args[1].asHostObject())
+        })
+        // Transform factory: 3-arg with explicit `double → float` rotation
+        // cast, plus a 1-arg shortcut for position-only updates (the most
+        // common mutation pattern in scripts, replacing Kotlin's `copy(...)`).
+        bindings.putMember("Transform", ProxyExecutable { args ->
+            when (args.size) {
+                0 -> Transform()
+                1 -> Transform(position = args[0].asHostObject())
+                2 -> Transform(
+                    position = args[0].asHostObject(),
+                    scale = args[1].asHostObject(),
+                )
+                3 -> Transform(
+                    position = args[0].asHostObject(),
+                    scale = args[1].asHostObject(),
+                    rotation = args[2].asDouble().toFloat(),
+                )
+                else -> error("Transform takes 0..3 args (position, scale, rotation)")
+            }
         })
         bindings.putMember("NodeRef", NodeRef::class.java)
         bindings.putMember("Key", Key::class.java)

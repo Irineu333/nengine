@@ -76,15 +76,15 @@
 
 ## 5. E4 — Migrate first Pong leaves (CenterLine + Score)
 
-- [ ] 5.1 Create `games/pong/src/main/resources/pong/scripts/center_line.py` translating `center-line.nengine.kts` line for line. Use `# extends Node2D` header. Move `@Inspect` vars to top-level annotated assignments. Move `onRender` to `def on_render(self, renderer)`.
-- [ ] 5.2 Create `games/pong/src/main/resources/pong/scripts/score.py` translating `score.nengine.kts` the same way.
-- [ ] 5.3 Update `pong/scene.json`:
+- [x] 5.1 Create `games/pong/src/main/resources/pong/scripts/center_line.py` translating `center-line.nengine.kts` line for line. Use `# extends Node2D` header. Move `@Inspect` vars to top-level annotated assignments. Move `onRender` to `def on_render(self, renderer)`.
+- [x] 5.2 Create `games/pong/src/main/resources/pong/scripts/score.py` translating `score.nengine.kts` the same way.
+- [x] 5.3 Update `pong/scene.json`:
   - For the center-line and the two score nodes, change `type` to a native Node type (e.g., `engine.Node2D`) and add `script` field pointing to the new `.py` file.
   - Move the previous `@Inspect` field values (size, color, score, etc.) into a `props` JSON object on each entry.
-- [ ] 5.4 Delete `center-line.nengine.kts` and `score.nengine.kts` from `pong/scripts/`.
-- [ ] 5.5 Make sure `:games:pong/build.gradle.kts` adds dependency on `:engine-bundle-python`.
-- [ ] 5.6 Make `:games:pong/src/main/kotlin/.../Main.kt` call `PythonScriptHost.install()` once before `BundleLoader.fromResources("pong")` (or rely on a `companion object` init pattern documented in `CLAUDE.md`).
-- [ ] 5.7 **Gate**: run `./gradlew :games:pong:run` and play 30 seconds. The center line and both scores should render exactly like before. The paddle/ball/walls/goals continue to use the old `.nengine.kts` path.
+- [x] 5.4 Delete `center-line.nengine.kts` and `score.nengine.kts` from `pong/scripts/`.
+- [x] 5.5 Make sure `:games:pong/build.gradle.kts` adds dependency on `:engine-bundle-python`.
+- [x] 5.6 Make `:games:pong/src/main/kotlin/.../Main.kt` call `PythonScriptHost.install()` once before `BundleLoader.fromResources("pong")` (or rely on a `companion object` init pattern documented in `CLAUDE.md`).
+- [x] 5.7 **Gate**: run `./gradlew :games:pong:run` and play 30 seconds. The center line and both scores should render exactly like before. The paddle/ball/walls/goals continue to use the old `.nengine.kts` path. _(Validated by user: center line dashes + score "0/0" render at the expected positions; scoring increment is intentionally muted until E7 brings PongScene over.)_
 
 ## 6. E5 — Migrate Walls, Goal, Ball
 

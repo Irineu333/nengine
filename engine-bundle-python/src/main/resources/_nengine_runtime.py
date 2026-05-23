@@ -22,7 +22,11 @@ def _nengine_load_module(source, path):
         'Node2D': Node2D,
     }
     exec(compile(source, path, 'exec'), ns)
-    return ns
+    # Wrap as SimpleNamespace so the Polyglot Value.hasMember/getMember API
+    # (attribute lookup) resolves the script's top-level def's; a bare dict
+    # exposes its entries as hash keys, not members, and the hook dispatcher
+    # would silently no-op every call.
+    return _NS(**ns)
 
 
 def _nengine_inspect(source):

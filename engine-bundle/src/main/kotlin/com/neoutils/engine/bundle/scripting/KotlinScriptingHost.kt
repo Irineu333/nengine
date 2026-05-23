@@ -217,6 +217,12 @@ internal class KotlinScriptingHost(
                     .split(File.pathSeparator)
                     .map { File(it) }
                     .filter { it.exists() }
+                    // Skip non-archive classpath entries (e.g. `.pom` files
+                    // pulled in by transitive Gradle deps such as GraalPy).
+                    // The Kotlin compiler's FastJar reader logs a noisy
+                    // stack trace for each of those, even though it then
+                    // skips them; we filter them out upstream.
+                    .filter { it.isDirectory || it.name.endsWith(".jar") }
                 updateClasspath(systemClasspath + classesDir)
             }
         }

@@ -1,24 +1,11 @@
 class PongScene : Scene() {
 
-    override fun onEnter() {
-        wireScoring()
-    }
-
-    private fun wireScoring() {
-        val ball = findChild("Ball") as? Ball ?: return
-        val leftScore = findChild("leftScore") as? Score
-        val rightScore = findChild("rightScore") as? Score
-        ball.onScore += { scorer ->
-            when (scorer) {
-                Goal.Side.Left -> incrementScore(leftScore)
-                Goal.Side.Right -> incrementScore(rightScore)
-            }
-        }
-    }
-
-    private fun incrementScore(scoreNode: Score?) {
-        scoreNode?.increment()
-    }
+    // Scoring wiring lived here before CenterLine/Score migrated to Python in
+    // E4. With the migration, leftScore/rightScore are now Node2D-with-script
+    // and `increment()` is a method of the Python instance, not callable from
+    // a Kotlin script. Wiring is restored when PongScene itself moves to
+    // Python in slice E7.
+    override fun onEnter() {}
 
     override fun onResize(width: Float, height: Float) {
         layout(width, height)
@@ -32,7 +19,6 @@ class PongScene : Scene() {
         val leftPaddle = findChild("left") as? Paddle ?: return
         val rightPaddle = findChild("right") as? Paddle ?: return
         val ball = findChild("Ball") as? Ball ?: return
-        val centerLine = findChild("centerLine") as? CenterLine ?: return
 
         topWall.size = Vec2(width, WALL_THICKNESS)
         topWall.transform = topWall.transform.copy(position = Vec2(0f, 0f))
@@ -62,10 +48,11 @@ class PongScene : Scene() {
             val serveToward = if (ball.velocity.x >= 0f) 1f else -1f
             ball.reset(serveToward)
         }
-        
-        centerLine.x = width / 2f
-        centerLine.height = height
 
+        // centerLine is a Node (script-only) and exposes no Kotlin getters
+        // we can drive from here — its x/height stay at scene.json defaults
+        // (400, 600) which align with the 800x600 window for the E4 gate;
+        // full handoff lands when PongScene moves to Python in slice E7.
         val leftScore = findChild("leftScore") as? Node2D ?: return
         val rightScore = findChild("rightScore") as? Node2D ?: return
         val scoreY = 24f

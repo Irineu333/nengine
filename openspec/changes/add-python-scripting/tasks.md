@@ -111,13 +111,13 @@
 
 ## 9. E8 — Remove Kotlin Scripting and finalize
 
-- [ ] 9.1 Delete `engine-bundle/src/main/kotlin/com/neoutils/engine/bundle/scripting/` directory entirely (`KotlinScriptingHost.kt`, `NEngineScript.kt`, `ScriptSource.kt`, `CyclicScriptDependencyError.kt`).
-- [ ] 9.2 Delete `engine-bundle/src/test/kotlin/com/neoutils/engine/bundle/scripting/KotlinScriptingHostTest.kt`.
-- [ ] 9.3 Remove `kotlin-scripting-common`, `kotlin-scripting-jvm`, and `kotlin-scripting-jvm-host` from `engine-bundle/build.gradle.kts` and from `libs.versions.toml`.
-- [ ] 9.4 Update `BundleLoader.kt` to remove any remaining direct reference to `KotlinScriptingHost` (should already be gone after E4 but double-check).
-- [ ] 9.5 Delete the `openspec/specs/scripting/` directory (the capability is removed by this change; its content is replaced by `script-host` and `python-scripting`).
-- [ ] 9.6 Run `./gradlew clean build` and confirm the project compiles cleanly with no warnings about deleted classes.
-- [ ] 9.7 Run all module tests (`./gradlew test`) and confirm the suite passes.
+- [x] 9.1 Delete `engine-bundle/src/main/kotlin/com/neoutils/engine/bundle/scripting/` directory entirely (`KotlinScriptingHost.kt`, `NEngineScript.kt`, `ScriptSource.kt`, `CyclicScriptDependencyError.kt`).
+- [x] 9.2 Delete `engine-bundle/src/test/kotlin/com/neoutils/engine/bundle/scripting/KotlinScriptingHostTest.kt`.
+- [x] 9.3 Remove `kotlin-scripting-common`, `kotlin-scripting-jvm`, and `kotlin-scripting-jvm-host` from `engine-bundle/build.gradle.kts` and from `libs.versions.toml`.
+- [x] 9.4 Update `BundleLoader.kt` to remove any remaining direct reference to `KotlinScriptingHost` (should already be gone after E4 but double-check).
+- [x] 9.5 Delete the `openspec/specs/scripting/` directory (the capability is removed by this change; its content is replaced by `script-host` and `python-scripting`).
+- [x] 9.6 Run `./gradlew clean build` and confirm the project compiles cleanly with no warnings about deleted classes.
+- [x] 9.7 Run all module tests (`./gradlew test`) and confirm the suite passes.
 - [ ] 9.8 **Gate**: run `./gradlew :games:pong:run` and confirm everything still works. Measure startup time and compare to the legacy build for the design notes.
 
 ## 10. Documentation and conventions

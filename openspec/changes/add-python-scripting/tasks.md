@@ -129,14 +129,14 @@
 
 ## 11. Publish .pyi stubs
 
-- [ ] 11.1 Write `engine-bundle-python/src/main/resources/stubs/engine/__init__.pyi` re-exporting the surfaces.
-- [ ] 11.2 Write `stubs/engine/math.pyi` with `Vec2` and `Rect`.
-- [ ] 11.3 Write `stubs/engine/render.pyi` with `Color` and `Renderer` (just the methods scripts use: `draw_rect`, `draw_line`, `measure_text`).
-- [ ] 11.4 Write `stubs/engine/input.pyi` with `Key` enum constants and the `Input` interface.
-- [ ] 11.5 Write `stubs/engine/scene.pyi` with `Node` and `Node2D` (only the public surface scripts touch: `transform`, `world_position()`, `add_child`, `root_scene()`, etc.).
-- [ ] 11.6 Write `stubs/engine/physics.pyi` with `BoxCollider`.
-- [ ] 11.7 Write `stubs/engine/serialization.pyi` with `NodeRef`.
-- [ ] 11.8 Confirm the stubs land in the built jar at `stubs/engine/*.pyi`.
+- [x] 11.1 Write `engine-bundle-python/src/main/resources/stubs/engine/__init__.pyi` re-exporting the surfaces.
+- [x] 11.2 Write `stubs/engine/math.pyi` with `Vec2` and `Rect`.
+- [x] 11.3 Write `stubs/engine/render.pyi` with `Color` and `Renderer` (just the methods scripts use: `draw_rect`, `draw_line`, `measure_text`).
+- [x] 11.4 Write `stubs/engine/input.pyi` with `Key` enum constants and the `Input` interface.
+- [x] 11.5 Write `stubs/engine/scene.pyi` with `Node` and `Node2D` (only the public surface scripts touch: `transform`, `world_position()`, `add_child`, `root_scene()`, etc.).
+- [x] 11.6 Write `stubs/engine/physics.pyi` with `BoxCollider`.
+- [x] 11.7 Write `stubs/engine/serialization.pyi` with `NodeRef`.
+- [x] 11.8 Confirm the stubs land in the built jar at `stubs/engine/*.pyi`.
 
 ## 12. Final verification
 

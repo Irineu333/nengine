@@ -1,9 +1,10 @@
 {
   "version": 1,
   "root": {
-    "type": "scripts/pong-scene.nengine.kts",
+    "type": "com.neoutils.engine.scene.Scene",
     "name": "PongScene",
     "properties": {},
+    "script": "scripts/pong_scene.py",
     "children": [
       {
         "type": "com.neoutils.engine.scene.Node2D",

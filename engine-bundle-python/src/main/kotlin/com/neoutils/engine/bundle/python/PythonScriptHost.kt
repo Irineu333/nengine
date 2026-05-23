@@ -23,6 +23,11 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
     override val extension = ".py"
 
     private val moduleCache = mutableMapOf<String, Value>()
+    // Indexes the Python `_ScriptNode` wrapper by host Node so peer scripts
+    // can reach across (e.g. PongScene wires `ball._on_score` and calls
+    // `score.increment()`). Exposed to Python via the `script_of(node)`
+    // factory binding.
+    private val instanceByNode = mutableMapOf<Node, Value>()
 
     private val loadModuleFn: Value
     private val inspectFn: Value
@@ -78,6 +83,15 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
         bindings.putMember("NodeRef", ProxyExecutable { args ->
             val path = if (args.isNotEmpty()) args[0].asString() else ""
             NodeRef<Node>(path)
+        })
+        // Lookup hook for cross-script communication: returns the Python
+        // `_ScriptNode` wrapper for a host Node so the caller can invoke the
+        // script's top-level def's (e.g. `score.increment()` after
+        // `script_of(score_node)`). Returns null when the Node has no
+        // attached script.
+        bindings.putMember("script_of", ProxyExecutable { args ->
+            val node = args[0].asHostObject<Node>()
+            instanceByNode[node]
         })
         bindings.putMember("Key", Key::class.java)
         bindings.putMember("BoxCollider", BoxCollider::class.java)
@@ -145,7 +159,8 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
     override fun attach(node: Node, script: Script): ScriptInstance {
         val moduleNs = moduleCache[script.path]
             ?: error("Script not loaded before attach: ${script.path}")
-        val instance = createInstanceFn.execute(node)
+        val instance = createInstanceFn.execute(node, moduleNs)
+        instanceByNode[node] = instance
         val scriptInstance = PythonScriptInstance(instance, moduleNs)
         // Seed the instance with each export's default — callers (e.g. BundleLoader)
         // may then override individual values via setExport from scene.json `props`.

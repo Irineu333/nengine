@@ -21,6 +21,11 @@ def _nengine_load_module(source, path):
         'Key': Key,
         'BoxCollider': BoxCollider,
         'Node2D': Node2D,
+        # Cross-script handle lookup: `script_of(node)` returns the Python
+        # `_ScriptNode` wrapper for the given host Node, exposing its
+        # top-level `def`s as bound methods. Forwarded from the Polyglot
+        # binding so user scripts pick it up as a regular global.
+        'script_of': script_of,
     }
     exec(compile(source, path, 'exec'), ns)
     # Wrap as SimpleNamespace so the Polyglot Value.hasMember/getMember API
@@ -109,16 +114,33 @@ class _ScriptNode:
     accessors (`self.transform`, `self.worldPosition()`) and also keep
     per-instance Python state (anything starting with `_`).
 
+    Attribute lookup order on `self.<name>`:
+      1. Instance dict (set via setExport, hooks, or `self.foo = ...`).
+      2. Top-level `def`s in the script module — exposed as bound
+         methods so peer scripts can call `score.increment()` after
+         retrieving the wrapper via `script_of(node)`.
+      3. The underlying Kotlin Node (`self.transform`, `self.findChild`,
+         ...).
+
     `self._node` is the explicit handle to the underlying Kotlin `Node`
     — scripts pass it to APIs that take a `Node` (e.g.
     `self.target.resolve(self._node)`) since Polyglot doesn't unwrap the
     Python wrapper automatically.
     """
 
-    def __init__(self, node):
+    def __init__(self, node, module_ns):
         object.__setattr__(self, '_node', node)
+        object.__setattr__(self, '_module_ns', module_ns)
 
     def __getattr__(self, name):
+        module_ns = object.__getattribute__(self, '_module_ns')
+        if hasattr(module_ns, name):
+            value = getattr(module_ns, name)
+            if callable(value) and not isinstance(value, type):
+                wrapper = self
+                def _bound(*args, **kwargs):
+                    return value(wrapper, *args, **kwargs)
+                return _bound
         node = object.__getattribute__(self, '_node')
         return getattr(node, name)
 
@@ -133,5 +155,5 @@ class _ScriptNode:
             object.__setattr__(self, name, value)
 
 
-def _nengine_create_instance(node):
-    return _ScriptNode(node)
+def _nengine_create_instance(node, module_ns):
+    return _ScriptNode(node, module_ns)

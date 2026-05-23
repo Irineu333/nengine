@@ -104,10 +104,10 @@
 
 ## 8. E7 — Migrate PongScene
 
-- [ ] 8.1 Translate `pong-scene.nengine.kts` to `pong_scene.py`. This script orchestrates the cross-references (`paddle.target = ball` etc.). Confirm those still work via `NodeRef.resolve` from the Python side.
-- [ ] 8.2 Update `pong/scene.json` to use `script: "scripts/pong_scene.py"` for the root scene node.
-- [ ] 8.3 Delete `pong-scene.nengine.kts`. The `pong/scripts/` directory now contains only `.py` files.
-- [ ] 8.4 **Gate**: run `./gradlew :games:pong:run` and play 60 seconds end-to-end. Goal scoring, ball reset, AI behavior, paddle input — all identical to before.
+- [x] 8.1 Translate `pong-scene.nengine.kts` to `pong_scene.py`. This script orchestrates the cross-references (`paddle.target = ball` etc.). Confirm those still work via `NodeRef.resolve` from the Python side. _(Cross-script reach uses a new `script_of(node)` lookup that returns the `_ScriptNode` Python wrapper — peer scripts call top-level `def`s on it as bound methods. Scene resize handled by polling `self.width/height` in `on_update`, since the SPI hook contract is fixed.)_
+- [x] 8.2 Update `pong/scene.json` to use `script: "scripts/pong_scene.py"` for the root scene node.
+- [x] 8.3 Delete `pong-scene.nengine.kts`. The `pong/scripts/` directory now contains only `.py` files.
+- [x] 8.4 **Gate**: run `./gradlew :games:pong:run` and play 60 seconds end-to-end. Goal scoring, ball reset, AI behavior, paddle input — all identical to before. _(Validated by user: scoring counts increment on goal contact; ball/paddle/AI behavior matches pre-migration; resize keeps the layout aligned.)_
 
 ## 9. E8 — Remove Kotlin Scripting and finalize
 

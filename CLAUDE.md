@@ -20,13 +20,14 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 ## Module Structure & How to Run
 
 ```
-:engine            ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX, GameHost SPI)
-:engine-bundle     ← carregamento de cena via bundle (scene.json + scripts/) e compilação interna de scripts `.nengine.kts`
-:engine-compose    ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface, ComposeHost) — segundo backend
-:engine-skiko      ← backend Skiko puro sobre SkiaLayer + JFrame (SkikoRenderer, SkikoInput, SkikoHost) — backend padrão
-:games:pong        ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
-:games:tictactoe   ← jogo Velha (humano vs humano), roda em Compose — sentinela do segundo backend
-:games:demos       ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
+:engine                ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX, GameHost SPI)
+:engine-bundle         ← carregamento de cena via bundle (scene.json + scripts/) + ScriptHost SPI agnóstica de linguagem
+:engine-bundle-python  ← implementação Python do ScriptHost via GraalPy 24.x; distribui stubs .pyi em resources/stubs/
+:engine-compose        ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface, ComposeHost) — segundo backend
+:engine-skiko          ← backend Skiko puro sobre SkiaLayer + JFrame (SkikoRenderer, SkikoInput, SkikoHost) — backend padrão
+:games:pong            ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
+:games:tictactoe       ← jogo Velha (humano vs humano), roda em Compose — sentinela do segundo backend
+:games:demos           ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
 ```
 
 Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durante a change `engine-foundation`.
@@ -37,7 +38,7 @@ Para rodar Pong:
 ./gradlew :games:pong:run
 ```
 
-`Main.kt` carrega o bundle `pong/` (em `:games:pong/src/main/resources/pong/`, com `scene.json` na raiz e `scripts/*.nengine.kts`) via `BundleLoader.fromResources("pong")` e entrega a `Scene` ao `SkikoHost`. O `scene.json` é a fonte da verdade da árvore — editar o JSON altera a cena sem recompilar Kotlin.
+`Main.kt` instala o `PythonScriptHost` via `PythonScriptHost.install()`, carrega o bundle `pong/` (em `:games:pong/src/main/resources/pong/`, com `scene.json` na raiz e `scripts/*.py`) via `BundleLoader.fromResources("pong")` e entrega a `Scene` ao `SkikoHost`. O `scene.json` é a fonte da verdade da árvore — editar o JSON ou os `.py` altera o comportamento sem recompilar Kotlin.
 
 Durante o jogo:
 
@@ -103,14 +104,68 @@ class Paddle : Node2D() {
 }
 ```
 
-### Scripting contract (`.nengine.kts`)
+### Scripting contract (Python)
 
-A engine suporta scripts Kotlin para definir comportamento de gameplay sob demanda, sem necessidade de recompilar a engine ou o launcher do jogo:
+A engine usa **Python via GraalPy** como mecanismo de scripting. O modelo é Godot-like: o Node Kotlin permanece a instância nativa; um script `.py` é **anexado** a ele via slot `Node.scriptInstance`. Somente jogos que dependem de `:engine-bundle-python` têm custo do runtime GraalPy — é estritamente opt-in.
 
-- Todo script deve ter a extensão `.nengine.kts` e declarar **exatamente uma** classe pública que herda de `Node` (ou subclasses como `Node2D`, `BoxCollider`).
-- Os scripts são compilados sob demanda pelo `BundleLoader` (em `:engine-bundle`): ele faz tree-walk no `scene.json` para descobrir quais paths `.nengine.kts` precisam ser compilados e resolve cross-references via algoritmo round-robin / fixed-point. Não existe manifesto manual — qualquer ordem de declaração na cena resolve, e ciclos são detectados com `CyclicScriptDependencyError`.
-- Pacotes padrão importados implicitamente em todo script: `com.neoutils.engine.scene.*`, `math.*`, `render.*`, `input.*`, `serialization.*`, `physics.*`.
-- O cache de bytecode fica em disco (`build/scripting-cache/<bundle>/` quando carregado via `fromResources`; `<bundle>/.nengine-cache/` quando carregado via `fromPath`). A chave inclui `SHA-256(source ⊕ importSet ⊕ engineVersion)` para evitar bytecode stale quando os cross-refs ou a versão da engine mudam, e bytecode de scripts não referenciados é varrido a cada bootstrap.
+#### Estrutura de um script
+
+```python
+# extends Node2D          ← obrigatório: tipo Node nativo que o script adorna
+
+speed: float = 360.0      ← export: anotação top-level, descoberta estaticamente via AST
+ai: bool = False
+target: NodeRef = NodeRef("")
+
+def on_enter(self):        ← hooks snake_case, todos opcionais
+    ...
+
+def on_update(self, dt: float):
+    ...
+
+def on_render(self, renderer):
+    ...
+
+def on_collide(self, other):
+    ...
+```
+
+- **`# extends <NodeType>`** na primeira linha não vazia. `<NodeType>` é resolvido contra o `NodeRegistry` (ex.: `Node2D`, `BoxCollider`). Falhar nesta linha é erro fatal.
+- **Exports** são atribuições anotadas no top-level. Tipos suportados: `int`, `float`, `bool`, `str`, `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`, `Optional[T]` (ou `T | None`). Qualquer outro tipo é silenciosamente ignorado.
+- **Estado runtime** fica em `self._private` (convenção: atributos com prefixo `_` não são exports, são instâncias por-nó).
+- **Hooks fixos**: `on_enter`, `on_update(dt)`, `on_render(renderer)`, `on_collide(other)`. Hooks ausentes são no-ops.
+- **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`.
+- **Fail-fast**: qualquer erro (parse, `extends` desconhecido, exception num hook) propaga até o `Main.kt` e crasha o processo.
+
+#### Wiring no `scene.json`
+
+```json
+{
+  "type": "engine.Node2D",
+  "script": "scripts/paddle.py",
+  "props": {
+    "speed": 360.0,
+    "ai": false
+  }
+}
+```
+
+`BundleLoader` faz tree-walk no JSON, coleta todos os `script` paths, carrega via `ScriptHostRegistry` (despachado por extensão de arquivo) e aplica `props` nos exports da instância.
+
+#### Instalando o ScriptHost
+
+O `Main.kt` do jogo precisa chamar `PythonScriptHost.install()` **antes** de `BundleLoader.fromResources(...)`. Sem isso, a extensão `.py` não tem host registrado e o carregamento falha.
+
+#### Inspecting Python scripts with IDE
+
+O `:engine-bundle-python` publica stubs `.pyi` em `src/main/resources/stubs/engine/`. Para habilitar autocompletar e type-checking no seu editor (Pyright/Pylance):
+
+1. Extraia os stubs do JAR ou localize o source em `engine-bundle-python/src/main/resources/stubs/`.
+2. Adicione o diretório `stubs/` ao `extraPaths` do Pyright (em `pyrightconfig.json`):
+   ```json
+   { "extraPaths": ["engine-bundle-python/src/main/resources/stubs"] }
+   ```
+3. Para Pylance (VS Code), configure `python.analysis.extraPaths` no `settings.json`.
 
 ## OpenSpec Workflow
 
@@ -136,6 +191,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | `add-scripting`       | Archived | Compilador e cache de scripts Kotlin `.nengine.kts` via Kotlin Scripting, e migração completa de Pong para scripts. |
 | `drop-pong-tag-only-scripts` | Archived | Remove scripts vazios (`paddle-collider`, `walls`) que serviam só como tag; usa `BoxCollider` da engine por FQN no `pong.scene.json`; `Ball.onCollide` despacha por estrutura da cena; rename `Goal.GoalSide` → `Goal.Side`. |
 | `add-bundle-loader`   | Archived | Substitui `:engine-scripting` por `:engine-bundle`; introduz `BundleLoader.fromResources`/`fromPath`; `NodeRegistry` bidirecional; descoberta de scripts via tree-walk + round-robin no host. Pong passa a viver em `resources/pong/`. |
+| `add-python-scripting` | Active  | Substitui Kotlin Scripting por ScriptHost SPI agnóstica + GraalPy como primeira impl (`:engine-bundle-python`). Migra Pong inteiro para `.py`. Remove `kotlin-scripting-*` deps. Publica stubs `.pyi`. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.

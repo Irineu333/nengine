@@ -122,10 +122,10 @@
 
 ## 10. Documentation and conventions
 
-- [ ] 10.1 Update `CLAUDE.md` module table to include `:engine-bundle-python` and remove any remaining mention of `.nengine.kts` as the active scripting mechanism.
-- [ ] 10.2 Rewrite the "Scripting contract" section in `CLAUDE.md` to describe the Python conventions: `# extends`, top-level annotated assignments for exports, snake_case hooks, runtime state in `self._private`.
-- [ ] 10.3 Add a short "Inspecting Python scripts" subsection mentioning the published `.pyi` stubs in `:engine-bundle-python/src/main/resources/stubs/` and how to configure an IDE (Pyright/Pylance `extraPaths`).
-- [ ] 10.4 Add `add-python-scripting` row to the roadmap table in `CLAUDE.md` with status moving from `Active` to `Archived` at the end of the change.
+- [x] 10.1 Update `CLAUDE.md` module table to include `:engine-bundle-python` and remove any remaining mention of `.nengine.kts` as the active scripting mechanism.
+- [x] 10.2 Rewrite the "Scripting contract" section in `CLAUDE.md` to describe the Python conventions: `# extends`, top-level annotated assignments for exports, snake_case hooks, runtime state in `self._private`.
+- [x] 10.3 Add a short "Inspecting Python scripts" subsection mentioning the published `.pyi` stubs in `:engine-bundle-python/src/main/resources/stubs/` and how to configure an IDE (Pyright/Pylance `extraPaths`).
+- [x] 10.4 Add `add-python-scripting` row to the roadmap table in `CLAUDE.md` with status moving from `Active` to `Archived` at the end of the change.
 
 ## 11. Publish .pyi stubs
 

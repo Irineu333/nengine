@@ -1,8 +1,14 @@
 package com.neoutils.engine.serialization
 
 import com.neoutils.engine.physics.BoxCollider
+import com.neoutils.engine.scene.Camera2D
+import com.neoutils.engine.scene.Circle2D
+import com.neoutils.engine.scene.ColorRect
+import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.scene.Polygon2D
 import com.neoutils.engine.scene.Scene
 import com.neoutils.engine.scene.Shape
 import com.neoutils.engine.scene.Text
@@ -58,6 +64,12 @@ object NodeRegistry {
         if (identifierByClass.containsKey(Scene::class)) return
         register(Scene::class) { Scene() }
         register(Node2D::class) { Node2D() }
+        register(Camera2D::class) { Camera2D() }
+        register(ColorRect::class) { ColorRect() }
+        register(Circle2D::class) { Circle2D() }
+        register(Line2D::class) { Line2D() }
+        register(Polygon2D::class) { Polygon2D() }
+        register(Label::class) { Label() }
         register(Shape::class) { Shape() }
         register(Text::class) { Text() }
         register(BoxCollider::class) { BoxCollider() }

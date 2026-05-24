@@ -28,13 +28,13 @@
 
 ## 5. Visual primitives
 
-- [ ] 5.1 Criar `engine/.../scene/ColorRect.kt`: `@Serializable class ColorRect : Node2D()` com `@Inspect var size: Vec2` (default `Vec2(10f, 10f)`) e `@Inspect var color: Color` (default `Color.WHITE`); override `onDraw` desenhando `drawRect` com `worldTransform().scale` aplicado a `size`.
-- [ ] 5.2 Criar `engine/.../scene/Circle2D.kt`: `@Serializable class Circle2D : Node2D()` com `@Inspect var radius: Float = 5f`, `@Inspect var color: Color`; override `onDraw` desenhando `drawCircle` com `worldPosition() + Vec2(radius, radius)` como centro e `radius * worldTransform().scale.x` como raio efetivo.
-- [ ] 5.3 Criar `engine/.../scene/Line2D.kt`: `@Serializable class Line2D : Node2D()` com `@Inspect var points: List<Vec2> = emptyList()`, `@Inspect var thickness: Float = 1f`, `@Inspect var color: Color`; override `onDraw` iterando pares consecutivos com `drawLine` somando `worldPosition()`.
-- [ ] 5.4 Criar `engine/.../scene/Polygon2D.kt`: `@Serializable class Polygon2D : Node2D()` com `@Inspect var points: List<Vec2> = emptyList()`, `@Inspect var color: Color`; override `onDraw` chamando `drawPolygon(points.map { it + worldPosition() }, color)`.
-- [ ] 5.5 Criar `engine/.../scene/Label.kt`: `@Serializable class Label : Node2D()` com `@Inspect var text: String = ""`, `@Inspect var size: Float = 12f`, `@Inspect var color: Color = Color.WHITE`; override `onDraw` com `drawText`.
-- [ ] 5.6 Deletar `engine/.../scene/Shape.kt` e `engine/.../scene/Text.kt`.
-- [ ] 5.7 Em `NodeRegistry` (em `:engine` ou `:engine-bundle`, onde mora hoje): remover registros de `Shape` e `Text`; adicionar registros de `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Camera2D`.
+- [x] 5.1 Criar `engine/.../scene/ColorRect.kt`: `@Serializable class ColorRect : Node2D()` com `@Inspect var size: Vec2` (default `Vec2(10f, 10f)`) e `@Inspect var color: Color` (default `Color.WHITE`); override `onDraw` desenhando `drawRect` com `worldTransform().scale` aplicado a `size`.
+- [x] 5.2 Criar `engine/.../scene/Circle2D.kt`: `@Serializable class Circle2D : Node2D()` com `@Inspect var radius: Float = 5f`, `@Inspect var color: Color`; override `onDraw` desenhando `drawCircle` com `worldPosition() + Vec2(radius, radius)` como centro e `radius * worldTransform().scale.x` como raio efetivo.
+- [x] 5.3 Criar `engine/.../scene/Line2D.kt`: `@Serializable class Line2D : Node2D()` com `@Inspect var points: List<Vec2> = emptyList()`, `@Inspect var thickness: Float = 1f`, `@Inspect var color: Color`; override `onDraw` iterando pares consecutivos com `drawLine` somando `worldPosition()`.
+- [x] 5.4 Criar `engine/.../scene/Polygon2D.kt`: `@Serializable class Polygon2D : Node2D()` com `@Inspect var points: List<Vec2> = emptyList()`, `@Inspect var color: Color`; override `onDraw` chamando `drawPolygon(points.map { it + worldPosition() }, color)`.
+- [x] 5.5 Criar `engine/.../scene/Label.kt`: `@Serializable class Label : Node2D()` com `@Inspect var text: String = ""`, `@Inspect var size: Float = 12f`, `@Inspect var color: Color = Color.WHITE`; override `onDraw` com `drawText`.
+- [ ] 5.6 Deletar `engine/.../scene/Shape.kt` e `engine/.../scene/Text.kt`. (deferred until games are migrated off Shape/Text in steps 10-12)
+- [x] 5.7 Em `NodeRegistry` (em `:engine` ou `:engine-bundle`, onde mora hoje): remover registros de `Shape` e `Text`; adicionar registros de `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Camera2D`. (Shape/Text removal deferred along with 5.6)
 
 ## 6. Camera2D
 

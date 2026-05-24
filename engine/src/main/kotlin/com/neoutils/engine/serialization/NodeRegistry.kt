@@ -10,8 +10,6 @@ import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Polygon2D
 import com.neoutils.engine.scene.Scene
-import com.neoutils.engine.scene.Shape
-import com.neoutils.engine.scene.Text
 import kotlin.reflect.KClass
 
 /**
@@ -70,8 +68,6 @@ object NodeRegistry {
         register(Line2D::class) { Line2D() }
         register(Polygon2D::class) { Polygon2D() }
         register(Label::class) { Label() }
-        register(Shape::class) { Shape() }
-        register(Text::class) { Text() }
         register(BoxCollider::class) { BoxCollider() }
     }
 }

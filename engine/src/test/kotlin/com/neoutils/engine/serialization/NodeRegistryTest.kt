@@ -63,8 +63,12 @@ class NodeRegistryTest {
         NodeRegistry.registerEngineTypes()
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Scene"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Node2D"))
-        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Shape"))
-        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Text"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Camera2D"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.ColorRect"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Circle2D"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Line2D"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Polygon2D"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Label"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.physics.BoxCollider"))
     }
 

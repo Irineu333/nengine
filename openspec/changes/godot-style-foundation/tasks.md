@@ -33,8 +33,8 @@
 - [x] 5.3 Criar `engine/.../scene/Line2D.kt`: `@Serializable class Line2D : Node2D()` com `@Inspect var points: List<Vec2> = emptyList()`, `@Inspect var thickness: Float = 1f`, `@Inspect var color: Color`; override `onDraw` iterando pares consecutivos com `drawLine` somando `worldPosition()`.
 - [x] 5.4 Criar `engine/.../scene/Polygon2D.kt`: `@Serializable class Polygon2D : Node2D()` com `@Inspect var points: List<Vec2> = emptyList()`, `@Inspect var color: Color`; override `onDraw` chamando `drawPolygon(points.map { it + worldPosition() }, color)`.
 - [x] 5.5 Criar `engine/.../scene/Label.kt`: `@Serializable class Label : Node2D()` com `@Inspect var text: String = ""`, `@Inspect var size: Float = 12f`, `@Inspect var color: Color = Color.WHITE`; override `onDraw` com `drawText`.
-- [ ] 5.6 Deletar `engine/.../scene/Shape.kt` e `engine/.../scene/Text.kt`. (deferred until games are migrated off Shape/Text in steps 10-12)
-- [x] 5.7 Em `NodeRegistry` (em `:engine` ou `:engine-bundle`, onde mora hoje): remover registros de `Shape` e `Text`; adicionar registros de `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Camera2D`. (Shape/Text removal deferred along with 5.6)
+- [x] 5.6 Deletar `engine/.../scene/Shape.kt` e `engine/.../scene/Text.kt`.
+- [x] 5.7 Em `NodeRegistry` (em `:engine` ou `:engine-bundle`, onde mora hoje): remover registros de `Shape` e `Text`; adicionar registros de `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Camera2D`.
 
 ## 6. Camera2D
 
@@ -86,10 +86,10 @@
 
 ## 12. Migrar `:games:tictactoe`
 
-- [ ] 12.1 `Board.kt`: renomear `onUpdate → onProcess`, `onRender → onDraw`.
-- [ ] 12.2 `StatusText.kt`: substituir extends `Text` por extends `Label` (ou compor `Label` — manter mínimo).
-- [ ] 12.3 `TicTacToeScene.kt`: ajustar uso de `Text` → `Label`.
-- [ ] 12.4 `Main.kt`: nenhuma mudança (já usa `ComposeHost`).
+- [x] 12.1 `Board.kt`: renomear `onUpdate → onProcess`, `onRender → onDraw`.
+- [x] 12.2 `StatusText.kt`: substituir extends `Text` por extends `Label` (ou compor `Label` — manter mínimo). (StatusText already extended `Node`, not `Text`; the renderer-driven layout it owns is incompatible with Label's simple drawText. No structural change required.)
+- [x] 12.3 `TicTacToeScene.kt`: ajustar uso de `Text` → `Label`. (no Text usage in scene.)
+- [x] 12.4 `Main.kt`: nenhuma mudança (já usa `ComposeHost`).
 
 ## 13. Docs
 

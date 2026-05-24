@@ -2,8 +2,9 @@ package com.neoutils.engine.serialization
 
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
+import com.neoutils.engine.scene.Circle2D
+import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Scene
-import com.neoutils.engine.scene.Shape
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -32,9 +33,8 @@ class SceneLoaderTest {
     fun `save produces version and root`() {
         val scene = Scene().apply {
             name = "root"
-            addChild(Shape().apply {
+            addChild(ColorRect().apply {
                 name = "rectangle"
-                kind = Shape.Kind.Rect
                 size = Vec2(20f, 30f)
                 color = Color.RED
             })
@@ -52,40 +52,34 @@ class SceneLoaderTest {
     @Test
     fun `load preserves order and properties`() {
         val original = Scene().apply {
-            addChild(Shape().apply {
+            addChild(ColorRect().apply {
                 name = "first"
-                kind = Shape.Kind.Rect
                 size = Vec2(10f, 10f)
                 color = Color.GREEN
-                filled = false
             })
-            addChild(Shape().apply {
+            addChild(Circle2D().apply {
                 name = "second"
-                kind = Shape.Kind.Circle
-                size = Vec2(20f, 20f)
+                radius = 10f
                 color = Color.BLUE
-                filled = true
             })
         }
         val loaded = SceneLoader.load(SceneLoader.save(original))
         assertEquals(2, loaded.children.size)
-        val first = loaded.children[0] as Shape
-        val second = loaded.children[1] as Shape
+        val first = loaded.children[0] as ColorRect
+        val second = loaded.children[1] as Circle2D
         assertEquals("first", first.name)
-        assertEquals(Shape.Kind.Rect, first.kind)
         assertEquals(Vec2(10f, 10f), first.size)
         assertEquals(Color.GREEN, first.color)
-        assertFalse(first.filled)
         assertEquals("second", second.name)
-        assertEquals(Shape.Kind.Circle, second.kind)
+        assertEquals(10f, second.radius)
     }
 
     @Test
     fun `round-trip is stable`() {
         val scene = Scene().apply {
-            addChild(Shape().apply {
-                kind = Shape.Kind.Circle
-                size = Vec2(50f, 50f)
+            addChild(Circle2D().apply {
+                radius = 25f
+                color = Color.WHITE
             })
         }
         val first = SceneLoader.save(scene)

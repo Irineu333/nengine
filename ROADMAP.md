@@ -8,12 +8,13 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `collision-overhaul`       | Reescreve colisão no estilo Godot: `CollisionObject2D` ramificado em `Area2D`/`StaticBody2D`/`CharacterBody2D`, `CollisionShape2D` carregando `Shape2D` polimórfica (`Rectangle`/`Circle`), `PhysicsSystem` com eventos entered/exited pareados. |
 | `bundle-tictactoe`         | Migra `:games:tictactoe` para o pipeline bundle (`scene.json` + Python), apagando os Nodes Kotlin do jogo. Prova viva de que `BundleLoader` + `PythonScriptHost` rodam idênticos no backend Compose.                                    |
+| `node-timer`               | Adiciona `Timer` Node estilo Godot estendendo `Node` puro (primeiro nó lógico não-visual) com signal `timeout` conectável do Python — primeira ponte de Signal nascido em Kotlin. Pré-requisito de `game-snake`.                       |
+| `game-snake`               | Jogo Snake como `:games:snake`. Validador de gameplay discreto/grid-based, mutação dinâmica do scene graph via script, wraparound em `Camera2D.bounds`, e da ponte Kotlin Signal → Python (consome `Timer.timeout`).                    |
 
 ## Planned
 
 | Change           | Resumo                                                                                                                                                                                                |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `game-snake`     | Validador da fundação Godot-style: fixed-step, signals, `Camera2D.bounds`, primitivas visuais, sem dependência de colisão nova.                                                                       |
 | `lua-scripting`  | Segunda implementação do `ScriptHost` SPI usando Lua. Prova que a SPI é genuinamente agnóstica de linguagem (não acomodada ao GraalPy); bundle de exemplo com `.lua` carregado lado-a-lado com `.py`. |
 | editor           | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição.                                                                    |
 

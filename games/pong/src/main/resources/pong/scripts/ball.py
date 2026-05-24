@@ -9,22 +9,21 @@ maxSpeed: float = 560.0
 speedupPerHit: float = 1.05
 fieldCenter: Vec2 = Vec2(400.0, 300.0)
 
+# Emitted with the side string ("Left" or "Right") when the ball touches a
+# goal collider. The PongScene wires this signal up to the scoreboards.
+scored: Signal = signal(str)
 
-def on_enter(self):
+
+def _ready(self):
     self._velocity = Vec2(0.0, 0.0)
     self._scored_this_tick = False
-    # Subscribers from the orchestrator (set externally as
-    # `ball._on_score = callback`) receive "Left" or "Right" when a goal is
-    # touched. Defaults to no-op so the ball still functions if nobody listens.
-    if not hasattr(self, '_on_score'):
-        self._on_score = None
     self.size = Vec2(self.ballSize, self.ballSize)
     if not getattr(self, '_initialized', False):
         _reset(self, 1.0 if _random.random() > 0.5 else -1.0)
         self._initialized = True
 
 
-def on_update(self, dt):
+def _physics_process(self, dt):
     self._scored_this_tick = False
     self.size = Vec2(self.ballSize, self.ballSize)
     pos = self.transform.position
@@ -32,23 +31,23 @@ def on_update(self, dt):
     self.transform = Transform(new_pos, self.transform.scale, self.transform.rotation)
 
 
-def on_render(self, renderer):
+def _draw(self, renderer):
     wp = self.worldPosition()
     center = Vec2(wp.x + self.ballSize / 2.0, wp.y + self.ballSize / 2.0)
     renderer.drawCircle(center, self.ballSize / 2.0, Color(1.0, 1.0, 1.0, 1.0), True, 1.0)
 
 
-def on_collide(self, other):
+def _on_collide(self, other):
     if self._scored_this_tick:
         return
     name = other.name
     if name == "leftGoal":
-        _emit_score(self, "Right")
+        self.scored.emit("Right")
         _reset(self, 1.0)
         self._scored_this_tick = True
         return
     if name == "rightGoal":
-        _emit_score(self, "Left")
+        self.scored.emit("Left")
         _reset(self, -1.0)
         self._scored_this_tick = True
         return
@@ -104,8 +103,3 @@ def _reset(self, serve_toward):
         sx * self.initialSpeed * math.cos(angle),
         self.initialSpeed * math.sin(angle),
     )
-
-
-def _emit_score(self, side):
-    if self._on_score is not None:
-        self._on_score(side)

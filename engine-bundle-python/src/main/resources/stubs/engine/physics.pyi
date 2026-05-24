@@ -11,7 +11,7 @@ class BoxCollider(Node2D):
 
         # extends BoxCollider
 
-    BoxCollider is also frequently created as a child node inside on_enter::
+    BoxCollider is also frequently created as a child node inside _ready::
 
         self._collider = BoxCollider(size=Vec2(10.0, 10.0))
         self.add_child(self._collider)

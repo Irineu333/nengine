@@ -61,7 +61,7 @@ x: float = 400.0
 height: float = 600.0
 
 
-def on_render(self, renderer):
+def _draw(self, renderer):
     dash_height = 12.0
     gap = 8.0
     dash_color = Color(1.0, 1.0, 1.0, 0.3)
@@ -110,11 +110,11 @@ textSize: float = 48.0
 color: Color = Color(1.0, 1.0, 1.0, 1.0)
 
 
-def on_enter(self):
+def _ready(self):
     self._value = 0
 
 
-def on_render(self, renderer):
+def _draw(self, renderer):
     renderer.drawText(str(self._value), self.worldPosition(), self.textSize, self.color)
 
 

@@ -144,15 +144,15 @@ class PythonScriptHostTest {
     // --- attach and hooks ------------------------------------------------
 
     @Test
-    fun `attach and onProcess dispatches to on_update in Python`() {
+    fun `attach and onProcess dispatches to _process in Python`() {
         val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to """
 ${EXTENDS_NODE2D}
 _calls = []
 
-def on_update(self, dt):
-    _calls.append(('on_update', dt))
+def _process(self, dt):
+    _calls.append(('_process', dt))
 """.trimIndent()
         )))
 
@@ -163,7 +163,7 @@ def on_update(self, dt):
     }
 
     @Test
-    fun `attach and missing on_collide does not throw`() {
+    fun `attach and missing _on_collide does not throw`() {
         val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to EXTENDS_NODE2D
@@ -175,13 +175,13 @@ def on_update(self, dt):
     }
 
     @Test
-    fun `setExport stores value accessible from Python on_render`() {
+    fun `setExport stores value accessible from Python _draw`() {
         val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to """
 ${EXTENDS_NODE2D}x: float = 0.0
 
-def on_render(self, renderer):
+def _draw(self, renderer):
     renderer.drawRect(None, None, False)
 """.trimIndent()
         )))

@@ -2,7 +2,7 @@
 
 # Layout / orchestration script for the Pong root. Owns the resize-driven
 # placement of walls, goals, paddles, scoreboard and ball, and wires the
-# scoring signal from ball.py into the leftScore / rightScore instances.
+# `scored` signal from ball.py into the leftScore / rightScore instances.
 
 WALL_THICKNESS: float = 8.0
 GOAL_THICKNESS: float = 8.0
@@ -13,16 +13,15 @@ SCORE_Y: float = 24.0
 SCORE_OFFSET: float = 80.0
 
 
-def on_enter(self):
+def _ready(self):
     self._last_w = -1.0
     self._last_h = -1.0
     _wire_scoring(self)
 
 
-def on_update(self, dt):
-    # Scene.onResize isn't part of the ScriptHost hook contract (fixed at
-    # enter / update / render / collide), so the scene's current size is
-    # polled here instead. Scene.width / height are kept current by the
+def _process(self, dt):
+    # Scene.onResize isn't part of the ScriptHost hook contract, so the
+    # scene's current size is polled here. Scene.size is kept current by the
     # runtime via Scene.resize() so the check is cheap.
     width = self._node.width
     height = self._node.height
@@ -45,13 +44,15 @@ def _wire_scoring(self):
     if ball is None:
         return
 
-    def _on_score(side):
+    # Closures capture the scoreboards by ref; the bound method is plain
+    # Python and GraalPy SAM-converts it for Signal.connect.
+    def _on_scored(side):
         if side == "Left" and left_score is not None:
             left_score.increment()
         elif side == "Right" and right_score is not None:
             right_score.increment()
 
-    ball._on_score = _on_score
+    ball.scored.connect(_on_scored)
 
 
 def _layout(self, width, height):
@@ -63,7 +64,6 @@ def _layout(self, width, height):
     left_paddle = root.findChild("left")
     right_paddle = root.findChild("right")
     ball_node = root.findChild("Ball")
-    center_line_node = root.findChild("centerLine")
     left_score_node = root.findChild("leftScore")
     right_score_node = root.findChild("rightScore")
 
@@ -93,18 +93,12 @@ def _layout(self, width, height):
         )
 
     if left_paddle is not None:
-        left_paddle_script = script_of(left_paddle)
-        if left_paddle_script is not None:
-            left_paddle_script.playFieldHeight = height
         left_paddle.transform = Transform(
             Vec2(PADDLE_MARGIN, height / 2.0 - PADDLE_HEIGHT / 2.0),
             left_paddle.transform.scale,
             left_paddle.transform.rotation,
         )
     if right_paddle is not None:
-        right_paddle_script = script_of(right_paddle)
-        if right_paddle_script is not None:
-            right_paddle_script.playFieldHeight = height
         right_paddle.transform = Transform(
             Vec2(width - PADDLE_MARGIN - PADDLE_WIDTH, height / 2.0 - PADDLE_HEIGHT / 2.0),
             right_paddle.transform.scale,
@@ -118,12 +112,6 @@ def _layout(self, width, height):
             if root.isLive:
                 serve_toward = 1.0 if ball._velocity.x >= 0.0 else -1.0
                 ball.reset(serve_toward)
-
-    if center_line_node is not None:
-        cl = script_of(center_line_node)
-        if cl is not None:
-            cl.x = width / 2.0
-            cl.height = height
 
     if left_score_node is not None:
         left_score_node.transform = Transform(

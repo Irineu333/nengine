@@ -3,7 +3,6 @@
 from typing import Optional
 
 size: Vec2 = Vec2(16.0, 96.0)
-playFieldHeight: float = 600.0
 upKey: Optional[Key] = None
 downKey: Optional[Key] = None
 ai: bool = False
@@ -13,7 +12,7 @@ aiTolerance: float = 8.0
 target: NodeRef = NodeRef("")
 
 
-def on_enter(self):
+def _ready(self):
     if not hasattr(self, '_collider') or self._collider is None:
         c = BoxCollider()
         c.size = self.size
@@ -21,7 +20,7 @@ def on_enter(self):
         self.addChild(c)
 
 
-def on_update(self, dt):
+def _physics_process(self, dt):
     if self._collider is not None:
         self._collider.size = self.size
     if self.ai:
@@ -32,7 +31,9 @@ def on_update(self, dt):
         return
     pos = self.transform.position
     new_y = pos.y + dy
-    max_y = self.playFieldHeight - self.size.y
+    scene = self.rootScene()
+    play_field_height = scene.viewport.size.y if scene is not None else 0.0
+    max_y = play_field_height - self.size.y
     if new_y < 0.0:
         new_y = 0.0
     elif new_y > max_y:
@@ -44,7 +45,7 @@ def on_update(self, dt):
     )
 
 
-def on_render(self, renderer):
+def _draw(self, renderer):
     wp = self.worldPosition()
     renderer.drawRect(Rect(wp, self.size), Color(1.0, 1.0, 1.0, 1.0), True)
 

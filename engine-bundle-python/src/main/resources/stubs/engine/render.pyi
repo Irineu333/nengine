@@ -23,7 +23,7 @@ class Color:
 
 
 class Renderer:
-    """Drawing surface passed to on_render(self, renderer). All coordinates are in world space."""
+    """Drawing surface passed to _draw(self, renderer). All coordinates are in world space."""
 
     def clear(self, color: Color) -> None: ...
 

@@ -65,16 +65,16 @@
 
 ## 10. Migrar `:games:pong`
 
-- [ ] 10.1 `pong.scene.json`: adicionar `Camera2D` filho do root com `current: true` e `bounds: Rect(Vec2.ZERO, Vec2(800f, 600f))`.
-- [ ] 10.2 `pong.scene.json`: trocar `centerLine` de `Node2D` + script para `Line2D` declarativo (sem script), pontos `[Vec2(400, 0), Vec2(400, 600)]` em local-space, `thickness: 2f`, `color: Color.WHITE`.
-- [ ] 10.3 `pong.scene.json`: remover prop `playFieldHeight` dos dois paddles.
-- [ ] 10.4 `pong.scene.json`: renomear nodes que usem `type: "com.neoutils.engine.scene.Text"` para `type: "com.neoutils.engine.scene.Label"`.
-- [ ] 10.5 `paddle.py`: renomear `on_enter→_ready`, `on_update→_physics_process` (movemos a integração para physics step), `on_render→_draw`. Adicionar `_draw(self, renderer)` desenhando o retângulo via `renderer.drawRect`. Remover `playFieldHeight` export; substituir uso por `self.rootScene().viewport.size.y`.
-- [ ] 10.6 `ball.py`: renomear hooks. Mover integração de velocidade para `_physics_process`. Manter `_draw` que desenha o círculo. Declarar `scored: Signal = signal(str)` top-level. Substituir `_emit_score(self, side)` por `self.scored.emit(side)`. Remover bloco `if not hasattr(self, '_on_score'): self._on_score = None`.
-- [ ] 10.7 `pong_scene.py`: no `_ready`, resolver `ball` via NodeRef + chamar `ball.scored.connect(self._on_scored)`. Definir `_on_scored(self, side)` que atualiza scoreboards.
-- [ ] 10.8 `goal.py`: renomear hooks (provavelmente `_ready` para configurar `size` baseado em `viewport`); revisar lógica para usar `scene.viewport` em vez de hardcoded sizes.
-- [ ] 10.9 `score.py`: renomear hooks (`_ready`, `_draw`); usar `Label` se aplicável.
-- [ ] 10.10 Deletar `center_line.py`.
+- [x] 10.1 `pong.scene.json`: adicionar `Camera2D` filho do root com `current: true` e `bounds: Rect(Vec2.ZERO, Vec2(800f, 600f))`.
+- [x] 10.2 `pong.scene.json`: trocar `centerLine` de `Node2D` + script para `Line2D` declarativo (sem script), pontos `[Vec2(400, 0), Vec2(400, 600)]` em local-space, `thickness: 2f`, `color: Color.WHITE`.
+- [x] 10.3 `pong.scene.json`: remover prop `playFieldHeight` dos dois paddles.
+- [x] 10.4 `pong.scene.json`: renomear nodes que usem `type: "com.neoutils.engine.scene.Text"` para `type: "com.neoutils.engine.scene.Label"`. (no Text nodes in pong; nothing to rename)
+- [x] 10.5 `paddle.py`: renomear `on_enter→_ready`, `on_update→_physics_process` (movemos a integração para physics step), `on_render→_draw`. Adicionar `_draw(self, renderer)` desenhando o retângulo via `renderer.drawRect`. Remover `playFieldHeight` export; substituir uso por `self.rootScene().viewport.size.y`.
+- [x] 10.6 `ball.py`: renomear hooks. Mover integração de velocidade para `_physics_process`. Manter `_draw` que desenha o círculo. Declarar `scored: Signal = signal(str)` top-level. Substituir `_emit_score(self, side)` por `self.scored.emit(side)`. Remover bloco `if not hasattr(self, '_on_score'): self._on_score = None`.
+- [x] 10.7 `pong_scene.py`: no `_ready`, resolver `ball` via NodeRef + chamar `ball.scored.connect(self._on_scored)`. Definir `_on_scored(self, side)` que atualiza scoreboards.
+- [x] 10.8 `goal.py`: renomear hooks (provavelmente `_ready` para configurar `size` baseado em `viewport`); revisar lógica para usar `scene.viewport` em vez de hardcoded sizes. (goal.py has no hooks; sizes still come from pong_scene._layout via scene.size — equivalent to viewport without a Camera2D override.)
+- [x] 10.9 `score.py`: renomear hooks (`_ready`, `_draw`); usar `Label` se aplicável. (kept as Node2D + _draw to preserve the same render shape; Label refactor optional and deferred.)
+- [x] 10.10 Deletar `center_line.py`.
 
 ## 11. Migrar `:games:demos`
 

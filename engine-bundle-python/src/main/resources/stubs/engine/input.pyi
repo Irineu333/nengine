@@ -33,7 +33,7 @@ class Key:
 class Input:
     """Read-only snapshot of input state for the current frame.
 
-    An ``Input`` instance is available inside ``on_update`` via ``self.input``
+    An ``Input`` instance is available inside ``_process`` / ``_physics_process`` via ``self.input``
     (the engine binds it to the node's scene input source).
     """
 

@@ -49,11 +49,10 @@ class GameLoopTest {
     }
 
     @Test
-    fun `tick order is update then physics then render`() {
+    fun `tick order is physics then process then draw`() {
         val scene = Scene()
         val order = mutableListOf<String>()
-        // Sensor collider records onCollide ordering relative to update.
-        val node = object : Node() { override fun onProcess(dt: Float) { order += "update" } }
+        val node = object : Node() { override fun onProcess(dt: Float) { order += "process" } }
         scene.addChild(node)
         val a = object : BoxCollider() {
             override fun onCollide(other: Collider) { order += "physics" }
@@ -71,13 +70,13 @@ class GameLoopTest {
             override fun drawText(text: String, position: Vec2, size: Float, color: Color) {}
             override fun measureText(text: String, size: Float): Vec2 = Vec2.ZERO
         }
-        // Inject a render-time recording node.
         val recorder = object : Node() {
-            override fun onDraw(renderer: Renderer) { order += "render" }
+            override fun onDraw(renderer: Renderer) { order += "draw" }
         }
         scene.addChild(recorder)
-        GameLoop(scene, renderer, NoopInput, PhysicsSystem()).tick(16_000_000L)
-        assertEquals(listOf("update", "physics", "render"), order)
+        // 20 ms > 1/60s so the accumulator drains one full physics step.
+        GameLoop(scene, renderer, NoopInput, PhysicsSystem()).tick(20_000_000L)
+        assertEquals(listOf("physics", "process", "draw"), order)
     }
 
     @Test

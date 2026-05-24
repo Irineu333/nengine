@@ -46,7 +46,7 @@ class SkikoHost : GameHost {
             val input = SkikoInput()
             val renderer = SkikoRenderer()
             val physics = PhysicsSystem()
-            val loop = GameLoop(scene, renderer, input, physics)
+            val loop = GameLoop(scene, renderer, input, physics, physicsHz = config.physicsHz)
             val fps = FpsCounter()
 
             val skiaLayer = SkiaLayer()

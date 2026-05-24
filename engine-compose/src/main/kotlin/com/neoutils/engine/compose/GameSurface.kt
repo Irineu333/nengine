@@ -41,7 +41,7 @@ fun GameSurface(
     val physics = remember { PhysicsSystem() }
     val textMeasurer = rememberTextMeasurer()
     val renderer = remember(textMeasurer) { ComposeRenderer(textMeasurer) }
-    val loop = remember(scene) { GameLoop(scene, renderer, input, physics) }
+    val loop = remember(scene) { GameLoop(scene, renderer, input, physics, physicsHz = config.physicsHz) }
     val fps = remember { FpsCounter() }
     val focusRequester = remember { FocusRequester() }
 

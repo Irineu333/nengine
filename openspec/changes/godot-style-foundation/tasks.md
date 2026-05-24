@@ -15,10 +15,10 @@
 
 ## 3. GameLoop fixed-step
 
-- [ ] 3.1 Em `GameLoop.kt`: adicionar parâmetro construtor `physicsHz: Int = 60`; campos `physicsDt: Float = 1f / physicsHz`, `maxStepsPerFrame: Int = 5`, `accumulator: Float = 0f`.
-- [ ] 3.2 Reescrever `tick(dtNanos)` para o algoritmo descrito em `design.md` D3 (acumulador → enquanto cabe física: drain → physicsProcess → drain → physics.step → decrementar; depois process; depois render; com clamp de spiral-of-death).
-- [ ] 3.3 Logar warning via `Debug` quando spiral-of-death clamp ativa (`Log.w` com mensagem nomeando `physicsHz` e o `dtNanos` que estourou).
-- [ ] 3.4 Em `GameConfig.kt`: adicionar `physicsHz: Int = 60` (mantém ABI binária para callers existentes — todos os existentes usam `GameConfig()` default).
+- [x] 3.1 Em `GameLoop.kt`: adicionar parâmetro construtor `physicsHz: Int = 60`; campos `physicsDt: Float = 1f / physicsHz`, `maxStepsPerFrame: Int = 5`, `accumulator: Float = 0f`.
+- [x] 3.2 Reescrever `tick(dtNanos)` para o algoritmo descrito em `design.md` D3 (acumulador → enquanto cabe física: drain → physicsProcess → drain → physics.step → decrementar; depois process; depois render; com clamp de spiral-of-death).
+- [x] 3.3 Logar warning via `Debug` quando spiral-of-death clamp ativa (`Log.w` com mensagem nomeando `physicsHz` e o `dtNanos` que estourou).
+- [x] 3.4 Em `GameConfig.kt`: adicionar `physicsHz: Int = 60` (mantém ABI binária para callers existentes — todos os existentes usam `GameConfig()` default).
 
 ## 4. Renderer SPI
 

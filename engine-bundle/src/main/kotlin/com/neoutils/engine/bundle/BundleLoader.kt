@@ -4,7 +4,8 @@ import com.neoutils.engine.bundle.script.BundleSource
 import com.neoutils.engine.bundle.script.ClasspathBundleSource
 import com.neoutils.engine.bundle.script.DirectoryBundleSource
 import com.neoutils.engine.bundle.script.PropCoercion
-import com.neoutils.engine.bundle.script.ScriptHostRegistry
+import com.neoutils.engine.bundle.script.Script
+import com.neoutils.engine.bundle.script.ScriptHost
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Scene
 import com.neoutils.engine.serialization.NodeEntry
@@ -23,17 +24,32 @@ import kotlin.reflect.KClass
  * resolves a bundle baked into the JVM classpath, and [fromPath] resolves a
  * bundle that lives on the filesystem (the editor scenario).
  *
- * Scripts are discovered via the `NodeEntry.script` field and dispatched
- * through [ScriptHostRegistry] by file extension. The legacy `.nengine.kts`
- * path was removed in E8 of `add-python-scripting`.
+ * Scripts are discovered via the `NodeEntry.script` field and dispatched to
+ * the [ScriptHost] passed via the `scripting` parameter. The legacy
+ * `.nengine.kts` path was removed in E8 of `add-python-scripting`.
  */
 object BundleLoader {
 
     private const val SCENE_FILE_NAME = "scene.json"
 
+    /**
+     * Loads a scene bundle from the JVM classpath.
+     *
+     * @param name Bundle name (folder on the classpath containing `scene.json`).
+     * @param types Optional list of game-specific [Node] subclasses to register
+     *   before parsing the scene.
+     * @param scripting Optional [ScriptHost] used to load scripts referenced by
+     *   the bundle. Pass `null` for script-less bundles. **Reuse the same
+     *   instance across multiple loads** when possible — constructing a host
+     *   (e.g. `PythonScriptHost.create()`) typically incurs significant cost
+     *   (such as GraalPy `Context` boot), and the host is safe to share.
+     *   When the bundle references at least one `script` but `scripting` is
+     *   `null`, the loader fails fast naming the offending path.
+     */
     fun fromResources(
         name: String,
         types: List<KClass<out Node>> = emptyList(),
+        scripting: ScriptHost? = null,
     ): Scene {
         val resource = this::class.java.classLoader.getResource("$name/$SCENE_FILE_NAME")
             ?: throw IllegalArgumentException(
@@ -44,12 +60,28 @@ object BundleLoader {
             bundleSource = ClasspathBundleSource(bundleRoot = name),
             sceneJsonText = sceneJson,
             types = types,
+            scripting = scripting,
         )
     }
 
+    /**
+     * Loads a scene bundle from a filesystem directory (editor scenario).
+     *
+     * @param bundleDir Directory containing `scene.json`.
+     * @param types Optional list of game-specific [Node] subclasses to register
+     *   before parsing the scene.
+     * @param scripting Optional [ScriptHost] used to load scripts referenced by
+     *   the bundle. Pass `null` for script-less bundles. **Reuse the same
+     *   instance across multiple loads** when possible — constructing a host
+     *   (e.g. `PythonScriptHost.create()`) typically incurs significant cost
+     *   (such as GraalPy `Context` boot), and the host is safe to share.
+     *   When the bundle references at least one `script` but `scripting` is
+     *   `null`, the loader fails fast naming the offending path.
+     */
     fun fromPath(
         bundleDir: File,
         types: List<KClass<out Node>> = emptyList(),
+        scripting: ScriptHost? = null,
     ): Scene {
         if (!bundleDir.isDirectory) {
             throw IllegalArgumentException(
@@ -66,6 +98,7 @@ object BundleLoader {
             bundleSource = DirectoryBundleSource(bundleDir = bundleDir),
             sceneJsonText = sceneFile.readText(),
             types = types,
+            scripting = scripting,
         )
     }
 
@@ -73,6 +106,7 @@ object BundleLoader {
         bundleSource: BundleSource,
         sceneJsonText: String,
         types: List<KClass<out Node>>,
+        scripting: ScriptHost?,
     ): Scene {
         NodeRegistry.registerEngineTypes()
 
@@ -82,19 +116,14 @@ object BundleLoader {
 
         val sceneFile = Json.decodeFromString(SceneFile.serializer(), sceneJsonText)
 
-        // Collect and load all scripts referenced in the scene via NodeEntry.script.
         val scriptPaths = collectScriptPaths(sceneFile.root)
-        val scripts = if (scriptPaths.isNotEmpty()) {
-            ScriptHostRegistry.loadAll(scriptPaths, bundleSource)
-        } else {
-            emptyMap()
-        }
+        val scripts = loadScripts(scriptPaths, scripting, bundleSource)
 
         return SceneLoader.load(sceneJsonText) { node, scriptPath ->
             val script = scripts[scriptPath]
                 ?: error("Script '$scriptPath' was collected but not loaded — this is a bug")
-            val host = ScriptHostRegistry.hostFor(scriptPath)
-                ?: error("No ScriptHost registered for '$scriptPath' — this is a bug")
+            val host = scripting
+                ?: error("Script '$scriptPath' was loaded without a ScriptHost — this is a bug")
             val instance = host.attach(node, script)
             ScriptAttachment(
                 instance = instance,
@@ -105,6 +134,30 @@ object BundleLoader {
                     instance.setExport(name, value)
                 },
             )
+        }
+    }
+
+    private fun loadScripts(
+        scriptPaths: Set<String>,
+        host: ScriptHost?,
+        bundle: BundleSource,
+    ): Map<String, Script> {
+        if (scriptPaths.isEmpty()) return emptyMap()
+        if (host == null) {
+            val firstPath = scriptPaths.first()
+            error(
+                "Bundle references script '$firstPath' but no ScriptHost was provided. " +
+                    "Pass `scripting = PythonScriptHost.create()` (or another ScriptHost) to BundleLoader."
+            )
+        }
+        return scriptPaths.associateWith { path ->
+            if (!path.endsWith(host.extension)) {
+                error(
+                    "Bundle references script '$path' but the provided ScriptHost handles " +
+                        "'${host.extension}'. Bundle and ScriptHost extensions must match."
+                )
+            }
+            host.load(path, bundle)
         }
     }
 

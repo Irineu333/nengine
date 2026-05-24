@@ -1,7 +1,6 @@
 package com.neoutils.engine.bundle.python
 
 import com.neoutils.engine.bundle.script.BundleSource
-import com.neoutils.engine.bundle.script.ScriptHostRegistry
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
@@ -29,25 +28,24 @@ class PythonScriptHostTest {
         override fun exists(path: String) = path in contents
     }
 
+    private lateinit var host: PythonScriptHost
+
     @Before
     fun setUp() {
         NodeRegistry.clear()
         NodeRegistry.registerEngineTypes()
-        ScriptHostRegistry.clear()
-        PythonScriptHost.install()
+        host = PythonScriptHost.create()
     }
 
     @After
     fun tearDown() {
         NodeRegistry.clear()
-        ScriptHostRegistry.clear()
     }
 
     // --- load: extends ---------------------------------------------------
 
     @Test
     fun `load with hash comment extends resolves Node2D`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "# extends Node2D\n"
         )))
@@ -56,7 +54,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load with docstring extends resolves Node2D`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "\"\"\"extends Node2D\"\"\"\n"
         )))
@@ -65,7 +62,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load without extends declaration fails fast`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         assertFailsWith<MissingExtendsDeclarationException> {
             host.load("test.py", bundle(mapOf("test.py" to "speed: float = 1.0\n")))
         }
@@ -73,7 +69,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load with unknown extends type fails fast naming type and path`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val ex = assertFailsWith<UnknownExtendsTypeException> {
             host.load("test.py", bundle(mapOf("test.py" to "# extends BananaNode\nspeed: float = 1.0\n")))
         }
@@ -85,7 +80,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load detects float export with default`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}speed: float = 360.0\n"
         )))
@@ -97,7 +91,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load detects bool export`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}ai: bool = False\n"
         )))
@@ -109,7 +102,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load detects Vec2 export`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}center: Vec2 = Vec2(400.0, 300.0)\n"
         )))
@@ -123,7 +115,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load silently drops unsupported export type`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}cache: dict = {}\n"
         )))
@@ -132,7 +123,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `load detects Optional Key export as nullable`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}from typing import Optional\nup_key: Optional[Key] = None\n"
         )))
@@ -145,7 +135,6 @@ class PythonScriptHostTest {
 
     @Test
     fun `attach and onProcess dispatches to _process in Python`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to """
 ${EXTENDS_NODE2D}
@@ -164,7 +153,6 @@ def _process(self, dt):
 
     @Test
     fun `attach and missing _on_collide does not throw`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to EXTENDS_NODE2D
         )))
@@ -178,7 +166,6 @@ def _process(self, dt):
 
     @Test
     fun `currentValue reflects setExport value as Kotlin Float`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}speed: float = 360.0\n"
         )))
@@ -192,7 +179,6 @@ def _process(self, dt):
 
     @Test
     fun `currentValue returns the declared default when never overridden`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}speed: float = 360.0\n"
         )))
@@ -204,7 +190,6 @@ def _process(self, dt):
 
     @Test
     fun `currentValue on unknown export name fails fast naming script path`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to "${EXTENDS_NODE2D}speed: float = 360.0\n"
         )))
@@ -219,7 +204,6 @@ def _process(self, dt):
 
     @Test
     fun `setExport stores value accessible from Python _draw`() {
-        val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to """
 ${EXTENDS_NODE2D}x: float = 0.0

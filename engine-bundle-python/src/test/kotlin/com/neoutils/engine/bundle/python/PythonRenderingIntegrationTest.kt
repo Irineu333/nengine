@@ -2,7 +2,6 @@ package com.neoutils.engine.bundle.python
 
 import com.neoutils.engine.bundle.script.BundleSource
 import com.neoutils.engine.bundle.script.PropCoercion
-import com.neoutils.engine.bundle.script.ScriptHostRegistry
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
@@ -38,18 +37,18 @@ private data class Quadruple<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
 class PythonRenderingIntegrationTest {
 
+    private lateinit var host: PythonScriptHost
+
     @Before
     fun setUp() {
         NodeRegistry.clear()
         NodeRegistry.registerEngineTypes()
-        ScriptHostRegistry.clear()
-        PythonScriptHost.install()
+        host = PythonScriptHost.create()
     }
 
     @After
     fun tearDown() {
         NodeRegistry.clear()
-        ScriptHostRegistry.clear()
     }
 
     @Test
@@ -78,7 +77,6 @@ def _draw(self, renderer):
             override fun read(path: String) = source
             override fun exists(path: String) = path == "center_line.py"
         }
-        val host = ScriptHostRegistry.hostFor("center_line.py")!!
         val script = host.load("center_line.py", bundle)
         val instance = host.attach(Node2D(), script)
         val props = buildJsonObject {
@@ -125,7 +123,6 @@ def increment(self):
             override fun read(path: String) = source
             override fun exists(path: String) = path == "score.py"
         }
-        val host = ScriptHostRegistry.hostFor("score.py")!!
         val script = host.load("score.py", bundle)
         val instance = host.attach(Node2D(), script)
         val props: JsonObject = buildJsonObject {

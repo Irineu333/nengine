@@ -25,7 +25,7 @@ import org.graalvm.polyglot.Value
 import org.graalvm.polyglot.proxy.ProxyExecutable
 import kotlin.reflect.KClass
 
-class PythonScriptHost private constructor(private val context: Context) : ScriptHost {
+class PythonScriptHost internal constructor(private val context: Context) : ScriptHost {
 
     override val extension = ".py"
 
@@ -206,22 +206,27 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
     }
 
     companion object {
-        fun install() {
-            val context = Context.newBuilder("python")
-                .allowAllAccess(true)
-                .allowExperimentalOptions(true)
-                .option("python.PosixModuleBackend", "java")
-                // Maps Java/Kotlin bean accessors (`getX()`, `isAi()`) to Python
-                // attribute access (`v.x`, `v.ai`) so script code stays
-                // idiomatic instead of forcing `v.getX()` everywhere.
-                .option("python.EmulateJython", "true")
-                // Suppress the "fallback runtime / interpreter only" warning —
-                // expected when running on a plain JDK without JVMCI. Scripts
-                // here are gameplay-sized; native compilation is not the bar.
-                .option("engine.WarnInterpreterOnly", "false")
-                .build()
-            ScriptHostRegistry.register(PythonScriptHost(context))
-        }
+        /**
+         * Builds a [PythonScriptHost] backed by a default GraalPy [Context].
+         * Construction is expensive (it boots the GraalPy `Context` and evals
+         * the runtime helpers eagerly); **reuse the returned instance across
+         * multiple `BundleLoader` loads** instead of constructing one per load.
+         */
+        fun create(): PythonScriptHost = PythonScriptHost(defaultContext())
+
+        private fun defaultContext(): Context = Context.newBuilder("python")
+            .allowAllAccess(true)
+            .allowExperimentalOptions(true)
+            .option("python.PosixModuleBackend", "java")
+            // Maps Java/Kotlin bean accessors (`getX()`, `isAi()`) to Python
+            // attribute access (`v.x`, `v.ai`) so script code stays
+            // idiomatic instead of forcing `v.getX()` everywhere.
+            .option("python.EmulateJython", "true")
+            // Suppress the "fallback runtime / interpreter only" warning —
+            // expected when running on a plain JDK without JVMCI. Scripts
+            // here are gameplay-sized; native compilation is not the bar.
+            .option("engine.WarnInterpreterOnly", "false")
+            .build()
     }
 }
 

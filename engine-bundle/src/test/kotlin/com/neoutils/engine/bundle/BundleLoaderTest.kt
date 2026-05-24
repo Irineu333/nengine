@@ -35,9 +35,9 @@ private class FakeScriptInstance : ScriptInstance {
 }
 
 private class FakeScriptHost(
+    override val extension: String = ".py",
     private val scriptFactory: (String) -> FakeScript = { FakeScript(it) },
 ) : ScriptHost {
-    override val extension = ".py"
     val loaded = mutableListOf<String>()
     val instances = mutableListOf<FakeScriptInstance>()
 
@@ -62,20 +62,17 @@ class BundleLoaderTest {
     @BeforeTest
     fun setUp() {
         NodeRegistry.clear()
-        ScriptHostRegistry.clear()
         fakeHost = FakeScriptHost()
-        ScriptHostRegistry.register(fakeHost)
     }
 
     @AfterTest
     fun tearDown() {
         NodeRegistry.clear()
-        ScriptHostRegistry.clear()
     }
 
     @Test
     fun `fromResources returns a detached scene with the expected tree`() {
-        val scene = BundleLoader.fromResources("test-bundle")
+        val scene = BundleLoader.fromResources("test-bundle", scripting = fakeHost)
         assertFalse(scene.isLive)
         assertEquals("TestRoot", scene.name)
         assertEquals(2, scene.children.size)
@@ -96,7 +93,7 @@ class BundleLoaderTest {
         val temp = createTempDir("bundle-test")
         materializeTestBundle(temp)
         try {
-            val fromDisk = BundleLoader.fromPath(temp)
+            val fromDisk = BundleLoader.fromPath(temp, scripting = fakeHost)
             assertEquals("TestRoot", fromDisk.name)
             assertEquals(2, fromDisk.children.size)
             assertEquals("fooScript", fromDisk.children[0].name)
@@ -111,11 +108,9 @@ class BundleLoaderTest {
         val temp = createTempDir("bundle-equiv")
         materializeTestBundle(temp)
         try {
-            val fromResources = BundleLoader.fromResources("test-bundle")
+            val fromResources = BundleLoader.fromResources("test-bundle", scripting = fakeHost)
             NodeRegistry.clear()
-            ScriptHostRegistry.clear()
-            ScriptHostRegistry.register(FakeScriptHost())
-            val fromPath = BundleLoader.fromPath(temp)
+            val fromPath = BundleLoader.fromPath(temp, scripting = FakeScriptHost())
             assertEquals(treeShape(fromResources), treeShape(fromPath))
         } finally {
             temp.deleteRecursively()
@@ -124,7 +119,7 @@ class BundleLoaderTest {
 
     @Test
     fun `orphan script in scripts directory is not loaded`() {
-        BundleLoader.fromResources("test-bundle")
+        BundleLoader.fromResources("test-bundle", scripting = fakeHost)
         assertFalse(
             fakeHost.loaded.any { it.contains("orphan", ignoreCase = true) },
             "Orphan script should not have been loaded; loaded: ${fakeHost.loaded}"
@@ -158,7 +153,7 @@ class BundleLoaderTest {
                 }
                 """.trimIndent()
             )
-            val scene = BundleLoader.fromPath(temp)
+            val scene = BundleLoader.fromPath(temp, scripting = fakeHost)
             assertEquals(2, scene.children.size)
             assertEquals("first", scene.children[0].name)
             assertEquals("second", scene.children[1].name)
@@ -269,7 +264,7 @@ class BundleLoaderTest {
             File(temp, "scripts").mkdirs()
             File(temp, "scripts/dummy.py").writeText("# extends Node2D\nvalue: int = 0\n")
 
-            val scene = BundleLoader.fromPath(temp)
+            val scene = BundleLoader.fromPath(temp, scripting = fakeHost)
             val node = scene.children[0]
             node.onProcess(0f)
             assertEquals(1, fakeHost.instances[0].updateCallCount, "scriptInstance must be attached")
@@ -280,8 +275,70 @@ class BundleLoaderTest {
     }
 
     @Test
-    fun `script with unknown extension fails fast`() {
-        val temp = createTempDir("bundle-bad-ext")
+    fun `script-less bundle loads without scripting`() {
+        val temp = createTempDir("bundle-scriptless")
+        try {
+            File(temp, "scene.json").writeText(
+                """
+                {
+                  "version": 2,
+                  "root": {
+                    "type": "com.neoutils.engine.scene.Scene",
+                    "name": "Empty",
+                    "properties": {},
+                    "children": []
+                  }
+                }
+                """.trimIndent()
+            )
+            val scene = BundleLoader.fromPath(temp)
+            assertEquals("Empty", scene.name)
+            assertEquals(0, scene.children.size)
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `bundle with scripts and no host fails fast`() {
+        val temp = createTempDir("bundle-noscripting")
+        try {
+            File(temp, "scene.json").writeText(
+                """
+                {
+                  "version": 2,
+                  "root": {
+                    "type": "com.neoutils.engine.scene.Scene",
+                    "name": "Root",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "com.neoutils.engine.scene.Node2D",
+                        "name": "scripted",
+                        "properties": {},
+                        "script": "scripts/foo.py",
+                        "children": []
+                      }
+                    ]
+                  }
+                }
+                """.trimIndent()
+            )
+            File(temp, "scripts").mkdirs()
+            File(temp, "scripts/foo.py").writeText("# extends Node2D\n")
+            val ex = assertFailsWith<IllegalStateException> { BundleLoader.fromPath(temp) }
+            val msg = ex.message!!
+            assertTrue(msg.contains("scripts/foo.py"), msg)
+            assertTrue(msg.contains("ScriptHost"), msg)
+            assertTrue(msg.contains("scripting"), msg)
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `extension mismatch fails fast`() {
+        val temp = createTempDir("bundle-extmismatch")
         try {
             File(temp, "scene.json").writeText(
                 """
@@ -306,9 +363,12 @@ class BundleLoaderTest {
             )
             File(temp, "scripts").mkdirs()
             File(temp, "scripts/thing.lua").writeText("-- lua script")
-            assertFailsWith<UnsupportedScriptExtensionException> {
-                BundleLoader.fromPath(temp)
+            val ex = assertFailsWith<IllegalStateException> {
+                BundleLoader.fromPath(temp, scripting = fakeHost)
             }
+            val msg = ex.message!!
+            assertTrue(msg.contains("scripts/thing.lua"), msg)
+            assertTrue(msg.contains(".py"), msg)
         } finally {
             temp.deleteRecursively()
         }
@@ -318,14 +378,12 @@ class BundleLoaderTest {
     fun `properties key matching both inspect and export is fatal collision`() {
         // Replace the default fake host with one whose script exports "transform"
         // (collides with Node2D @Inspect var transform).
-        ScriptHostRegistry.clear()
         val collidingHost = FakeScriptHost(scriptFactory = {
             FakeScript(
                 path = it,
                 exports = listOf(ExportedProperty("transform", Int::class, default = 0)),
             )
         })
-        ScriptHostRegistry.register(collidingHost)
         val temp = createTempDir("bundle-collision")
         try {
             File(temp, "scene.json").writeText(
@@ -351,7 +409,7 @@ class BundleLoaderTest {
             )
             File(temp, "scripts").mkdirs()
             File(temp, "scripts/dummy.py").writeText("# extends Node2D\ntransform: int = 0\n")
-            val ex = assertFailsWith<IllegalStateException> { BundleLoader.fromPath(temp) }
+            val ex = assertFailsWith<IllegalStateException> { BundleLoader.fromPath(temp, scripting = collidingHost) }
             val msg = ex.message!!
             assertTrue(msg.contains("transform"), msg)
             assertTrue(msg.contains("collider"), msg)
@@ -389,7 +447,7 @@ class BundleLoaderTest {
             )
             File(temp, "scripts").mkdirs()
             File(temp, "scripts/dummy.py").writeText("# extends Node2D\nvalue: int = 0\n")
-            val ex = assertFailsWith<IllegalStateException> { BundleLoader.fromPath(temp) }
+            val ex = assertFailsWith<IllegalStateException> { BundleLoader.fromPath(temp, scripting = fakeHost) }
             val msg = ex.message!!
             assertTrue(msg.contains("mystery"), msg)
             assertTrue(msg.contains("scripted"), msg)
@@ -431,7 +489,7 @@ class BundleLoaderTest {
             )
             File(temp, "scripts").mkdirs()
             File(temp, "scripts/dummy.py").writeText("# extends Node2D\nvalue: int = 0\n")
-            val scene = BundleLoader.fromPath(temp)
+            val scene = BundleLoader.fromPath(temp, scripting = fakeHost)
             val n = scene.children[0] as Node2D
             assertEquals(3f, n.transform.position.x)
             assertEquals(4f, n.transform.position.y)

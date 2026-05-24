@@ -48,7 +48,7 @@ Para rodar Pong:
 ./gradlew :games:pong:run
 ```
 
-`Main.kt` instala o `PythonScriptHost` via `PythonScriptHost.install()`, carrega o bundle `pong/` (em `:games:pong/src/main/resources/pong/`, com `scene.json` na raiz e `scripts/*.py`) via `BundleLoader.fromResources("pong")` e entrega a `Scene` ao `SkikoHost`. O `scene.json` é a fonte da verdade da árvore — editar o JSON ou os `.py` altera o comportamento sem recompilar Kotlin.
+`Main.kt` constrói o `PythonScriptHost` via `PythonScriptHost.create()`, carrega o bundle `pong/` (em `:games:pong/src/main/resources/pong/`, com `scene.json` na raiz e `scripts/*.py`) via `BundleLoader.fromResources("pong", scripting = python)` e entrega a `Scene` ao `SkikoHost`. O `scene.json` é a fonte da verdade da árvore — editar o JSON ou os `.py` altera o comportamento sem recompilar Kotlin.
 
 Durante o jogo:
 
@@ -201,7 +201,7 @@ A factory `signal(type)` recebe o tipo apenas como dica de documentação — Py
 
 `scene.json` usa **bag único** `properties` (estilo Godot): propriedades `@Inspect` nativas do Node e exports do script anexado convivem no mesmo objeto. O arquivo MUST declarar `"version": 2` no topo — `version: 1` é rejeitado com mensagem explícita nomeando a change `godot-style-properties` (sem leitor legacy; migre manualmente fundindo `props` em `properties`).
 
-`BundleLoader` faz tree-walk no JSON, coleta todos os `script` paths, carrega via `ScriptHostRegistry` (despachado por extensão de arquivo), atacha cada script ao Node e devolve um `ScriptAttachment` ao `SceneLoader`. O `SceneLoader` então roteia cada chave de `properties`:
+`BundleLoader` faz tree-walk no JSON, coleta todos os `script` paths, carrega via o `ScriptHost` recebido no parâmetro `scripting` (validando que o `host.extension` bate com a extensão de cada path), atacha cada script ao Node e devolve um `ScriptAttachment` ao `SceneLoader`. O `SceneLoader` então roteia cada chave de `properties`:
 
 - chave bate só com `@Inspect` do Node → aplica via setter `@Inspect`.
 - chave bate só com export do script → aplica via `setExport` (após `PropCoercion`).
@@ -210,9 +210,16 @@ A factory `signal(type)` recebe o tipo apenas como dica de documentação — Py
 
 Essa disciplina é fail-fast: typos viram crash com mensagem acionável em vez de propriedades silenciosamente ignoradas.
 
-#### Instalando o ScriptHost
+#### Construindo o ScriptHost e passando ao BundleLoader
 
-O `Main.kt` do jogo precisa chamar `PythonScriptHost.install()` **antes** de `BundleLoader.fromResources(...)`. Sem isso, a extensão `.py` não tem host registrado e o carregamento falha.
+O `Main.kt` do jogo constrói um `ScriptHost` explicitamente e injeta no `BundleLoader`:
+
+```kotlin
+val python = PythonScriptHost.create()
+val scene = BundleLoader.fromResources("pong", scripting = python)
+```
+
+`PythonScriptHost.create()` boota o `Context` GraalPy (operação cara) e devolve uma instância segura para compartilhar entre múltiplos loads — reuse a mesma referência em vez de chamar `create()` repetidamente. Bundles sem nenhum `script` referenciado podem omitir `scripting` (ou passar `null`); nesse caso o GraalPy nunca é instanciado. Se o bundle referencia ao menos um `script` e `scripting` é `null`, o `BundleLoader` falha-fast nomeando o path encontrado e recomendando a chamada literal `PythonScriptHost.create()`.
 
 #### Inspecting Python scripts with IDE
 

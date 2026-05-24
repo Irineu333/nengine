@@ -7,10 +7,10 @@ import com.neoutils.engine.skiko.SkikoHost
 import java.io.File
 
 fun main(args: Array<String>) {
-    PythonScriptHost.install()
+    val python = PythonScriptHost.create()
     val scene = when (val path = args.firstOrNull()) {
-        null -> BundleLoader.fromResources("pong")
-        else -> BundleLoader.fromPath(File(path))
+        null -> BundleLoader.fromResources("pong", scripting = python)
+        else -> BundleLoader.fromPath(File(path), scripting = python)
     }
     SkikoHost().run(scene, GameConfig(title = "Pong", width = 800, height = 600))
 }

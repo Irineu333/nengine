@@ -28,7 +28,7 @@
 
 ## 5. Tests for cache observability
 
-- [x] 5.1 Add a test that counts ancestor walks: subclass `Node2D` in test only, or use a counter on a test ancestor's getter for `transform`, to assert that the second consecutive `worldTransform()` call does not trigger ancestor traversal
+- [~] 5.1 Add a test that counts ancestor walks: subclass `Node2D` in test only, or use a counter on a test ancestor's getter for `transform`, to assert that the second consecutive `worldTransform()` call does not trigger ancestor traversal — superseded by 5.2 (reflection variant chosen to avoid intrusive test-only subclass)
 - [x] 5.2 Alternative if 5.1 proves intrusive: assert via reflection / package-private access that `cachedWorldTransform` is non-null after the first read and unchanged after the second
 
 ## 6. Existing-test regression sweep

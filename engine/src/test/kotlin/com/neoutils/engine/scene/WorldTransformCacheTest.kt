@@ -105,7 +105,8 @@ class WorldTransformCacheTest {
         assertEquals(Vec2(109f, 0f), child1.worldTransform().position)
     }
 
-    // 4.7: SceneLoader.save does not include the cache field in JSON
+    // 4.7: SceneLoader.save does not include the cache field, and load yields
+    // a node whose cache is unpopulated until the first read.
     @Test
     fun `saved JSON does not contain cachedWorldTransform field`() {
         val scene = Scene()
@@ -114,6 +115,14 @@ class WorldTransformCacheTest {
         node.worldTransform()
         val json = SceneLoader.save(scene)
         assertFalse(json.contains("cachedWorldTransform"), "JSON must not contain cachedWorldTransform")
+
+        val loaded = SceneLoader.load(json)
+        val loadedNode = loaded.children.single() as Node2D
+        val field = Node2D::class.java.getDeclaredField("cachedWorldTransform")
+        field.isAccessible = true
+        assertNull(field.get(loadedNode), "loaded node's cache must start null")
+        loadedNode.worldTransform()
+        assertNotNull(field.get(loadedNode), "loaded node's cache must populate on first read")
     }
 
     // 5.2: Use reflection to assert cache is populated after first read and unchanged after second

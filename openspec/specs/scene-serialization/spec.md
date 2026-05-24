@@ -45,44 +45,42 @@ The engine SHALL provide a `NodeRef<T : Node>` type that carries a relative path
 - **WHEN** the paddle is removed from the scene and then re-added
 - **THEN** the next call to `ref.resolve(from = paddle)` recomputes the resolution rather than returning a stale cached value
 
-### Requirement: Signal exposes a typed event bus per node
+### Requirement: Signal primitive for inter-node communication
 
-The engine SHALL provide a `Signal<T>` class usable as a per-node event bus. The class MUST expose `operator fun plusAssign(handler: (T) -> Unit)` to register handlers, `operator fun minusAssign(handler: (T) -> Unit)` to unregister handlers, and `fun emit(value: T)` to invoke all currently registered handlers in registration order. `Signal` MUST NOT be `@Serializable` itself, and SHALL be carried on nodes as a `@Transient` field; handlers registered in code are not persisted across save/load and MUST be re-registered after `onEnter`. Emission MUST tolerate handler registration and removal that occur during the emission itself by iterating over a snapshot of the handler list taken at the start of `emit`.
+The engine SHALL provide `Signal<T>` (in `com.neoutils.engine.serialization` for source-compatibility with existing imports, but conceptually an event hub used throughout `:engine`) as a runtime event hub with `connect(handler) -> Disposable`, `disconnect(disposable)`, and `emit(value)` operations. `Signal` instances appearing on `@Serializable Node` subclasses MUST be annotated with `@Transient` because their handlers are runtime-only and cannot be serialized; the static configuration that a future editor would want (e.g. "this signal is wired to that handler in another node") MUST live in a separate serializable structure (out of scope for this change). The previous `Signal` API that conflated wiring (`var path: NodeRef`) with the signal contract SHALL be removed; routing in the editor era will use `NodeRef` + `Signal` composition, not a hybrid type.
 
-#### Scenario: plusAssign registers a handler
+#### Scenario: Signal has connect/emit/disconnect runtime API
 
-- **GIVEN** an empty `Signal<Int>`
-- **WHEN** code calls `signal += { value -> received = value }`
-- **AND** code calls `signal.emit(42)`
-- **THEN** `received` equals `42`
+- **WHEN** code instantiates `Signal<String>()` and calls `signal.connect { ... }`
+- **THEN** the call returns a `Disposable`
+- **AND** subsequent `signal.emit("hello")` invokes the registered handler with `"hello"`
 
-#### Scenario: minusAssign unregisters a handler
+#### Scenario: Signal field on a Serializable Node is Transient
 
-- **GIVEN** a `Signal<Int>` with handler `h` registered
-- **WHEN** code calls `signal -= h`
-- **AND** code calls `signal.emit(5)`
-- **THEN** `h` is not invoked
+- **WHEN** any class in `:engine` extending `Node` and annotated `@Serializable` declares a `Signal` field
+- **THEN** that field is annotated `@Transient`
+- **AND** the field is not present in the JSON produced by `SceneLoader.save`
 
-#### Scenario: emit invokes handlers in registration order
+#### Scenario: Old Signal-with-NodeRef shape is removed
 
-- **GIVEN** a `Signal<Int>` with handlers `h1`, `h2`, `h3` registered in that order
-- **WHEN** code calls `signal.emit(0)`
-- **THEN** invocation order is `h1`, `h2`, `h3`
+- **WHEN** the source of `Signal.kt` (or its replacement) is inspected
+- **THEN** there is no `var path: NodeRef` property on `Signal`
+- **AND** there is no constructor of `Signal` accepting a `NodeRef`
 
-#### Scenario: Registration during emit affects only future emissions
+### Requirement: @Inspect and @Transient discipline on Node subclasses
 
-- **GIVEN** a `Signal<Int>` whose registered handler `h1` registers a second handler `h2` when invoked
-- **WHEN** code calls `signal.emit(1)`
-- **THEN** `h1` is invoked
-- **AND** `h2` is NOT invoked during this `emit` call
-- **AND** the next `signal.emit(2)` invokes both `h1` and `h2`
+Every `var` on a `@Serializable Node` subclass shipped by `:engine` SHALL be annotated either with `@Inspect` (configuration that appears in `scene.json` and will be editable in the future visual editor) or with `@Transient` (runtime state that MUST NOT be persisted). This rule applies recursively to subclasses but does NOT apply to game-side code (games are encouraged to follow it but no engine machinery enforces). `Signal` properties, callback fields, current-tick caches, and similar runtime-only state MUST be `@Transient`.
 
-#### Scenario: Removal during emit takes effect immediately for subsequent handlers in the same emit
+#### Scenario: Every engine var is annotated
 
-- **GIVEN** a `Signal<Int>` with handlers `h1` and `h2`, where `h1` removes `h2` when invoked
-- **WHEN** code calls `signal.emit(1)`
-- **THEN** `h1` is invoked
-- **AND** `h2` is still invoked because emission iterates over the snapshot taken at the start
+- **WHEN** any class in `:engine` extending `Node` and annotated `@Serializable` is inspected
+- **THEN** every `var` property is annotated either with `@Inspect` (`com.neoutils.engine.serialization.Inspect`) or with `@Transient` (`kotlinx.serialization.Transient`)
+
+#### Scenario: Signal fields are Transient
+
+- **WHEN** any engine-shipped Node has a `Signal<*>` field
+- **THEN** the field is `@Transient`
+- **AND** it does not appear in serialized JSON
 
 ### Requirement: @Inspect marks properties as inspectable and serialized
 

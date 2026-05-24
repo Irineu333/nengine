@@ -38,6 +38,7 @@ class ScriptHostRegistryTest {
         override fun onProcess(dt: Float) = Unit
         override fun onPhysicsProcess(dt: Float) = Unit
         override fun onDraw(renderer: Renderer) = Unit
+        override fun onExit() = Unit
         override fun onCollide(other: Node) = Unit
     }
 

@@ -185,7 +185,9 @@ abstract class Node {
         scriptInstance?.onDraw(renderer)
     }
 
-    open fun onExit() {}
+    open fun onExit() {
+        scriptInstance?.onExit()
+    }
 
     companion object {
         private const val TAG = "Scene"

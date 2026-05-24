@@ -14,6 +14,7 @@ interface ScriptInstanceContract {
     fun onProcess(dt: Float)
     fun onPhysicsProcess(dt: Float)
     fun onDraw(renderer: Renderer)
+    fun onExit()
     fun onCollide(other: Node)
 
     /**

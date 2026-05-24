@@ -31,6 +31,7 @@ private class FakeScriptInstance : ScriptInstance {
     override fun onProcess(dt: Float) { updateCallCount++ }
     override fun onPhysicsProcess(dt: Float) {}
     override fun onDraw(renderer: Renderer) {}
+    override fun onExit() {}
     override fun onCollide(other: Node) {}
 }
 

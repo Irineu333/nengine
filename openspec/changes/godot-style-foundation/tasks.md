@@ -48,13 +48,13 @@
 
 ## 8. Python bridge
 
-- [ ] 8.1 Em `PythonScriptHost.kt`: na construção do `Context`, expor bindings adicionais: `Signal`, `Camera2D`, `Label`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`. Remover bindings de `Shape`, `Text`.
-- [ ] 8.2 Em `PythonScriptHost.kt`: adicionar binding `signal` (factory que constrói `Signal<Any?>()` ignorando o typeHint).
-- [ ] 8.3 Em `PythonScriptHost.kt`: ScriptInstance dispatcher passa a chamar `_ready`, `_process`, `_physics_process`, `_draw`, `_exit_tree`, `_on_collide` no objeto Python. Nomes antigos (`on_*`) deixam de ser tentados.
-- [ ] 8.4 Em `PythonScriptHost.kt`: AST inspector ganha uma segunda passada: para cada `AnnAssign` top-level cuja `annotation.id == "Signal"`, validar que `value` é `Call(func=Name("signal"))`. Em caso de match, popular `Script.signals[name] = SignalDeclaration(name)`. Em caso de mismatch, levantar com mensagem clara nomeando script + linha.
-- [ ] 8.5 Adicionar `Script.signals: Map<String, SignalDeclaration>` no contrato de `Script` (em `engine-bundle`).
-- [ ] 8.6 Em `ScriptInstance` Python: durante `attach`, instanciar `Signal<*>()` Kotlin por entrada em `script.signals`, gravar no map `signals`, e expor cada signal como atributo no objeto Python via `module.<name> = signalInstance`.
-- [ ] 8.7 Verificar interop `Signal.connect(pythonCallback)`: GraalPy expõe o callable Python como `Value` invocável; envolver em `(T) -> Unit = { value -> pythonCallable.execute(value) }`.
+- [x] 8.1 Em `PythonScriptHost.kt`: na construção do `Context`, expor bindings adicionais: `Signal`, `Camera2D`, `Label`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`. Remover bindings de `Shape`, `Text`. (Shape/Text bindings removal deferred along with 5.6)
+- [x] 8.2 Em `PythonScriptHost.kt`: adicionar binding `signal` (factory que constrói `Signal<Any?>()` ignorando o typeHint).
+- [x] 8.3 Em `PythonScriptHost.kt`: ScriptInstance dispatcher passa a chamar `_ready`, `_process`, `_physics_process`, `_draw`, `_exit_tree`, `_on_collide` no objeto Python. Nomes antigos (`on_*`) deixam de ser tentados.
+- [x] 8.4 Em `PythonScriptHost.kt`: AST inspector ganha uma segunda passada: para cada `AnnAssign` top-level cuja `annotation.id == "Signal"`, validar que `value` é `Call(func=Name("signal"))`. Em caso de match, popular `Script.signals[name] = SignalDeclaration(name)`. Em caso de mismatch, levantar com mensagem clara nomeando script + linha.
+- [x] 8.5 Adicionar `Script.signals: Map<String, SignalDeclaration>` no contrato de `Script` (em `engine-bundle`).
+- [x] 8.6 Em `ScriptInstance` Python: durante `attach`, instanciar `Signal<*>()` Kotlin por entrada em `script.signals`, gravar no map `signals`, e expor cada signal como atributo no objeto Python via `module.<name> = signalInstance`.
+- [x] 8.7 Verificar interop `Signal.connect(pythonCallback)`: GraalPy expõe o callable Python como `Value` invocável; envolver em `(T) -> Unit = { value -> pythonCallable.execute(value) }`. (GraalPy SAM-converts Python callables to Function1 automatically with allowAllAccess; explicit wrapper not required.)
 
 ## 9. Stubs `.pyi`
 

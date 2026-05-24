@@ -21,6 +21,14 @@ def _nengine_load_module(source, path):
         'Key': Key,
         'BoxCollider': BoxCollider,
         'Node2D': Node2D,
+        'Camera2D': Camera2D,
+        'ColorRect': ColorRect,
+        'Circle2D': Circle2D,
+        'Line2D': Line2D,
+        'Polygon2D': Polygon2D,
+        'Label': Label,
+        'Signal': Signal,
+        'signal': signal,
         # Cross-script handle lookup: `script_of(node)` returns the Python
         # `_ScriptNode` wrapper for the given host Node, exposing its
         # top-level `def`s as bound methods. Forwarded from the Polyglot
@@ -53,6 +61,10 @@ def _nengine_inspect(source):
         name = node.target.id
         ann = node.annotation
         nullable = False
+
+        # Skip Signal declarations — handled by _nengine_inspect_signals.
+        if isinstance(ann, _ast.Name) and ann.id == 'Signal':
+            continue
 
         # Optional[T]
         if (isinstance(ann, _ast.Subscript) and isinstance(ann.value, _ast.Name)
@@ -88,6 +100,43 @@ def _nengine_inspect(source):
         # Use SimpleNamespace so Polyglot getMember() works (attribute access, not dict)
         result.append(_NS(name=name, type_name=type_name, nullable=nullable, default=default_val))
 
+    return result
+
+
+def _nengine_inspect_signals(source, path):
+    """Second AST pass dedicated to top-level `name: Signal = signal(...)`
+    declarations. Returns a list of SimpleNamespace(name=str).
+
+    Strict validation: if a top-level AnnAssign declares the type `Signal`
+    but its value is not a call to `signal(...)`, raise — that almost
+    certainly indicates a typo we should surface, not silently drop.
+    """
+    try:
+        tree = _ast.parse(source)
+    except Exception:
+        return []
+
+    result = []
+    for node in tree.body:
+        if not isinstance(node, _ast.AnnAssign) or not isinstance(node.target, _ast.Name):
+            continue
+        ann = node.annotation
+        if not (isinstance(ann, _ast.Name) and ann.id == 'Signal'):
+            continue
+        name = node.target.id
+        value = node.value
+        is_signal_call = (
+            isinstance(value, _ast.Call)
+            and isinstance(value.func, _ast.Name)
+            and value.func.id == 'signal'
+        )
+        if not is_signal_call:
+            raise SyntaxError(
+                "Script '%s' line %d: signal '%s' must be initialized via signal(...)" % (
+                    path, getattr(node, 'lineno', 0), name,
+                )
+            )
+        result.append(_NS(name=name))
     return result
 
 

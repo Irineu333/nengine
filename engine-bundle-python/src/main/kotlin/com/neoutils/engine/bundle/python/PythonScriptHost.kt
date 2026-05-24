@@ -8,10 +8,17 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.scene.Camera2D
+import com.neoutils.engine.scene.Circle2D
+import com.neoutils.engine.scene.ColorRect
+import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.scene.Polygon2D
 import com.neoutils.engine.serialization.NodeRef
 import com.neoutils.engine.serialization.NodeRegistry
+import com.neoutils.engine.serialization.Signal
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Source
 import org.graalvm.polyglot.Value
@@ -24,13 +31,14 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
 
     private val moduleCache = mutableMapOf<String, Value>()
     // Indexes the Python `_ScriptNode` wrapper by host Node so peer scripts
-    // can reach across (e.g. PongScene wires `ball._on_score` and calls
-    // `score.increment()`). Exposed to Python via the `script_of(node)`
+    // can reach across (e.g. PongScene wires `ball.scored.connect(...)` and
+    // calls `score.increment()`). Exposed to Python via the `script_of(node)`
     // factory binding.
     private val instanceByNode = mutableMapOf<Node, Value>()
 
     private val loadModuleFn: Value
     private val inspectFn: Value
+    private val inspectSignalsFn: Value
     private val parseExtendsFn: Value
     private val createInstanceFn: Value
 
@@ -84,6 +92,10 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
             val path = if (args.isNotEmpty()) args[0].asString() else ""
             NodeRef<Node>(path)
         })
+        // `signal(type)` Godot-style factory. The type hint is purely
+        // documentation — Python has no `Signal<T>` runtime, and the AST
+        // inspector only looks for the syntactic shape `Signal = signal(...)`.
+        bindings.putMember("signal", ProxyExecutable { Signal<Any?>() })
         // Lookup hook for cross-script communication: returns the Python
         // `_ScriptNode` wrapper for a host Node so the caller can invoke the
         // script's top-level def's (e.g. `score.increment()` after
@@ -96,6 +108,13 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
         bindings.putMember("Key", Key::class.java)
         bindings.putMember("BoxCollider", BoxCollider::class.java)
         bindings.putMember("Node2D", Node2D::class.java)
+        bindings.putMember("Camera2D", Camera2D::class.java)
+        bindings.putMember("ColorRect", ColorRect::class.java)
+        bindings.putMember("Circle2D", Circle2D::class.java)
+        bindings.putMember("Line2D", Line2D::class.java)
+        bindings.putMember("Polygon2D", Polygon2D::class.java)
+        bindings.putMember("Label", Label::class.java)
+        bindings.putMember("Signal", Signal::class.java)
 
         val runtimeCode = PythonScriptHost::class.java.getResourceAsStream("/_nengine_runtime.py")
             ?.readBytes()?.toString(Charsets.UTF_8)
@@ -105,6 +124,7 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
 
         loadModuleFn = bindings.getMember("_nengine_load_module")
         inspectFn = bindings.getMember("_nengine_inspect")
+        inspectSignalsFn = bindings.getMember("_nengine_inspect_signals")
         parseExtendsFn = bindings.getMember("_nengine_parse_extends")
         createInstanceFn = bindings.getMember("_nengine_create_instance")
     }
@@ -121,11 +141,12 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
             ?: throw UnknownExtendsTypeException(typeName, path)
 
         val exports = buildExports(source, path)
+        val signals = buildSignals(source, path)
 
         val moduleNs = loadModuleFn.execute(source, path)
         moduleCache[path] = moduleNs
 
-        return ScriptData(path, extendsType, exports)
+        return ScriptData(path, extendsType, exports, signals)
     }
 
     private fun buildExports(source: String, path: String): List<ExportedProperty> {
@@ -141,6 +162,18 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
             val kotlinType = kotlinTypeFor(typeName)
             val default = if (defaultRaw.isNull) null else valueToKotlin(defaultRaw, kotlinType)
             result += ExportedProperty(name, kotlinType, default, nullable)
+        }
+        return result
+    }
+
+    private fun buildSignals(source: String, path: String): Map<String, SignalDeclaration> {
+        val signalsValue = inspectSignalsFn.execute(source, path)
+        if (!signalsValue.hasArrayElements()) return emptyMap()
+        val result = linkedMapOf<String, SignalDeclaration>()
+        for (i in 0 until signalsValue.arraySize) {
+            val entry = signalsValue.getArrayElement(i)
+            val name = entry.getMember("name").asString()
+            result[name] = SignalDeclaration(name)
         }
         return result
     }
@@ -161,7 +194,18 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
             ?: error("Script not loaded before attach: ${script.path}")
         val instance = createInstanceFn.execute(node, moduleNs)
         instanceByNode[node] = instance
-        val scriptInstance = PythonScriptInstance(instance, moduleNs)
+        // Per-instance Signal map: each attach instantiates its own Signal
+        // so two nodes sharing the same script have independent event hubs.
+        // The instance is exposed back to Python via putMember; the wrapper's
+        // own __dict__ shadows any module-level placeholder created by
+        // `name: Signal = signal(...)` at module-load time.
+        val signals = linkedMapOf<String, Signal<*>>()
+        for (decl in script.signals.values) {
+            val sig = Signal<Any?>()
+            signals[decl.name] = sig
+            instance.putMember(decl.name, sig)
+        }
+        val scriptInstance = PythonScriptInstance(instance, moduleNs, signals)
         // Seed the instance with each export's default — callers (e.g. BundleLoader)
         // may then override individual values via setExport from scene.json `props`.
         for (export in script.exports) {
@@ -194,37 +238,41 @@ private data class ScriptData(
     override val path: String,
     override val extendsType: KClass<out Node>,
     override val exports: List<ExportedProperty>,
+    override val signals: Map<String, SignalDeclaration>,
 ) : Script
 
 private class PythonScriptInstance(
     private val instance: Value,
     private val moduleNs: Value,
+    override val signals: Map<String, Signal<*>>,
 ) : ScriptInstance {
-
-    override val signals: Map<String, com.neoutils.engine.serialization.Signal<*>> = emptyMap()
 
     override fun setExport(name: String, value: Any?) {
         instance.putMember(name, value)
     }
 
     override fun onEnter() {
-        callHook("on_enter")
+        callHook("_ready")
     }
 
     override fun onProcess(dt: Float) {
-        callHook("on_update", dt)
+        callHook("_process", dt)
     }
 
     override fun onPhysicsProcess(dt: Float) {
-        // No-op until step 8 wires `_physics_process` into the dispatcher.
+        callHook("_physics_process", dt)
     }
 
     override fun onDraw(renderer: Renderer) {
-        callHook("on_render", renderer)
+        callHook("_draw", renderer)
+    }
+
+    override fun onExit() {
+        callHook("_exit_tree")
     }
 
     override fun onCollide(other: Node) {
-        callHook("on_collide", other)
+        callHook("_on_collide", other)
     }
 
     private fun callHook(name: String, vararg args: Any?) {
@@ -242,6 +290,9 @@ class MissingExtendsDeclarationException(path: String) :
 
 class UnknownExtendsTypeException(typeName: String, path: String) :
     RuntimeException("Script '$path' declares 'extends $typeName' but '$typeName' is not registered in NodeRegistry")
+
+class InvalidSignalDeclarationException(path: String, line: Int, name: String) :
+    RuntimeException("Script '$path' line $line: '$name: Signal' must be initialized via the `signal(...)` factory")
 
 private fun kotlinTypeFor(name: String): KClass<*> = when (name) {
     "Int" -> Int::class

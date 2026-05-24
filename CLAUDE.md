@@ -229,20 +229,5 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 
 ## Roadmap
 
-| Change                | Status   | Resumo                                                                 |
-| --------------------- | -------- | ---------------------------------------------------------------------- |
-| `engine-foundation`   | Archived | Scene graph, math, SPIs, física O(N²), game loop, Compose runtime, Pong, DX e CLAUDE.md. |
-| `add-tictactoe`       | Archived | Mouse buttons na SPI de `Input`, `drawLine` e `measureText` no `Renderer`, `Rect.contains`, e jogo da Velha humano vs humano em `:games:tictactoe`. |
-| `engine-consistency`  | Archived | Composição de `Transform` por ancestralidade, cache de `Scene` em `Node`, mutação segura durante traversal, overlay de colliders migrado de `Scene` para `GameSurface`. Inclui `:games:demos` para validação visual. |
-| `add-skiko-runtime`   | Archived | Runtime Skiko puro (sem Compose) como backend padrão; `ComposeHost`/`SkikoHost` implementando o novo `GameHost` SPI; overlay de debug unificado. |
-| `prepare-for-serialization` | Archived | Primitivas `NodeRef`/`Signal`/`@Inspect`, `NodeRegistry`, `SceneLoader` (`save`/`load` JSON via `kotlinx.serialization`); refactor de Pong/Demos/Velha para construtores no-args + `@Inspect` var; `pong.scene.json` como entry point principal de Pong. |
-| `add-scripting`       | Archived | Compilador e cache de scripts Kotlin `.nengine.kts` via Kotlin Scripting, e migração completa de Pong para scripts. |
-| `drop-pong-tag-only-scripts` | Archived | Remove scripts vazios (`paddle-collider`, `walls`) que serviam só como tag; usa `BoxCollider` da engine por FQN no `pong.scene.json`; `Ball.onCollide` despacha por estrutura da cena; rename `Goal.GoalSide` → `Goal.Side`. |
-| `add-bundle-loader`   | Archived | Substitui `:engine-scripting` por `:engine-bundle`; introduz `BundleLoader.fromResources`/`fromPath`; `NodeRegistry` bidirecional; descoberta de scripts via tree-walk + round-robin no host. Pong passa a viver em `resources/pong/`. |
-| `add-python-scripting` | Active  | Substitui Kotlin Scripting por ScriptHost SPI agnóstica + GraalPy como primeira impl (`:engine-bundle-python`). Migra Pong inteiro para `.py`. Remove `kotlin-scripting-*` deps. Publica stubs `.pyi`. |
-| `cache-world-transform` | Archived | Cache lazy + invalidação eager em `Node2D.worldTransform()`: corta o multiplicador O(N²) parasitário do broad phase; setter custom no `transform`; hooks em `applyAdd`/`applyRemove`; demos de stress (`4` com 30 colliders planos, `5` com 12 colliders dentro de caixa rotativa exercitando invalidação por ancestral). |
-| `godot-style-foundation` | Active   | Renomeação dos hooks para `onProcess`/`onPhysicsProcess`/`onDraw` (Python: `_process`/`_physics_process`/`_draw`/`_ready`/`_exit_tree`/`_on_collide`), `GameLoop` fixed-step com accumulator e clamp de spiral-of-death, `Signal<T>` event hub real com bridge Python, `groups`/`getNodesInGroup`, `Camera2D` + `Scene.viewport`, primitivas visuais `ColorRect`/`Circle2D`/`Line2D`/`Polygon2D`/`Label` substituindo `Shape`/`Text`, `Renderer.drawPolygon`. |
-| `game-snake`          | Planned  | Validador da fundação Godot-style: fixed-step, signals, `Camera2D.bounds`, primitivas visuais, sem dependência de colisão nova. |
-| editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
-
-Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.
+- Plano de evolução vive em [`ROADMAP.md`](./ROADMAP.md). 
+- Histórico de changes concluídas: [`openspec/changes/archive/`](./openspec/changes/archive/).

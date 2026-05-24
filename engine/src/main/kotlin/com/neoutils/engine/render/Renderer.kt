@@ -24,4 +24,25 @@ interface Renderer {
      * self-intersection is undefined.
      */
     fun drawPolygon(points: List<Vec2>, color: Color)
+
+    /**
+     * Pushes a new entry onto a LIFO transform stack composing
+     * `translate(translation) ∘ scale(scale)` over the current top. All
+     * subsequent `draw*` calls render under the resulting cumulative transform
+     * until the matching [popTransform]. Pushes nest (deeper pushes compose
+     * on top of shallower ones).
+     *
+     * The stack starts as identity at every backend-defined frame boundary
+     * (e.g. each `SkikoRenderer.bind` or each new `DrawScope` invocation).
+     * Every `pushTransform` issued during a frame MUST be matched by a
+     * `popTransform` before the frame boundary ends.
+     */
+    fun pushTransform(translation: Vec2, scale: Vec2)
+
+    /**
+     * Pops the top entry of the transform stack, restoring whatever transform
+     * was active before the matching [pushTransform]. Throws
+     * [IllegalStateException] when called on an empty stack.
+     */
+    fun popTransform()
 }

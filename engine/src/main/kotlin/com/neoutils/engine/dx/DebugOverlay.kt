@@ -12,11 +12,28 @@ val DEBUG_COLLIDER_COLOR: Color = Color(0f, 1f, 0f, 0.8f)
  * Backend-agnostic overlay drawing. Called by each `GameHost` after
  * `GameLoop.tick(...)` and before the renderer is unbound. Issues zero draw
  * calls when both `Debug.showFps` and `Debug.colliderVisualization` are off.
+ *
+ * Splits work into two passes:
+ *  1. World pass — collider bounds rendered under the same view transform that
+ *     `Scene.render` would push, so collider outlines line up with the
+ *     projected scene. Runs first, inside a try/finally that pops the pushed
+ *     transform (when one was pushed).
+ *  2. HUD pass — FPS counter in screen space (identity transform), so it
+ *     anchors at the same surface corner regardless of camera bounds. Runs
+ *     last, outside any push.
  */
 fun renderDebugOverlay(renderer: Renderer, scene: Scene) {
     if (Debug.colliderVisualization) {
-        for (collider in collectColliders(scene)) {
-            renderer.drawRect(collider.bounds(), DEBUG_COLLIDER_COLOR, filled = false)
+        val view = scene.currentCamera()?.computeViewTransform(scene.size)
+        if (view != null) {
+            renderer.pushTransform(view.first, view.second)
+            try {
+                drawColliders(renderer, scene)
+            } finally {
+                renderer.popTransform()
+            }
+        } else {
+            drawColliders(renderer, scene)
         }
     }
     if (Debug.showFps) {
@@ -26,5 +43,11 @@ fun renderDebugOverlay(renderer: Renderer, scene: Scene) {
             size = 18f,
             color = Color.WHITE,
         )
+    }
+}
+
+private fun drawColliders(renderer: Renderer, scene: Scene) {
+    for (collider in collectColliders(scene)) {
+        renderer.drawRect(collider.bounds(), DEBUG_COLLIDER_COLOR, filled = false)
     }
 }

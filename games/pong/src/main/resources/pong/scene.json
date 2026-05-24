@@ -11,7 +11,8 @@
         "name": "MainCamera",
         "properties": {
           "bounds": { "origin": { "x": 0.0, "y": 0.0 }, "size": { "x": 800.0, "y": 600.0 } },
-          "current": true
+          "current": true,
+          "aspectMode": "FIT"
         },
         "children": []
       },
@@ -33,7 +34,7 @@
         "name": "left",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": 32.0, "y": 252.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
@@ -54,7 +55,7 @@
         "name": "right",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": 752.0, "y": 252.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
@@ -75,7 +76,7 @@
         "name": "Ball",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": 392.0, "y": 292.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
@@ -98,7 +99,7 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 10.0, "y": 10.0 }
+          "size": { "x": 800.0, "y": 8.0 }
         },
         "children": []
       },
@@ -107,11 +108,11 @@
         "name": "bottomWall",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": 0.0, "y": 592.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 10.0, "y": 10.0 }
+          "size": { "x": 800.0, "y": 8.0 }
         },
         "children": []
       },
@@ -120,11 +121,11 @@
         "name": "leftGoal",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": -8.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 10.0, "y": 10.0 },
+          "size": { "x": 8.0, "y": 600.0 },
           "side": "Left"
         },
         "script": "scripts/goal.py",
@@ -135,11 +136,11 @@
         "name": "rightGoal",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": 800.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 10.0, "y": 10.0 },
+          "size": { "x": 8.0, "y": 600.0 },
           "side": "Right"
         },
         "script": "scripts/goal.py",
@@ -150,7 +151,7 @@
         "name": "leftScore",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": 320.0, "y": 24.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
@@ -165,7 +166,7 @@
         "name": "rightScore",
         "properties": {
           "transform": {
-            "position": { "x": 0.0, "y": 0.0 },
+            "position": { "x": 440.0, "y": 24.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },

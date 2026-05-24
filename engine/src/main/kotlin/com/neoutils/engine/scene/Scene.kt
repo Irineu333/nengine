@@ -83,7 +83,17 @@ open class Scene : Node() {
 
     fun render(renderer: Renderer) {
         if (!isLive) return
-        runTraversal(rendering = true) { traverseDraw(this, renderer) }
+        val view = currentCamera()?.computeViewTransform(size)
+        if (view != null) {
+            renderer.pushTransform(view.first, view.second)
+            try {
+                runTraversal(rendering = true) { traverseDraw(this, renderer) }
+            } finally {
+                renderer.popTransform()
+            }
+        } else {
+            runTraversal(rendering = true) { traverseDraw(this, renderer) }
+        }
     }
 
     /**
@@ -121,7 +131,7 @@ open class Scene : Node() {
         isMutationDeferred = false
     }
 
-    private fun currentCamera(): Camera2D? {
+    internal fun currentCamera(): Camera2D? {
         return findCurrentCamera(this)
     }
 

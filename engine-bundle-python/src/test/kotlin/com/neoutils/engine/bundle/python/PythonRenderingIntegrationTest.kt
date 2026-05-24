@@ -31,6 +31,8 @@ private class RecordingRenderer : Renderer {
     }
     override fun measureText(text: String, size: Float): Vec2 = Vec2(0f, 0f)
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
+    override fun pushTransform(translation: Vec2, scale: Vec2) {}
+    override fun popTransform() {}
 }
 
 private data class Quadruple<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

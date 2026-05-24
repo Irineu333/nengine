@@ -66,12 +66,37 @@ class Scene(Node2D):
     def get_nodes_in_group(self, name: str) -> List[Node]: ...
 
 
+class AspectMode:
+    """How ``Camera2D.bounds`` is projected onto the surface when the aspect
+    ratios differ. Use the string values "FIT", "FILL" or "STRETCH" in
+    ``scene.json``; in Python scripts the enum is exposed as
+    ``AspectMode.FIT`` / ``AspectMode.FILL`` / ``AspectMode.STRETCH``."""
+
+    FIT: "AspectMode"
+    FILL: "AspectMode"
+    STRETCH: "AspectMode"
+
+
 class Camera2D(Node2D):
     """2D camera node. Marking ``current = True`` makes its ``bounds`` the
-    scene's viewport."""
+    scene's viewport, and ``Scene.render`` pushes a view transform that maps
+    ``bounds`` onto the surface under ``aspect_mode``."""
 
     bounds: Rect
     current: bool
+    aspect_mode: AspectMode
+
+    def screen_to_world(self, screen_position: Vec2, scene_size: Vec2) -> Vec2:
+        """Convert a surface (pixel) coordinate to a world coordinate, honoring
+        ``bounds`` and ``aspect_mode``. Returns ``screen_position`` unchanged
+        when ``bounds.size`` has a zero or negative component (identity
+        fallback)."""
+        ...
+
+    def world_to_screen(self, world_position: Vec2, scene_size: Vec2) -> Vec2:
+        """Inverse of :meth:`screen_to_world`. Converts a world coordinate to a
+        surface (pixel) coordinate."""
+        ...
 
 
 class Label(Node2D):

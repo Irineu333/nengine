@@ -5,6 +5,8 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.scene.AspectMode
+import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.Scene
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -84,6 +86,83 @@ class DebugOverlayTest {
         assertEquals(1, texts.size)
     }
 
+    @Test
+    fun `colliders with current camera push view transform around collider rects`() {
+        Debug.colliderVisualization = true
+        val scene = Scene()
+        val camera = Camera2D().apply {
+            bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
+            current = true
+            aspectMode = AspectMode.FIT
+        }
+        scene.addChild(camera)
+        scene.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
+        scene.addChild(BoxCollider().apply { size = Vec2(20f, 20f) })
+        scene.resize(1280f, 900f)
+        scene.start()
+
+        val recorder = RecordingRenderer()
+        renderDebugOverlay(recorder, scene)
+
+        val tags = recorder.calls.map {
+            when (it) {
+                is Call.Push -> "push"
+                is Call.Pop -> "pop"
+                is Call.Rect -> "rect"
+                else -> "other"
+            }
+        }
+        // push → rect, rect → pop (no HUD because showFps is off)
+        assertEquals(listOf("push", "rect", "rect", "pop"), tags)
+
+        val push = recorder.calls.filterIsInstance<Call.Push>().single()
+        assertEquals(Vec2(40f, 0f), push.translation)
+        assertEquals(Vec2(1.5f, 1.5f), push.scale)
+    }
+
+    @Test
+    fun `colliders without current camera draw without push or pop`() {
+        Debug.colliderVisualization = true
+        val recorder = RecordingRenderer()
+        val scene = sceneWithCollider(count = 2)
+
+        renderDebugOverlay(recorder, scene)
+
+        assertEquals(0, recorder.calls.count { it is Call.Push })
+        assertEquals(0, recorder.calls.count { it is Call.Pop })
+        assertEquals(2, recorder.calls.count { it is Call.Rect })
+    }
+
+    @Test
+    fun `FPS draws outside any push when camera is current`() {
+        Debug.showFps = true
+        Debug.colliderVisualization = true
+        val scene = Scene()
+        val camera = Camera2D().apply {
+            bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
+            current = true
+        }
+        scene.addChild(camera)
+        scene.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
+        scene.resize(1280f, 900f)
+        scene.start()
+
+        val recorder = RecordingRenderer()
+        renderDebugOverlay(recorder, scene)
+
+        // Order: push → collider rect → pop → text.
+        val tags = recorder.calls.map {
+            when (it) {
+                is Call.Push -> "push"
+                is Call.Pop -> "pop"
+                is Call.Rect -> "rect"
+                is Call.Text -> "text"
+                else -> "other"
+            }
+        }
+        assertEquals(listOf("push", "rect", "pop", "text"), tags)
+    }
+
     private fun sceneWithCollider(count: Int = 1): Scene {
         val scene = Scene()
         repeat(count) { scene.addChild(BoxCollider().apply { size = Vec2(10f, 10f) }) }
@@ -98,6 +177,8 @@ private sealed class Call {
     data class Line(val from: Vec2, val to: Vec2, val thickness: Float, val color: Color) : Call()
     data class Circle(val center: Vec2, val radius: Float, val color: Color, val filled: Boolean, val thickness: Float) : Call()
     data class Clear(val color: Color) : Call()
+    data class Push(val translation: Vec2, val scale: Vec2) : Call()
+    object Pop : Call()
 }
 
 private class RecordingRenderer : Renderer {
@@ -126,4 +207,11 @@ private class RecordingRenderer : Renderer {
 
     override fun measureText(text: String, size: Float): Vec2 = Vec2(text.length * size * 0.5f, size)
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
+    override fun pushTransform(translation: Vec2, scale: Vec2) {
+        calls += Call.Push(translation, scale)
+    }
+
+    override fun popTransform() {
+        calls += Call.Pop
+    }
 }

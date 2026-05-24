@@ -29,13 +29,19 @@ class ComposeRenderer(
 ) : Renderer {
 
     private var scope: DrawScope? = null
+    private var transformDepth: Int = 0
 
     fun bind(drawScope: DrawScope) {
         scope = drawScope
+        transformDepth = 0
     }
 
     fun unbind() {
+        val leaked = transformDepth
         scope = null
+        check(leaked == 0) {
+            "ComposeRenderer.unbind() with $leaked unmatched pushTransform call(s); every push MUST be matched by pop within a frame."
+        }
     }
 
     private fun required(): DrawScope = checkNotNull(scope) {
@@ -97,6 +103,22 @@ class ComposeRenderer(
             close()
         }
         s.drawPath(path, color = color.toUi(), style = Fill)
+    }
+
+    override fun pushTransform(translation: Vec2, scale: Vec2) {
+        val s = required()
+        s.drawContext.canvas.save()
+        s.drawContext.transform.translate(translation.x, translation.y)
+        // Pivot must be (0, 0); the default pivot is the surface center, which
+        // would shift draws by the surface's half-size on every scale.
+        s.drawContext.transform.scale(scale.x, scale.y, Offset.Zero)
+        transformDepth++
+    }
+
+    override fun popTransform() {
+        check(transformDepth > 0) { "popTransform on empty transform stack (ComposeRenderer)" }
+        required().drawContext.canvas.restore()
+        transformDepth--
     }
 
     private fun textStyle(size: Float, color: Color): TextStyle = TextStyle(

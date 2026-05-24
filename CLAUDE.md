@@ -95,6 +95,10 @@ Durante a execução:
 - **Em `:engine-compose`, use APIs do Compose, não Skia direto.** `org.jetbrains.skia.*` só com justificativa documentada.
 - **Testes para regras invariantes.** Cada decisão arquitetural com risco de regressão (lifecycle ordering, broad phase) tem teste unitário.
 
+### Camera2D define o mundo virtual
+
+Quando uma cena tem um `Camera2D` com `current = true`, seu `bounds` (um `Rect` em coordenadas de mundo) define a região visível do mundo virtual; o `Renderer` projeta esse `bounds` sobre a surface (`scene.size`) respeitando `aspectMode` antes do tree-walk de `_draw`. Padrão é `AspectMode.FIT` (zoom uniforme, letterbox bars nas margens sobressalentes). Cenas sem `Camera2D` (ex.: `:games:tictactoe`) caem no fallback identity — coordenadas mundiais são pixels da surface. A view transform é aplicada por `Scene.render` via `Renderer.pushTransform/popTransform` (LIFO), e o overlay de debug de colliders usa a mesma transform para que os bounds desenhem alinhados ao mundo projetado.
+
 ### Serialization contract (`@Inspect` / `@Transient`)
 
 Classes candidatas a aparecer numa scene file levam `@Serializable` (do `kotlinx.serialization`). Para essas classes vale a disciplina abaixo — exigida porque a engine ainda não tem lint custom para fazê-la cumprir:
@@ -159,6 +163,7 @@ def _on_collide(self, other):           ← apenas relevante para BoxCollider e 
   - `_exit_tree(self)` — limpeza ao sair da live tree.
   - `_on_collide(self, other)` — disparado pelo `PhysicsSystem` para `BoxCollider`s em contato.
 - **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Signal`, `signal`.
+- **Coordenadas surface ↔ mundo**: scripts que precisam converter input em pixels (mouse) para coordenadas do mundo (ou vice-versa) usam `Camera2D.screenToWorld(screenPosition, sceneSize)` e `Camera2D.worldToScreen(worldPosition, sceneSize)`. Ambos honram `bounds` + `aspectMode` e caem em identity quando `bounds.size <= 0`. Não usados em Pong/Demos/Tic hoje, mas é o caminho documentado para qualquer jogo novo com clique-no-mundo.
 - **Fail-fast**: qualquer erro (parse, `extends` desconhecido, exception num hook) propaga até o `Main.kt` e crasha o processo.
 
 #### Signals

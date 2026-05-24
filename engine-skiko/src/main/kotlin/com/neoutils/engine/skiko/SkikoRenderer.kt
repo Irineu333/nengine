@@ -32,13 +32,19 @@ class SkikoRenderer : Renderer {
     private val fontCache: HashMap<Float, Font> = HashMap()
     private val textLineCache: HashMap<TextLineKey, TextLine> = HashMap()
     private val sharedPaint: Paint = Paint().apply { isAntiAlias = true }
+    private var transformDepth: Int = 0
 
     fun bind(canvas: Canvas) {
         this.canvas = canvas
+        transformDepth = 0
     }
 
     fun unbind() {
+        val leaked = transformDepth
         canvas = null
+        check(leaked == 0) {
+            "SkikoRenderer.unbind() with $leaked unmatched pushTransform call(s); every push MUST be matched by pop within a frame."
+        }
     }
 
     private fun required(): Canvas = checkNotNull(canvas) {
@@ -103,6 +109,20 @@ class SkikoRenderer : Renderer {
         for (i in 1 until points.size) builder.lineTo(points[i].x, points[i].y)
         builder.closePath()
         c.drawPath(builder.snapshot(), configurePaint(color, filled = true, thickness = 1f))
+    }
+
+    override fun pushTransform(translation: Vec2, scale: Vec2) {
+        val c = required()
+        c.save()
+        c.translate(translation.x, translation.y)
+        c.scale(scale.x, scale.y)
+        transformDepth++
+    }
+
+    override fun popTransform() {
+        check(transformDepth > 0) { "popTransform on empty transform stack (SkikoRenderer)" }
+        required().restore()
+        transformDepth--
     }
 }
 

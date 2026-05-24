@@ -4,9 +4,7 @@ import com.neoutils.engine.bundle.script.*
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Scene
 import com.neoutils.engine.serialization.NodeRegistry
-import com.neoutils.engine.serialization.SceneLoader
 import java.io.File
 import kotlin.reflect.KClass
 import kotlin.test.*
@@ -27,6 +25,7 @@ private class FakeScriptInstance : ScriptInstance {
 
     override val signals: Map<String, com.neoutils.engine.serialization.Signal<*>> = emptyMap()
     override fun setExport(name: String, value: Any?) { applied[name] = value }
+    override fun currentValue(name: String): Any? = applied[name]
     override fun onEnter() {}
     override fun onProcess(dt: Float) { updateCallCount++ }
     override fun onPhysicsProcess(dt: Float) {}
@@ -35,14 +34,16 @@ private class FakeScriptInstance : ScriptInstance {
     override fun onCollide(other: Node) {}
 }
 
-private class FakeScriptHost : ScriptHost {
+private class FakeScriptHost(
+    private val scriptFactory: (String) -> FakeScript = { FakeScript(it) },
+) : ScriptHost {
     override val extension = ".py"
     val loaded = mutableListOf<String>()
     val instances = mutableListOf<FakeScriptInstance>()
 
     override fun load(path: String, bundle: BundleSource): Script {
         loaded += path
-        return FakeScript(path)
+        return scriptFactory(path)
     }
 
     override fun attach(node: Node, script: Script): ScriptInstance {
@@ -82,7 +83,7 @@ class BundleLoaderTest {
         val foo = scene.children[0]
         assertEquals("fooScript", foo.name)
         assertTrue(foo is Node2D)
-        // verify scriptInstance was attached: calling onUpdate propagates to the instance
+        // verify scriptInstance was attached: calling onProcess propagates to the instance
         foo.onProcess(0f)
         assertEquals(1, fakeHost.instances[0].updateCallCount)
 
@@ -142,16 +143,16 @@ class BundleLoaderTest {
             File(temp, "scene.json").writeText(
                 """
                 {
-                  "version": 1,
+                  "version": 2,
                   "root": {
                     "type": "com.neoutils.engine.scene.Scene",
                     "name": "DupRoot",
                     "properties": {},
                     "children": [
-                      { "type": "com.neoutils.engine.scene.Node2D", "name": "first", "properties": {},
-                        "script": "scripts/dummy.py", "props": { "value": 1 }, "children": [] },
-                      { "type": "com.neoutils.engine.scene.Node2D", "name": "second", "properties": {},
-                        "script": "scripts/dummy.py", "props": { "value": 2 }, "children": [] }
+                      { "type": "com.neoutils.engine.scene.Node2D", "name": "first", "properties": { "value": 1 },
+                        "script": "scripts/dummy.py", "children": [] },
+                      { "type": "com.neoutils.engine.scene.Node2D", "name": "second", "properties": { "value": 2 },
+                        "script": "scripts/dummy.py", "children": [] }
                     ]
                   }
                 }
@@ -183,7 +184,7 @@ class BundleLoaderTest {
             File(temp, "scene.json").writeText(
                 """
                 {
-                  "version": 1,
+                  "version": 2,
                   "root": {
                     "type": "com.neoutils.engine.scene.Scene",
                     "name": "CustomRoot",
@@ -212,7 +213,7 @@ class BundleLoaderTest {
             File(temp, "scene.json").writeText(
                 """
                 {
-                  "version": 1,
+                  "version": 2,
                   "root": {
                     "type": "com.neoutils.engine.scene.Scene",
                     "name": "EngineRoot",
@@ -241,13 +242,13 @@ class BundleLoaderTest {
     }
 
     @Test
-    fun `node with script and props attaches scriptInstance and applies export`() {
+    fun `node with script and export properties attaches and applies export`() {
         val temp = createTempDir("bundle-script-props")
         try {
             File(temp, "scene.json").writeText(
                 """
                 {
-                  "version": 1,
+                  "version": 2,
                   "root": {
                     "type": "com.neoutils.engine.scene.Scene",
                     "name": "Root",
@@ -256,9 +257,8 @@ class BundleLoaderTest {
                       {
                         "type": "com.neoutils.engine.scene.Node2D",
                         "name": "scripted",
-                        "properties": {},
+                        "properties": { "value": 42 },
                         "script": "scripts/dummy.py",
-                        "props": { "value": 42 },
                         "children": []
                       }
                     ]
@@ -271,7 +271,6 @@ class BundleLoaderTest {
 
             val scene = BundleLoader.fromPath(temp)
             val node = scene.children[0]
-            // calling onUpdate propagates iff scriptInstance was attached
             node.onProcess(0f)
             assertEquals(1, fakeHost.instances[0].updateCallCount, "scriptInstance must be attached")
             assertEquals(42, fakeHost.instances[0].applied["value"])
@@ -287,7 +286,7 @@ class BundleLoaderTest {
             File(temp, "scene.json").writeText(
                 """
                 {
-                  "version": 1,
+                  "version": 2,
                   "root": {
                     "type": "com.neoutils.engine.scene.Scene",
                     "name": "Root",
@@ -316,13 +315,23 @@ class BundleLoaderTest {
     }
 
     @Test
-    fun `props without script fails fast`() {
-        val temp = createTempDir("bundle-props-no-script")
+    fun `properties key matching both inspect and export is fatal collision`() {
+        // Replace the default fake host with one whose script exports "transform"
+        // (collides with Node2D @Inspect var transform).
+        ScriptHostRegistry.clear()
+        val collidingHost = FakeScriptHost(scriptFactory = {
+            FakeScript(
+                path = it,
+                exports = listOf(ExportedProperty("transform", Int::class, default = 0)),
+            )
+        })
+        ScriptHostRegistry.register(collidingHost)
+        val temp = createTempDir("bundle-collision")
         try {
             File(temp, "scene.json").writeText(
                 """
                 {
-                  "version": 1,
+                  "version": 2,
                   "root": {
                     "type": "com.neoutils.engine.scene.Scene",
                     "name": "Root",
@@ -330,9 +339,9 @@ class BundleLoaderTest {
                     "children": [
                       {
                         "type": "com.neoutils.engine.scene.Node2D",
-                        "name": "bad",
-                        "properties": {},
-                        "props": { "value": 1 },
+                        "name": "collider",
+                        "properties": { "transform": 1 },
+                        "script": "scripts/dummy.py",
                         "children": []
                       }
                     ]
@@ -340,10 +349,93 @@ class BundleLoaderTest {
                 }
                 """.trimIndent()
             )
-            val ex = assertFailsWith<IllegalStateException> {
-                BundleLoader.fromPath(temp)
-            }
-            assertTrue(ex.message!!.contains("props"), "Error should mention 'props': ${ex.message}")
+            File(temp, "scripts").mkdirs()
+            File(temp, "scripts/dummy.py").writeText("# extends Node2D\ntransform: int = 0\n")
+            val ex = assertFailsWith<IllegalStateException> { BundleLoader.fromPath(temp) }
+            val msg = ex.message!!
+            assertTrue(msg.contains("transform"), msg)
+            assertTrue(msg.contains("collider"), msg)
+            assertTrue(msg.contains("scripts/dummy.py"), msg)
+            assertTrue(msg.contains("Node2D"), msg)
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `properties unknown key with attached script is fatal listing both candidate sources`() {
+        val temp = createTempDir("bundle-unknown")
+        try {
+            File(temp, "scene.json").writeText(
+                """
+                {
+                  "version": 2,
+                  "root": {
+                    "type": "com.neoutils.engine.scene.Scene",
+                    "name": "Root",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "com.neoutils.engine.scene.Node2D",
+                        "name": "scripted",
+                        "properties": { "mystery": 1 },
+                        "script": "scripts/dummy.py",
+                        "children": []
+                      }
+                    ]
+                  }
+                }
+                """.trimIndent()
+            )
+            File(temp, "scripts").mkdirs()
+            File(temp, "scripts/dummy.py").writeText("# extends Node2D\nvalue: int = 0\n")
+            val ex = assertFailsWith<IllegalStateException> { BundleLoader.fromPath(temp) }
+            val msg = ex.message!!
+            assertTrue(msg.contains("mystery"), msg)
+            assertTrue(msg.contains("scripted"), msg)
+            assertTrue(msg.contains("transform"), msg) // Node2D @Inspect candidate
+            assertTrue(msg.contains("value"), msg)     // export candidate
+            assertTrue(msg.contains("scripts/dummy.py"), msg)
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `properties valid mix of inspect and export keys routes to both targets`() {
+        val temp = createTempDir("bundle-mixed")
+        try {
+            File(temp, "scene.json").writeText(
+                """
+                {
+                  "version": 2,
+                  "root": {
+                    "type": "com.neoutils.engine.scene.Scene",
+                    "name": "Root",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "com.neoutils.engine.scene.Node2D",
+                        "name": "mixed",
+                        "properties": {
+                          "transform": { "position": {"x": 3.0, "y": 4.0}, "scale": {"x": 1.0, "y": 1.0}, "rotation": 0.0 },
+                          "value": 99
+                        },
+                        "script": "scripts/dummy.py",
+                        "children": []
+                      }
+                    ]
+                  }
+                }
+                """.trimIndent()
+            )
+            File(temp, "scripts").mkdirs()
+            File(temp, "scripts/dummy.py").writeText("# extends Node2D\nvalue: int = 0\n")
+            val scene = BundleLoader.fromPath(temp)
+            val n = scene.children[0] as Node2D
+            assertEquals(3f, n.transform.position.x)
+            assertEquals(4f, n.transform.position.y)
+            assertEquals(99, fakeHost.instances[0].applied["value"])
         } finally {
             temp.deleteRecursively()
         }

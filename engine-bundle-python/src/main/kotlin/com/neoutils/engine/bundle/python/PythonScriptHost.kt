@@ -178,16 +178,7 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
         return result
     }
 
-    private fun valueToKotlin(value: Value, type: KClass<*>): Any? {
-        if (value.isNull) return null
-        return when (type) {
-            Float::class -> value.asDouble().toFloat()
-            Int::class -> value.asInt()
-            Boolean::class -> value.asBoolean()
-            String::class -> value.asString()
-            else -> if (value.isHostObject) value.asHostObject() else null
-        }
-    }
+    private fun valueToKotlin(value: Value, type: KClass<*>): Any? = polyglotValueToKotlin(value, type)
 
     override fun attach(node: Node, script: Script): ScriptInstance {
         val moduleNs = moduleCache[script.path]
@@ -205,9 +196,9 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
             signals[decl.name] = sig
             instance.putMember(decl.name, sig)
         }
-        val scriptInstance = PythonScriptInstance(instance, moduleNs, signals)
+        val scriptInstance = PythonScriptInstance(instance, moduleNs, script, signals)
         // Seed the instance with each export's default — callers (e.g. BundleLoader)
-        // may then override individual values via setExport from scene.json `props`.
+        // may then override individual values via setExport from scene.json `properties`.
         for (export in script.exports) {
             scriptInstance.setExport(export.name, export.default)
         }
@@ -244,11 +235,23 @@ private data class ScriptData(
 private class PythonScriptInstance(
     private val instance: Value,
     private val moduleNs: Value,
+    private val script: Script,
     override val signals: Map<String, Signal<*>>,
 ) : ScriptInstance {
 
     override fun setExport(name: String, value: Any?) {
         instance.putMember(name, value)
+    }
+
+    override fun currentValue(name: String): Any? {
+        val export = script.exports.firstOrNull { it.name == name }
+            ?: throw IllegalArgumentException(
+                "Export '$name' is not declared in script '${script.path}'"
+            )
+        if (!instance.hasMember(name)) return export.default
+        val raw = instance.getMember(name)
+        if (raw == null || raw.isNull) return if (export.nullable) null else export.default
+        return polyglotValueToKotlin(raw, export.type)
     }
 
     override fun onEnter() {
@@ -293,6 +296,17 @@ class UnknownExtendsTypeException(typeName: String, path: String) :
 
 class InvalidSignalDeclarationException(path: String, line: Int, name: String) :
     RuntimeException("Script '$path' line $line: '$name: Signal' must be initialized via the `signal(...)` factory")
+
+private fun polyglotValueToKotlin(value: Value, type: KClass<*>): Any? {
+    if (value.isNull) return null
+    return when (type) {
+        Float::class -> value.asDouble().toFloat()
+        Int::class -> value.asInt()
+        Boolean::class -> value.asBoolean()
+        String::class -> value.asString()
+        else -> if (value.isHostObject) value.asHostObject() else null
+    }
+}
 
 private fun kotlinTypeFor(name: String): KClass<*> = when (name) {
     "Int" -> Int::class

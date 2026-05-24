@@ -2,17 +2,23 @@ package com.neoutils.engine.serialization
 
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
+import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.ColorRect
+import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.scene.ScriptInstanceContract
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -41,12 +47,14 @@ class SceneLoaderTest {
         }
         val text = SceneLoader.save(scene)
         val obj: JsonObject = Json.parseToJsonElement(text).jsonObject
-        assertEquals(1, obj["version"]!!.jsonPrimitive.content.toInt())
+        assertEquals(2, obj["version"]!!.jsonPrimitive.content.toInt())
         val root = obj["root"]!!.jsonObject
         assertEquals("com.neoutils.engine.scene.Scene", root["type"]!!.jsonPrimitive.content)
         assertEquals("root", root["name"]!!.jsonPrimitive.content)
         assertTrue(root["children"] != null)
         assertTrue(root["properties"] != null)
+        // No props field anywhere
+        assertTrue("props" !in root)
     }
 
     @Test
@@ -108,7 +116,7 @@ class SceneLoaderTest {
         NodeRegistry.register("scripts/counter.nengine.kts", CounterNode::class) { CounterNode() }
         val jsonText = """
             {
-              "version": 1,
+              "version": 2,
               "root": {
                 "type": "com.neoutils.engine.scene.Scene",
                 "name": "root",
@@ -135,7 +143,7 @@ class SceneLoaderTest {
     fun `unknown type fails fast regardless of suffix`() {
         val jsonText = """
             {
-              "version": 1,
+              "version": 2,
               "root": {
                 "type": "com.neoutils.engine.scene.Scene",
                 "name": "root",
@@ -151,7 +159,7 @@ class SceneLoaderTest {
               }
             }
         """.trimIndent()
-        val ex = kotlin.test.assertFailsWith<UnknownNodeTypeException> {
+        val ex = assertFailsWith<UnknownNodeTypeException> {
             SceneLoader.load(jsonText)
         }
         assertEquals("scripts/missing.nengine.kts", ex.typeName)
@@ -169,6 +177,135 @@ class SceneLoaderTest {
         val child = (obj["root"]!!.jsonObject["children"] as kotlinx.serialization.json.JsonArray)[0].jsonObject
         assertEquals("scripts/counter.nengine.kts", child["type"]!!.jsonPrimitive.content)
     }
+
+    @Test
+    fun `load rejects version 1 with explicit message`() {
+        val jsonText = """
+            {
+              "version": 1,
+              "root": {
+                "type": "com.neoutils.engine.scene.Scene",
+                "name": "root",
+                "properties": {},
+                "children": []
+              }
+            }
+        """.trimIndent()
+        val ex = assertFailsWith<IllegalStateException> {
+            SceneLoader.load(jsonText)
+        }
+        val msg = ex.message!!
+        assertTrue(msg.contains("version 1"), msg)
+        assertTrue(msg.contains("version 2"), msg)
+        assertTrue(msg.contains("godot-style-properties"), msg)
+    }
+
+    @Test
+    fun `unknown property in properties without script fails fast`() {
+        val jsonText = """
+            {
+              "version": 2,
+              "root": {
+                "type": "com.neoutils.engine.scene.Scene",
+                "name": "root",
+                "properties": {},
+                "children": [
+                  {
+                    "type": "com.neoutils.engine.scene.ColorRect",
+                    "name": "rect",
+                    "properties": { "ballSizr": 16.0 },
+                    "children": []
+                  }
+                ]
+              }
+            }
+        """.trimIndent()
+        val ex = assertFailsWith<IllegalStateException> {
+            SceneLoader.load(jsonText)
+        }
+        val msg = ex.message!!
+        assertTrue(msg.contains("ballSizr"), msg)
+        assertTrue(msg.contains("rect"), msg)
+        assertTrue(msg.contains("No script attached"), msg)
+    }
+
+    @Test
+    fun `entry with script but null attachScript fails fast`() {
+        val jsonText = """
+            {
+              "version": 2,
+              "root": {
+                "type": "com.neoutils.engine.scene.Scene",
+                "name": "root",
+                "properties": {},
+                "children": [
+                  {
+                    "type": "com.neoutils.engine.scene.ColorRect",
+                    "name": "rect",
+                    "script": "scripts/foo.py",
+                    "properties": {},
+                    "children": []
+                  }
+                ]
+              }
+            }
+        """.trimIndent()
+        val ex = assertFailsWith<IllegalStateException> {
+            SceneLoader.load(jsonText, attachScript = null)
+        }
+        val msg = ex.message!!
+        assertTrue(msg.contains("scripts/foo.py"), msg)
+        assertTrue(msg.contains("no attachScript host"), msg)
+    }
+
+    @Test
+    fun `round-trip is stable with attached script and currentValue`() {
+        // Tree with one node carrying a fake script that exposes a single export
+        val jsonText = """
+            {
+              "version": 2,
+              "root": {
+                "type": "com.neoutils.engine.scene.Scene",
+                "name": "root",
+                "properties": {},
+                "children": [
+                  {
+                    "type": "com.neoutils.engine.scene.ColorRect",
+                    "name": "rect",
+                    "script": "fake.py",
+                    "properties": { "speed": 480.0 },
+                    "children": []
+                  }
+                ]
+              }
+            }
+        """.trimIndent()
+
+        val instances = mutableMapOf<Node, FakeScriptInstance>()
+        val attach: (Node, String) -> ScriptAttachment = { node, _ ->
+            val inst = FakeScriptInstance(mutableMapOf("speed" to JsonPrimitive(360.0)))
+            instances[node] = inst
+            ScriptAttachment(
+                instance = inst,
+                exportNames = setOf("speed"),
+                applyExport = { name, el -> inst.exports[name] = el },
+            )
+        }
+        val serialize: (Node) -> Map<String, JsonElement>? = { node ->
+            instances[node]?.exports?.toMap()
+        }
+
+        val scene = SceneLoader.load(jsonText, attach)
+        val first = SceneLoader.save(scene, serialize)
+        val scene2 = SceneLoader.load(first, attach)
+        val second = SceneLoader.save(scene2, serialize)
+        assertEquals(first, second)
+        // sanity: emitted JSON carries the export inside `properties`
+        val obj = Json.parseToJsonElement(first).jsonObject
+        val child = (obj["root"]!!.jsonObject["children"] as kotlinx.serialization.json.JsonArray)[0].jsonObject
+        val props = child["properties"]!!.jsonObject
+        assertEquals(480.0, props["speed"]!!.jsonPrimitive.content.toDouble())
+    }
 }
 
 class CounterNode : com.neoutils.engine.scene.Node() {
@@ -176,4 +313,16 @@ class CounterNode : com.neoutils.engine.scene.Node() {
     companion object {
         @Volatile var totalEnters: Int = 0
     }
+}
+
+private class FakeScriptInstance(
+    val exports: MutableMap<String, JsonElement>,
+) : ScriptInstanceContract {
+    override val signals: Map<String, Signal<*>> = emptyMap()
+    override fun onEnter() {}
+    override fun onProcess(dt: Float) {}
+    override fun onPhysicsProcess(dt: Float) {}
+    override fun onDraw(renderer: Renderer) {}
+    override fun onExit() {}
+    override fun onCollide(other: Node) {}
 }

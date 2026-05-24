@@ -2,7 +2,6 @@ package com.neoutils.engine.serialization
 
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Scene
-import com.neoutils.engine.scene.ScriptInstanceContract
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -14,8 +13,9 @@ import kotlin.reflect.full.memberProperties
 /**
  * Saves a scene tree to and loads it from a JSON document. The serialized
  * shape is `SceneFile` over `NodeEntry`: each node carries an identifier (the
- * value registered in [NodeRegistry] for its class), its `name`, an `@Inspect`
- * property map, and its children in order.
+ * value registered in [NodeRegistry] for its class), its `name`, a unified
+ * `properties` map that holds both `@Inspect` properties of the Node and
+ * exports of any attached script, and its children in order.
  *
  * Load does not invoke `Scene.start()` — the returned scene is detached and
  * `isLive == false`. The caller decides when to make it live so deferred
@@ -24,37 +24,62 @@ import kotlin.reflect.full.memberProperties
 object SceneLoader {
 
     private const val NAME_PROPERTY = "name"
+    private const val SUPPORTED_VERSION = 2
 
     private val json = Json {
         prettyPrint = true
         encodeDefaults = true
     }
 
-    fun save(scene: Scene): String {
-        val root = nodeToEntry(scene)
-        return json.encodeToString(SceneFile.serializer(), SceneFile(root = root))
+    fun save(
+        scene: Scene,
+        serializeScriptExports: ((Node) -> Map<String, JsonElement>?)? = null,
+    ): String {
+        val root = nodeToEntry(scene, serializeScriptExports)
+        return json.encodeToString(
+            SceneFile.serializer(),
+            SceneFile(version = SUPPORTED_VERSION, root = root),
+        )
     }
 
     fun load(
         text: String,
-        attachScript: ((node: Node, scriptPath: String, props: JsonObject?) -> ScriptInstanceContract?)? = null,
+        attachScript: ((node: Node, scriptPath: String) -> ScriptAttachment?)? = null,
     ): Scene {
         val file = json.decodeFromString(SceneFile.serializer(), text)
-        val root = entryToNode(file.root, attachScript)
+        if (file.version != SUPPORTED_VERSION) {
+            error(
+                "SceneFile version ${file.version} is not supported. " +
+                    "This loader requires version $SUPPORTED_VERSION " +
+                    "(field 'props' was merged into 'properties' in change " +
+                    "godot-style-properties). Migrate manually."
+            )
+        }
+        val root = entryToNode(file.root, attachScript, path = "/${file.root.name}")
         return root as? Scene
             ?: error("Root node is not a Scene: ${file.root.type}")
     }
 
-    private fun nodeToEntry(node: Node): NodeEntry {
+    private fun nodeToEntry(
+        node: Node,
+        serializeScriptExports: ((Node) -> Map<String, JsonElement>?)?,
+    ): NodeEntry {
         val typeName = NodeRegistry.identifierFor(node::class)
             ?: node::class.qualifiedName
             ?: error("Node type has no qualified name (anonymous?): ${node::class}")
-        val children = node.children.map(::nodeToEntry)
+        val children = node.children.map { nodeToEntry(it, serializeScriptExports) }
+        val merged = linkedMapOf<String, JsonElement>()
+        merged.putAll(extractInspectProperties(node))
+        if (node.scriptInstance != null) {
+            val exports = serializeScriptExports?.invoke(node)
+            if (exports != null) merged.putAll(exports)
+        }
         return NodeEntry(
             type = typeName,
             name = node.name,
-            properties = extractInspectProperties(node),
+            properties = JsonObject(merged),
             children = children,
+            script = node.scriptPath,
         )
     }
 
@@ -75,34 +100,85 @@ object SceneLoader {
 
     private fun entryToNode(
         entry: NodeEntry,
-        attachScript: ((node: Node, scriptPath: String, props: JsonObject?) -> ScriptInstanceContract?)?,
+        attachScript: ((node: Node, scriptPath: String) -> ScriptAttachment?)?,
+        path: String,
     ): Node {
-        if (entry.props != null && entry.script == null) {
-            error("NodeEntry '${entry.name}': 'props' requires 'script' to be non-null")
-        }
         val node = NodeRegistry.create(entry.type)
         node.name = entry.name
-        applyProperties(node, entry.properties)
-        entry.script?.let { scriptPath ->
-            node.scriptInstance = attachScript?.invoke(node, scriptPath, entry.props)
+        val attachment: ScriptAttachment? = entry.script?.let { scriptPath ->
+            if (attachScript == null) {
+                error(
+                    "Node '${entry.name}' (path '$path') references script " +
+                        "'$scriptPath' but no attachScript host was provided to SceneLoader.load."
+                )
+            }
+            val a = attachScript.invoke(node, scriptPath)
+            node.scriptInstance = a?.instance
+            node.scriptPath = scriptPath
+            a
         }
+        routeAndApplyProperties(node, attachment, entry.properties, path, entry.script)
         for (child in entry.children) {
-            node.addChild(entryToNode(child, attachScript))
+            node.addChild(entryToNode(child, attachScript, "$path/${child.name}"))
         }
         return node
     }
 
-    private fun applyProperties(node: Node, properties: JsonObject) {
+    private fun routeAndApplyProperties(
+        node: Node,
+        attachment: ScriptAttachment?,
+        properties: JsonObject,
+        path: String,
+        scriptPath: String?,
+    ) {
         val klass = node::class
+        val inspectMutables = linkedMapOf<String, KMutableProperty1<*, *>>()
+        val inspectNames = linkedSetOf<String>()
         for (property in klass.memberProperties) {
             property.findAnnotation<Inspect>() ?: continue
-            if (property.name == NAME_PROPERTY) continue
-            val element = properties[property.name] ?: continue
+            inspectNames.add(property.name)
             val mutable = property as? KMutableProperty1<*, *> ?: continue
-            val serializer = json.serializersModule.serializer(property.returnType)
-            val value = json.decodeFromJsonElement(serializer, element)
-            @Suppress("UNCHECKED_CAST")
-            (mutable as KMutableProperty1<Any, Any?>).set(node, value)
+            inspectMutables[property.name] = mutable
+        }
+        val exportNames: Set<String> = attachment?.exportNames ?: emptySet()
+
+        for ((key, element) in properties) {
+            val isInspect = key in inspectNames
+            val isExport = key in exportNames
+            when {
+                isInspect && isExport -> {
+                    error(
+                        "Property '$key' on node '${node.name}' (path '$path') is declared " +
+                            "both as @Inspect on ${klass.qualifiedName} and as an export in " +
+                            "$scriptPath. Property names must be unique across Node and script."
+                    )
+                }
+                isInspect -> {
+                    if (key == NAME_PROPERTY) continue
+                    val mutable = inspectMutables[key] ?: continue
+                    val serializer = json.serializersModule.serializer(mutable.returnType)
+                    val value = json.decodeFromJsonElement(serializer, element)
+                    @Suppress("UNCHECKED_CAST")
+                    (mutable as KMutableProperty1<Any, Any?>).set(node, value)
+                }
+                isExport -> {
+                    attachment!!.applyExport(key, element)
+                }
+                else -> {
+                    val inspectMsg = inspectNames.sorted().toString()
+                    val scriptMsg = if (attachment != null && scriptPath != null) {
+                        "Candidates from exports in $scriptPath: " +
+                            exportNames.sorted().toString() + "."
+                    } else {
+                        "No script attached."
+                    }
+                    error(
+                        "Unknown property '$key' on node '${node.name}' (path '$path'). " +
+                            "Candidates from @Inspect on ${klass.qualifiedName}: $inspectMsg. " +
+                            scriptMsg
+                    )
+                }
+            }
         }
     }
 }

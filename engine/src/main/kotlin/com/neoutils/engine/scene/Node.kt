@@ -46,6 +46,14 @@ abstract class Node {
     @Transient
     internal var scriptInstance: ScriptInstanceContract? = null
 
+    /**
+     * Bundle-relative path of the script attached to this node, mirroring
+     * `NodeEntry.script`. Set by `SceneLoader` on load so `save` can round-trip
+     * the field without consulting a script registry.
+     */
+    @Transient
+    internal var scriptPath: String? = null
+
     @Transient
     private val _groups: MutableSet<String> = mutableSetOf()
     val groups: Set<String> get() = _groups

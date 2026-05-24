@@ -11,6 +11,7 @@ import com.neoutils.engine.serialization.NodeEntry
 import com.neoutils.engine.serialization.NodeRegistry
 import com.neoutils.engine.serialization.SceneFile
 import com.neoutils.engine.serialization.SceneLoader
+import com.neoutils.engine.serialization.ScriptAttachment
 import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.reflect.KClass
@@ -89,20 +90,21 @@ object BundleLoader {
             emptyMap()
         }
 
-        return SceneLoader.load(sceneJsonText) { node, scriptPath, props ->
+        return SceneLoader.load(sceneJsonText) { node, scriptPath ->
             val script = scripts[scriptPath]
                 ?: error("Script '$scriptPath' was collected but not loaded — this is a bug")
             val host = ScriptHostRegistry.hostFor(scriptPath)
                 ?: error("No ScriptHost registered for '$scriptPath' — this is a bug")
             val instance = host.attach(node, script)
-            if (props != null) {
-                for ((name, jsonEl) in props) {
-                    val export = script.exports.find { it.name == name } ?: continue
+            ScriptAttachment(
+                instance = instance,
+                exportNames = script.exports.map { it.name }.toSet(),
+                applyExport = { name, jsonEl ->
+                    val export = script.exports.first { it.name == name }
                     val value = PropCoercion.coerce(jsonEl, export.type, export.nullable)
                     instance.setExport(name, value)
-                }
-            }
-            instance
+                },
+            )
         }
     }
 

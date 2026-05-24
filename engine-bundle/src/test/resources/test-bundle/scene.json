@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "root": {
     "type": "com.neoutils.engine.scene.Scene",
     "name": "TestRoot",
@@ -13,10 +13,10 @@
             "position": { "x": 1.0, "y": 2.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
-          }
+          },
+          "value": 7
         },
         "script": "scripts/dummy.py",
-        "props": { "value": 7 },
         "children": []
       },
       {

@@ -174,6 +174,49 @@ def _process(self, dt):
         instance.onCollide(other)  // no exception
     }
 
+    // --- currentValue --------------------------------------------------------
+
+    @Test
+    fun `currentValue reflects setExport value as Kotlin Float`() {
+        val host = ScriptHostRegistry.hostFor("test.py")!!
+        val script = host.load("test.py", bundle(mapOf(
+            "test.py" to "${EXTENDS_NODE2D}speed: float = 360.0\n"
+        )))
+        val node = Node2D()
+        val instance = host.attach(node, script)
+        instance.setExport("speed", 480.0f)
+        val value = instance.currentValue("speed")
+        assertTrue(value is Float, "expected Float, got ${value?.let { it::class }}")
+        assertEquals(480.0f, value, 0.001f)
+    }
+
+    @Test
+    fun `currentValue returns the declared default when never overridden`() {
+        val host = ScriptHostRegistry.hostFor("test.py")!!
+        val script = host.load("test.py", bundle(mapOf(
+            "test.py" to "${EXTENDS_NODE2D}speed: float = 360.0\n"
+        )))
+        val node = Node2D()
+        val instance = host.attach(node, script)
+        val value = instance.currentValue("speed")
+        assertEquals(360.0f, value as Float, 0.001f)
+    }
+
+    @Test
+    fun `currentValue on unknown export name fails fast naming script path`() {
+        val host = ScriptHostRegistry.hostFor("test.py")!!
+        val script = host.load("test.py", bundle(mapOf(
+            "test.py" to "${EXTENDS_NODE2D}speed: float = 360.0\n"
+        )))
+        val node = Node2D()
+        val instance = host.attach(node, script)
+        val ex = assertFailsWith<IllegalArgumentException> {
+            instance.currentValue("mystery")
+        }
+        assertTrue(ex.message!!.contains("mystery"))
+        assertTrue(ex.message!!.contains("test.py"))
+    }
+
     @Test
     fun `setExport stores value accessible from Python _draw`() {
         val host = ScriptHostRegistry.hostFor("test.py")!!

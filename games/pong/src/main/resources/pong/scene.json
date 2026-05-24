@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "root": {
     "type": "com.neoutils.engine.scene.Scene",
     "name": "PongScene",
@@ -36,10 +36,7 @@
             "position": { "x": 0.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
-          }
-        },
-        "script": "scripts/paddle.py",
-        "props": {
+          },
           "size": { "x": 16.0, "y": 96.0 },
           "upKey": "W",
           "downKey": "S",
@@ -49,6 +46,7 @@
           "aiTolerance": 8.0,
           "target": ""
         },
+        "script": "scripts/paddle.py",
         "children": []
       },
       {
@@ -59,10 +57,7 @@
             "position": { "x": 0.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
-          }
-        },
-        "script": "scripts/paddle.py",
-        "props": {
+          },
           "size": { "x": 16.0, "y": 96.0 },
           "upKey": null,
           "downKey": null,
@@ -72,6 +67,7 @@
           "aiTolerance": 8.0,
           "target": "../Ball"
         },
+        "script": "scripts/paddle.py",
         "children": []
       },
       {
@@ -83,16 +79,14 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 16.0, "y": 16.0 }
-        },
-        "script": "scripts/ball.py",
-        "props": {
+          "size": { "x": 16.0, "y": 16.0 },
           "ballSize": 16.0,
           "initialSpeed": 280.0,
           "maxSpeed": 560.0,
           "speedupPerHit": 1.05,
           "fieldCenter": { "x": 400.0, "y": 300.0 }
         },
+        "script": "scripts/ball.py",
         "children": []
       },
       {
@@ -130,12 +124,10 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 10.0, "y": 10.0 }
-        },
-        "script": "scripts/goal.py",
-        "props": {
+          "size": { "x": 10.0, "y": 10.0 },
           "side": "Left"
         },
+        "script": "scripts/goal.py",
         "children": []
       },
       {
@@ -147,12 +139,10 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 10.0, "y": 10.0 }
-        },
-        "script": "scripts/goal.py",
-        "props": {
+          "size": { "x": 10.0, "y": 10.0 },
           "side": "Right"
         },
+        "script": "scripts/goal.py",
         "children": []
       },
       {
@@ -163,13 +153,11 @@
             "position": { "x": 0.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
-          }
-        },
-        "script": "scripts/score.py",
-        "props": {
+          },
           "textSize": 48.0,
           "color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 }
         },
+        "script": "scripts/score.py",
         "children": []
       },
       {
@@ -180,13 +168,11 @@
             "position": { "x": 0.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
-          }
-        },
-        "script": "scripts/score.py",
-        "props": {
+          },
           "textSize": 48.0,
           "color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 }
         },
+        "script": "scripts/score.py",
         "children": []
       }
     ]

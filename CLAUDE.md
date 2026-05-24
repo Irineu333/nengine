@@ -191,14 +191,24 @@ A factory `signal(type)` recebe o tipo apenas como dica de documentação — Py
 {
   "type": "engine.Node2D",
   "script": "scripts/paddle.py",
-  "props": {
+  "properties": {
+    "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
     "speed": 360.0,
     "ai": false
   }
 }
 ```
 
-`BundleLoader` faz tree-walk no JSON, coleta todos os `script` paths, carrega via `ScriptHostRegistry` (despachado por extensão de arquivo) e aplica `props` nos exports da instância.
+`scene.json` usa **bag único** `properties` (estilo Godot): propriedades `@Inspect` nativas do Node e exports do script anexado convivem no mesmo objeto. O arquivo MUST declarar `"version": 2` no topo — `version: 1` é rejeitado com mensagem explícita nomeando a change `godot-style-properties` (sem leitor legacy; migre manualmente fundindo `props` em `properties`).
+
+`BundleLoader` faz tree-walk no JSON, coleta todos os `script` paths, carrega via `ScriptHostRegistry` (despachado por extensão de arquivo), atacha cada script ao Node e devolve um `ScriptAttachment` ao `SceneLoader`. O `SceneLoader` então roteia cada chave de `properties`:
+
+- chave bate só com `@Inspect` do Node → aplica via setter `@Inspect`.
+- chave bate só com export do script → aplica via `setExport` (após `PropCoercion`).
+- chave bate com ambos → **erro fatal de colisão**, nomeando o nó, a chave, o tipo do Node e o path do script.
+- chave não bate com nada → **erro fatal de chave desconhecida**, listando os candidatos (`@Inspect` names do Node e, se houver script, exports do script com o path).
+
+Essa disciplina é fail-fast: typos viram crash com mensagem acionável em vez de propriedades silenciosamente ignoradas.
 
 #### Instalando o ScriptHost
 

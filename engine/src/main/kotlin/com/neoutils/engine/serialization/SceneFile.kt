@@ -11,13 +11,12 @@ data class NodeEntry(
     val properties: JsonObject,
     val children: List<NodeEntry> = emptyList(),
     val script: String? = null,
-    val props: JsonObject? = null,
 )
 
 /** Top-level wrapper around the root node entry. `version` lets future
  *  changes break the format without silently corrupting older files. */
 @Serializable
 data class SceneFile(
-    val version: Int = 1,
+    val version: Int = 2,
     val root: NodeEntry,
 )

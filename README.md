@@ -19,23 +19,24 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 
 ### Scripting
 
-| Linguagem     | Status     | Módulo                  | Notas                                  |
-| ------------- | ---------- | ----------------------- | -------------------------------------- |
+| Linguagem     | Status     | Módulo                  | Notas                                   |
+|---------------|------------|-------------------------|-----------------------------------------|
+| Kotlin        | native     | `:engine`               | biblioteca entra como dependencia       |
 | Python        | default    | `:engine-bundle-python` | via GraalPy 24.x; stubs `.pyi` inclusos |
-| Kotlin Script | deprecated | —                       | substituído por bundle + Python        |
+| Kotlin Script | deprecated | —                       | experiencia de desenvolvimento ruim     |
 
 ### Jogos
 
 | Jogo          | Backend | Scripting | Função na engine                                     |
-| ------------- | ------- | --------- | ---------------------------------------------------- |
+|---------------|---------|-----------|------------------------------------------------------|
 | Pong          | Skiko   | Python    | prova da fundação (loop, física, scripts, signals)   |
-| Jogo da Velha | Compose | Kotlin\*  | sentinela do segundo backend                         |
+| Jogo da Velha | Compose | Kotlin    | sentinela do segundo backend                         |
 | Demos         | Skiko   | Kotlin    | 5 cenas exercitando invariantes (transform, colisão) |
 
 ## O que pretendemos ter
 
 | Item          | Categoria | Estado                                                 |
-| ------------- | --------- | ------------------------------------------------------ |
+|---------------|-----------|--------------------------------------------------------|
 | Lua scripting | runtime   | planejado — prova que a SPI é genuinamente agnóstica   |
 | Snake         | jogo      | planejado — validador de Camera2D, signals, fixed-step |
 | Editor visual | tooling   | planejado — vai dirigir decisões de serialização       |
@@ -62,3 +63,4 @@ Há dois caminhos previstos:
 - [`CLAUDE.md`](./CLAUDE.md) — invariantes arquiteturais, convenções, contrato de scripting, workflow OpenSpec
 - [`ROADMAP.md`](./ROADMAP.md) — changes ativas e planejadas
 - [`openspec/changes/archive/`](./openspec/changes/archive/) — histórico de decisões arquivadas
+- [`openspec/specs`](./openspec/specs/) — especificações do projeto

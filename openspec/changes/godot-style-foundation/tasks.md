@@ -1,10 +1,10 @@
 ## 1. Hook renames in `:engine`
 
-- [ ] 1.1 Em `Node.kt`: renomear `onUpdate(dt)` → `onProcess(dt)` e `onRender(renderer)` → `onDraw(renderer)`. Manter `onEnter`/`onExit`.
-- [ ] 1.2 Em `Node.kt`: adicionar `open fun onPhysicsProcess(dt: Float) { scriptInstance?.onPhysicsProcess(dt) }` com no-op default.
-- [ ] 1.3 Em `Node.kt`: adicionar `groups: Set<String>` (campo respaldado por `MutableSet<String>` `@Transient`), métodos `addToGroup(name)`, `removeFromGroup(name)`, `isInGroup(name): Boolean`.
-- [ ] 1.4 Em `Node.kt`: o delegate de `scriptInstance` em `onProcess`/`onDraw`/`onPhysicsProcess` chama os métodos correspondentes na SPI `ScriptInstanceContract`.
-- [ ] 1.5 Em `ScriptInstanceContract.kt`: renomear `onUpdate(dt)` → `onProcess(dt)`, `onRender(renderer)` → `onDraw(renderer)`. Adicionar `onPhysicsProcess(dt)`. Adicionar `signals: Map<String, Signal<*>>`.
+- [x] 1.1 Em `Node.kt`: renomear `onUpdate(dt)` → `onProcess(dt)` e `onRender(renderer)` → `onDraw(renderer)`. Manter `onEnter`/`onExit`.
+- [x] 1.2 Em `Node.kt`: adicionar `open fun onPhysicsProcess(dt: Float) { scriptInstance?.onPhysicsProcess(dt) }` com no-op default.
+- [x] 1.3 Em `Node.kt`: adicionar `groups: Set<String>` (campo respaldado por `MutableSet<String>` `@Transient`), métodos `addToGroup(name)`, `removeFromGroup(name)`, `isInGroup(name): Boolean`.
+- [x] 1.4 Em `Node.kt`: o delegate de `scriptInstance` em `onProcess`/`onDraw`/`onPhysicsProcess` chama os métodos correspondentes na SPI `ScriptInstanceContract`.
+- [x] 1.5 Em `ScriptInstanceContract.kt`: renomear `onUpdate(dt)` → `onProcess(dt)`, `onRender(renderer)` → `onDraw(renderer)`. Adicionar `onPhysicsProcess(dt)`. Adicionar `signals: Map<String, Signal<*>>`.
 
 ## 2. Scene lifecycle + groups
 

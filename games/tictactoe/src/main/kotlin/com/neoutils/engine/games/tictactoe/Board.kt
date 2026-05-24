@@ -77,7 +77,7 @@ class Board : Node2D() {
         currentPlayer = Mark.X
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val input = rootScene()?.input ?: return
         hoveredCell = cellAt(input.pointerPosition)
 
@@ -91,7 +91,7 @@ class Board : Node2D() {
         placeMove(target)
     }
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         drawGrid(renderer)
         for (i in 0 until 9) {
             val mark = cells[i] ?: continue

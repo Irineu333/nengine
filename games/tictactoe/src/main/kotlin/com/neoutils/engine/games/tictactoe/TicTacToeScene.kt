@@ -27,7 +27,7 @@ class TicTacToeScene : Scene() {
         layout(width, height)
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val board = findChild("board") as? Board ?: return
         val status = findChild("status") as? StatusText ?: return
         status.text = statusFor(board)

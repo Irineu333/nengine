@@ -144,7 +144,7 @@ class PythonScriptHostTest {
     // --- attach and hooks ------------------------------------------------
 
     @Test
-    fun `attach and onUpdate dispatches to on_update in Python`() {
+    fun `attach and onProcess dispatches to on_update in Python`() {
         val host = ScriptHostRegistry.hostFor("test.py")!!
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to """
@@ -158,7 +158,7 @@ def on_update(self, dt):
 
         val node = Node2D()
         val instance = host.attach(node, script)
-        instance.onUpdate(0.016f)
+        instance.onProcess(0.016f)
         // No exception means the hook was dispatched
     }
 

@@ -63,7 +63,7 @@ class Spawner : Node2D() {
     @Transient
     private var autoCooldown: Float = 0f
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val scene = rootScene() ?: return
         val input = scene.input ?: return
         val leftDown = input.isMouseDown(MouseButton.Left)
@@ -148,7 +148,7 @@ class SpawnerBall : BoxCollider() {
         velocity = v
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val scene = rootScene() ?: return
         val maxX = scene.width
         val maxY = scene.height

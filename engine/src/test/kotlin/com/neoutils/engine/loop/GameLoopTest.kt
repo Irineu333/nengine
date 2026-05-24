@@ -40,7 +40,7 @@ class GameLoopTest {
     fun `tick converts nanoseconds to seconds`() {
         val scene = Scene()
         val received = mutableListOf<Float>()
-        val node = object : Node() { override fun onUpdate(dt: Float) { received += dt } }
+        val node = object : Node() { override fun onProcess(dt: Float) { received += dt } }
         scene.addChild(node)
         val loop = GameLoop(scene, CountingRenderer(), NoopInput)
         loop.tick(16_666_666L)
@@ -53,7 +53,7 @@ class GameLoopTest {
         val scene = Scene()
         val order = mutableListOf<String>()
         // Sensor collider records onCollide ordering relative to update.
-        val node = object : Node() { override fun onUpdate(dt: Float) { order += "update" } }
+        val node = object : Node() { override fun onProcess(dt: Float) { order += "update" } }
         scene.addChild(node)
         val a = object : BoxCollider() {
             override fun onCollide(other: Collider) { order += "physics" }
@@ -73,7 +73,7 @@ class GameLoopTest {
         }
         // Inject a render-time recording node.
         val recorder = object : Node() {
-            override fun onRender(renderer: Renderer) { order += "render" }
+            override fun onDraw(renderer: Renderer) { order += "render" }
         }
         scene.addChild(recorder)
         GameLoop(scene, renderer, NoopInput, PhysicsSystem()).tick(16_000_000L)
@@ -84,7 +84,7 @@ class GameLoopTest {
     fun `large dtNanos is clamped to maxDt`() {
         val scene = Scene()
         val received = mutableListOf<Float>()
-        scene.addChild(object : Node() { override fun onUpdate(dt: Float) { received += dt } })
+        scene.addChild(object : Node() { override fun onProcess(dt: Float) { received += dt } })
         val loop = GameLoop(scene, CountingRenderer(), NoopInput).apply { maxDt = 0.05f }
         loop.tick(10_000_000_000L) // 10 seconds raw
         assertEquals(0.05f, received[0])

@@ -17,8 +17,8 @@ class Text : Node2D() {
     @Inspect
     var color: Color = Color.WHITE
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         renderer.drawText(text, worldPosition(), size, color)
-        super.onRender(renderer)
+        super.onDraw(renderer)
     }
 }

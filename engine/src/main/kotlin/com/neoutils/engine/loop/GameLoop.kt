@@ -24,7 +24,7 @@ class GameLoop(
         scene.input = input
         val dt = (dtNanos / 1_000_000_000f).coerceAtMost(maxDt).coerceAtLeast(0f)
         scene.applyPending()
-        scene.update(dt)
+        scene.process(dt)
         scene.applyPending()
         physics.step(scene)
         scene.applyPending()

@@ -47,6 +47,10 @@ abstract class Node {
     internal var scriptInstance: ScriptInstanceContract? = null
 
     @Transient
+    private val _groups: MutableSet<String> = mutableSetOf()
+    val groups: Set<String> get() = _groups
+
+    @Transient
     private val pendingAdd: MutableList<Node> = mutableListOf()
 
     @Transient
@@ -58,7 +62,7 @@ abstract class Node {
         val owning = if (this is Scene) this else scene
         if (owning != null && owning.isMutationDeferred) {
             if (owning.isRendering) {
-                Log.w(TAG, "addChild called during onRender; ignored ('${child.name}' -> '$name')")
+                Log.w(TAG, "addChild called during onDraw; ignored ('${child.name}' -> '$name')")
                 return
             }
             pendingAdd += child
@@ -72,7 +76,7 @@ abstract class Node {
         val owning = if (this is Scene) this else scene
         if (owning != null && owning.isMutationDeferred) {
             if (owning.isRendering) {
-                Log.w(TAG, "removeChild called during onRender; ignored ('${child.name}' from '$name')")
+                Log.w(TAG, "removeChild called during onDraw; ignored ('${child.name}' from '$name')")
                 return
             }
             pendingRemove += child
@@ -155,16 +159,30 @@ abstract class Node {
      */
     fun findChild(name: String): Node? = _children.firstOrNull { it.name == name }
 
+    fun addToGroup(name: String) {
+        _groups.add(name)
+    }
+
+    fun removeFromGroup(name: String) {
+        _groups.remove(name)
+    }
+
+    fun isInGroup(name: String): Boolean = name in _groups
+
     open fun onEnter() {
         scriptInstance?.onEnter()
     }
 
-    open fun onUpdate(dt: Float) {
-        scriptInstance?.onUpdate(dt)
+    open fun onProcess(dt: Float) {
+        scriptInstance?.onProcess(dt)
     }
 
-    open fun onRender(renderer: Renderer) {
-        scriptInstance?.onRender(renderer)
+    open fun onPhysicsProcess(dt: Float) {
+        scriptInstance?.onPhysicsProcess(dt)
+    }
+
+    open fun onDraw(renderer: Renderer) {
+        scriptInstance?.onDraw(renderer)
     }
 
     open fun onExit() {}

@@ -22,10 +22,10 @@ open class Scene : Node() {
         private set
 
     /**
-     * `true` while the scene is inside an `onUpdate`, `onCollide` or
-     * `onRender` traversal (or another physics phase). Read by `Node.addChild`
-     * / `Node.removeChild` to decide between immediate mutation and enqueuing
-     * onto the pending queues.
+     * `true` while the scene is inside an `onProcess`, `onPhysicsProcess`,
+     * `onCollide` or `onDraw` traversal (or another physics phase). Read by
+     * `Node.addChild` / `Node.removeChild` to decide between immediate
+     * mutation and enqueuing onto the pending queues.
      */
     @Transient
     internal var isMutationDeferred: Boolean = false
@@ -59,14 +59,19 @@ open class Scene : Node() {
         if (isLive) detachFromLiveTree()
     }
 
-    fun update(dt: Float) {
+    fun process(dt: Float) {
         if (!isLive) return
-        runTraversal(rendering = false) { traverseUpdate(this, dt) }
+        runTraversal(rendering = false) { traverseProcess(this, dt) }
+    }
+
+    fun physicsProcess(dt: Float) {
+        if (!isLive) return
+        runTraversal(rendering = false) { traversePhysicsProcess(this, dt) }
     }
 
     fun render(renderer: Renderer) {
         if (!isLive) return
-        runTraversal(rendering = true) { traverseRender(this, renderer) }
+        runTraversal(rendering = true) { traverseDraw(this, renderer) }
     }
 
     /**
@@ -98,13 +103,18 @@ open class Scene : Node() {
         }
     }
 
-    private fun traverseUpdate(node: Node, dt: Float) {
-        node.onUpdate(dt)
-        for (child in node.children) traverseUpdate(child, dt)
+    private fun traverseProcess(node: Node, dt: Float) {
+        node.onProcess(dt)
+        for (child in node.children) traverseProcess(child, dt)
     }
 
-    private fun traverseRender(node: Node, renderer: Renderer) {
-        node.onRender(renderer)
-        for (child in node.children) traverseRender(child, renderer)
+    private fun traversePhysicsProcess(node: Node, dt: Float) {
+        node.onPhysicsProcess(dt)
+        for (child in node.children) traversePhysicsProcess(child, dt)
+    }
+
+    private fun traverseDraw(node: Node, renderer: Renderer) {
+        node.onDraw(renderer)
+        for (child in node.children) traverseDraw(child, renderer)
     }
 }

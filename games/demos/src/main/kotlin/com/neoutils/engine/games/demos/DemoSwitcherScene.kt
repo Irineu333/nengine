@@ -42,7 +42,7 @@ class DemoSwitcherScene : Scene() {
         addChild(activeNode)
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val input = this.input ?: return
         when {
             input.wasKeyPressed(Key.DIGIT_1) -> select(Slot.Orbit)
@@ -56,7 +56,7 @@ class DemoSwitcherScene : Scene() {
 
 private class HudOverlay(private val slot: () -> DemoSwitcherScene.Slot) : Node() {
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         val name = when (slot()) {
             DemoSwitcherScene.Slot.Orbit -> "1. Transform orbit (rotation -> position)"
             DemoSwitcherScene.Slot.Scale -> "2. Scale hierarchy (parent scale -> child size)"

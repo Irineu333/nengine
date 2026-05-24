@@ -61,7 +61,7 @@ class ScalePivot : Node2D() {
     @kotlinx.serialization.Transient
     private var t: Float = 0f
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         t += dt
         val s = ScaleHierarchyDemo.MIN_SCALE +
             (ScaleHierarchyDemo.MAX_SCALE - ScaleHierarchyDemo.MIN_SCALE) *

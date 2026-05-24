@@ -111,13 +111,13 @@ class NodeTest {
     }
 
     @Test
-    fun `scene update propagates to all live nodes`() {
+    fun `scene process propagates to all live nodes`() {
         val scene = Scene()
         var ticks = 0
-        val node = object : Node() { override fun onUpdate(dt: Float) { ticks++ } }
+        val node = object : Node() { override fun onProcess(dt: Float) { ticks++ } }
         scene.addChild(node)
         scene.start()
-        scene.update(0.016f)
+        scene.process(0.016f)
         assertEquals(1, ticks)
     }
 
@@ -214,7 +214,7 @@ class NodeTest {
         val scene = Scene()
         val order = mutableListOf<String>()
         class R(val tag: String) : Node() {
-            override fun onRender(renderer: com.neoutils.engine.render.Renderer) { order += tag }
+            override fun onDraw(renderer: com.neoutils.engine.render.Renderer) { order += tag }
         }
         val a = R("a")
         val b = R("b")

@@ -25,10 +25,12 @@ private class FakeScriptInstance : ScriptInstance {
     val applied = mutableMapOf<String, Any?>()
     var updateCallCount = 0
 
+    override val signals: Map<String, com.neoutils.engine.serialization.Signal<*>> = emptyMap()
     override fun setExport(name: String, value: Any?) { applied[name] = value }
     override fun onEnter() {}
-    override fun onUpdate(dt: Float) { updateCallCount++ }
-    override fun onRender(renderer: Renderer) {}
+    override fun onProcess(dt: Float) { updateCallCount++ }
+    override fun onPhysicsProcess(dt: Float) {}
+    override fun onDraw(renderer: Renderer) {}
     override fun onCollide(other: Node) {}
 }
 
@@ -80,7 +82,7 @@ class BundleLoaderTest {
         assertEquals("fooScript", foo.name)
         assertTrue(foo is Node2D)
         // verify scriptInstance was attached: calling onUpdate propagates to the instance
-        foo.onUpdate(0f)
+        foo.onProcess(0f)
         assertEquals(1, fakeHost.instances[0].updateCallCount)
 
         val collider = scene.children[1]
@@ -269,7 +271,7 @@ class BundleLoaderTest {
             val scene = BundleLoader.fromPath(temp)
             val node = scene.children[0]
             // calling onUpdate propagates iff scriptInstance was attached
-            node.onUpdate(0f)
+            node.onProcess(0f)
             assertEquals(1, fakeHost.instances[0].updateCallCount, "scriptInstance must be attached")
             assertEquals(42, fakeHost.instances[0].applied["value"])
         } finally {

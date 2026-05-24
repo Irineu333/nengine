@@ -32,10 +32,12 @@ class ScriptHostRegistryTest {
     }
 
     private fun noopInstance(): ScriptInstance = object : ScriptInstance {
+        override val signals: Map<String, com.neoutils.engine.serialization.Signal<*>> = emptyMap()
         override fun setExport(name: String, value: Any?) = Unit
         override fun onEnter() = Unit
-        override fun onUpdate(dt: Float) = Unit
-        override fun onRender(renderer: Renderer) = Unit
+        override fun onProcess(dt: Float) = Unit
+        override fun onPhysicsProcess(dt: Float) = Unit
+        override fun onDraw(renderer: Renderer) = Unit
         override fun onCollide(other: Node) = Unit
     }
 

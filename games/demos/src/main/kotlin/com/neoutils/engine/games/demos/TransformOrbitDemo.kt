@@ -64,7 +64,7 @@ class TransformOrbitDemo : Node2D() {
 @Serializable
 class Rotator : Node2D() {
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         transform = transform.copy(
             rotation = transform.rotation + TransformOrbitDemo.ANGULAR_VELOCITY * dt
         )

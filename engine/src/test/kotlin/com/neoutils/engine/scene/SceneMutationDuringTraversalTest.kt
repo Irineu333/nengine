@@ -18,13 +18,13 @@ private class LifecycleSpy(name: String, val log: MutableList<String>) : Node() 
 class SceneMutationDuringTraversalTest {
 
     @Test
-    fun `addChild during onUpdate does not crash and applies before next phase`() {
+    fun `addChild during onProcess does not crash and applies before next phase`() {
         val scene = Scene()
         val log = mutableListOf<String>()
         val spawned = LifecycleSpy("spawn", log)
         val spawner = object : Node() {
             var didSpawn = false
-            override fun onUpdate(dt: Float) {
+            override fun onProcess(dt: Float) {
                 if (!didSpawn) {
                     didSpawn = true
                     scene.addChild(spawned)
@@ -35,7 +35,7 @@ class SceneMutationDuringTraversalTest {
         scene.start()
         log.clear()
 
-        scene.update(0.016f)
+        scene.process(0.016f)
         scene.applyPending()
 
         assertTrue(spawned.isLive, "spawned child should be live after drain")
@@ -44,19 +44,19 @@ class SceneMutationDuringTraversalTest {
     }
 
     @Test
-    fun `removeChild during onUpdate does not crash and applies before next phase`() {
+    fun `removeChild during onProcess does not crash and applies before next phase`() {
         val scene = Scene()
         val log = mutableListOf<String>()
         val victim = LifecycleSpy("victim", log)
         scene.addChild(victim)
         val killer = object : Node() {
-            override fun onUpdate(dt: Float) { scene.removeChild(victim) }
+            override fun onProcess(dt: Float) { scene.removeChild(victim) }
         }
         scene.addChild(killer)
         scene.start()
         log.clear()
 
-        scene.update(0.016f)
+        scene.process(0.016f)
         scene.applyPending()
 
         assertFalse(victim.isLive)

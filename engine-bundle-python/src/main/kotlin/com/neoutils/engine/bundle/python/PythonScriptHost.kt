@@ -201,6 +201,8 @@ private class PythonScriptInstance(
     private val moduleNs: Value,
 ) : ScriptInstance {
 
+    override val signals: Map<String, com.neoutils.engine.serialization.Signal<*>> = emptyMap()
+
     override fun setExport(name: String, value: Any?) {
         instance.putMember(name, value)
     }
@@ -209,11 +211,15 @@ private class PythonScriptInstance(
         callHook("on_enter")
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         callHook("on_update", dt)
     }
 
-    override fun onRender(renderer: Renderer) {
+    override fun onPhysicsProcess(dt: Float) {
+        // No-op until step 8 wires `_physics_process` into the dispatcher.
+    }
+
+    override fun onDraw(renderer: Renderer) {
         callHook("on_render", renderer)
     }
 

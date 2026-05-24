@@ -4,6 +4,7 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.serialization.Signal
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -20,19 +21,30 @@ class NodeScriptInstanceTest {
 
     private class RecordingContract : ScriptInstanceContract {
         val calls = mutableListOf<String>()
+        override val signals: Map<String, Signal<*>> = emptyMap()
         override fun onEnter() { calls += "onEnter" }
-        override fun onUpdate(dt: Float) { calls += "onUpdate($dt)" }
-        override fun onRender(renderer: Renderer) { calls += "onRender" }
+        override fun onProcess(dt: Float) { calls += "onProcess($dt)" }
+        override fun onPhysicsProcess(dt: Float) { calls += "onPhysicsProcess($dt)" }
+        override fun onDraw(renderer: Renderer) { calls += "onDraw" }
         override fun onCollide(other: Node) { calls += "onCollide" }
     }
 
     @Test
-    fun `onUpdate dispatches to scriptInstance`() {
+    fun `onProcess dispatches to scriptInstance`() {
         val node = Node2D()
         val contract = RecordingContract()
         node.scriptInstance = contract
-        node.onUpdate(0.016f)
-        assertEquals(listOf("onUpdate(0.016)"), contract.calls)
+        node.onProcess(0.016f)
+        assertEquals(listOf("onProcess(0.016)"), contract.calls)
+    }
+
+    @Test
+    fun `onPhysicsProcess dispatches to scriptInstance`() {
+        val node = Node2D()
+        val contract = RecordingContract()
+        node.scriptInstance = contract
+        node.onPhysicsProcess(0.016f)
+        assertEquals(listOf("onPhysicsProcess(0.016)"), contract.calls)
     }
 
     @Test
@@ -45,19 +57,19 @@ class NodeScriptInstanceTest {
     }
 
     @Test
-    fun `onRender dispatches to scriptInstance`() {
+    fun `onDraw dispatches to scriptInstance`() {
         val node = Node2D()
         val contract = RecordingContract()
         node.scriptInstance = contract
-        node.onRender(testRenderer)
-        assertEquals(listOf("onRender"), contract.calls)
+        node.onDraw(testRenderer)
+        assertEquals(listOf("onDraw"), contract.calls)
     }
 
     @Test
     fun `node without scriptInstance behaves like before`() {
         val node = Node2D()
-        // no exception, no dispatch
-        node.onUpdate(0.016f)
+        node.onProcess(0.016f)
+        node.onPhysicsProcess(0.016f)
         node.onEnter()
     }
 }

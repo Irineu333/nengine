@@ -57,11 +57,11 @@ class RotatingBoxDemo : Node2D() {
         }
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         if (dt > 0f) instantFps = 1f / dt
     }
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         val text = "balls: $BALL_COUNT | fps: ${instantFps.roundToInt()}"
         val textSize = 14f
         val sceneW = rootScene()?.width ?: 800f
@@ -103,7 +103,7 @@ class RotatingBox : Node2D() {
 
     // Single transform assignment per frame so the world-transform cache
     // invalidation cascade fires once (rotation + translation in one go).
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val scene = rootScene() ?: return
         val newRotation = transform.rotation + ANGULAR_VELOCITY * dt
         val c = cos(newRotation)
@@ -122,7 +122,7 @@ class RotatingBox : Node2D() {
         transform = Transform(position = Vec2(nx, ny), rotation = newRotation)
     }
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         val world = worldTransform()
         val c = cos(world.rotation)
         val s = sin(world.rotation)
@@ -147,7 +147,7 @@ class RotatingBox : Node2D() {
                 color = outline,
             )
         }
-        super.onRender(renderer)
+        super.onDraw(renderer)
     }
 }
 
@@ -184,7 +184,7 @@ class BoxedBall(
     // in world axes — a known limitation (see `Shape` KDoc) that visually
     // shifts the ball by up to `BALL_SIZE` from its logical local position
     // when the parent rotates, leaking through the box outline.
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         val world = worldTransform()
         val c = cos(world.rotation)
         val s = sin(world.rotation)
@@ -199,10 +199,10 @@ class BoxedBall(
             color = currentColor,
             filled = true,
         )
-        super.onRender(renderer)
+        super.onDraw(renderer)
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val min = -HALF_BOX
         val max = HALF_BOX - BALL_SIZE
         var nx = transform.position.x + vx * dt

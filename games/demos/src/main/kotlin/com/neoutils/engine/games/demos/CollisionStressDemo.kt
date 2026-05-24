@@ -50,11 +50,11 @@ class CollisionStressDemo : Node2D() {
         }
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         if (dt > 0f) instantFps = 1f / dt
     }
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         val text = "balls: $BALL_COUNT | fps: ${instantFps.roundToInt()}"
         val textSize = 14f
         val sceneW = rootScene()?.width ?: 800f
@@ -114,7 +114,7 @@ class Ball(
         )
     }
 
-    override fun onUpdate(dt: Float) {
+    override fun onProcess(dt: Float) {
         val scene = rootScene() ?: return
         var nx = transform.position.x + vx * dt
         var ny = transform.position.y + vy * dt

@@ -23,7 +23,7 @@ class StatusText : Node() {
     @Inspect
     var baselineY: Float = 0f
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         val scene = rootScene() ?: return
         val bounds = renderer.measureText(text, size)
         val x = scene.width / 2f - bounds.x / 2f

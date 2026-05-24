@@ -1,6 +1,7 @@
 package com.neoutils.engine.scene
 
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.serialization.Signal
 
 /**
  * Minimal contract that `:engine` needs to dispatch lifecycle hooks to an
@@ -10,7 +11,14 @@ import com.neoutils.engine.render.Renderer
  */
 interface ScriptInstanceContract {
     fun onEnter()
-    fun onUpdate(dt: Float)
-    fun onRender(renderer: Renderer)
+    fun onProcess(dt: Float)
+    fun onPhysicsProcess(dt: Float)
+    fun onDraw(renderer: Renderer)
     fun onCollide(other: Node)
+
+    /**
+     * Signals declared at the top level of the script and instantiated at
+     * attach time. Keyed by signal name as it appears in the script source.
+     */
+    val signals: Map<String, Signal<*>>
 }

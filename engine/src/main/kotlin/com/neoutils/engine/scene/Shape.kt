@@ -32,7 +32,7 @@ class Shape : Node2D() {
 
     enum class Kind { Rect, Circle }
 
-    override fun onRender(renderer: Renderer) {
+    override fun onDraw(renderer: Renderer) {
         val world = worldTransform()
         val w = size.x * world.scale.x
         val h = size.y * world.scale.y
@@ -45,6 +45,6 @@ class Shape : Node2D() {
                 filled = filled,
             )
         }
-        super.onRender(renderer)
+        super.onDraw(renderer)
     }
 }

@@ -89,7 +89,7 @@ def on_render(self, renderer):
             instance.setExport(name, PropCoercion.coerce(jsonEl, export.type, export.nullable))
         }
         val renderer = RecordingRenderer()
-        instance.onRender(renderer)
+        instance.onDraw(renderer)
         assertEquals(30, renderer.rects.size)
         val (firstRect, firstColor, firstFilled) = renderer.rects.first()
         assertEquals(399f, firstRect.origin.x)
@@ -142,7 +142,7 @@ def increment(self):
         }
         instance.onEnter()
         val renderer = RecordingRenderer()
-        instance.onRender(renderer)
+        instance.onDraw(renderer)
         assertEquals(1, renderer.texts.size)
         val drawn = renderer.texts.single()
         assertEquals("0", drawn.a)

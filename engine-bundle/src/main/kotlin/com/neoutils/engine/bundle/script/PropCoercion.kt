@@ -9,8 +9,9 @@ import kotlinx.serialization.json.*
 import kotlin.reflect.KClass
 
 /**
- * Converts a `JsonElement` from `scene.json` `props` into the Kotlin type
- * expected by the corresponding [ExportedProperty.type].
+ * Converts a `JsonElement` from a `scene.json` `properties` key (routed as a
+ * script export) into the Kotlin type expected by the corresponding
+ * [ExportedProperty.type].
  */
 object PropCoercion {
 

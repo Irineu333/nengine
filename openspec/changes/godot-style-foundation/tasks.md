@@ -103,7 +103,7 @@
 ## 14. Smoke & verify
 
 - [x] 14.1 `./gradlew check` passa.
-- [ ] 14.2 `./gradlew :games:pong:run` abre e roda — paddle responde a W/S, IA persegue, gols funcionam (score atualiza), F1/F2 toggles. (manual smoke pendente: usuário valida)
-- [ ] 14.3 `./gradlew :games:tictactoe:run` abre e roda — clique coloca X/O, vitória mostra linha, novo clique reinicia. (manual smoke pendente)
-- [ ] 14.4 `./gradlew :games:demos:run` abre e roda — teclas 1/2/3 trocam demos, spawner adiciona/remove bolinhas, F2 mostra colliders. (manual smoke pendente)
+- [x] 14.2 `./gradlew :games:pong:run` abre e roda — paddle responde a W/S, IA persegue, gols funcionam (score atualiza), F1/F2 toggles. (validado pelo usuário; log macOS `IMKCFRunLoopWakeUpReliable` é ruído conhecido do AWT/Skiko)
+- [x] 14.3 `./gradlew :games:tictactoe:run` abre e roda — clique coloca X/O, vitória mostra linha, novo clique reinicia. (validado pelo usuário)
+- [ ] 14.4 `./gradlew :games:demos:run` abre e roda — teclas 1/2/3 trocam demos, spawner adiciona/remove bolinhas, F2 mostra colliders. (rodou com regressão visual de "quadrado fixo solid" nos demos 2 e 3; corrigido via Line2D — re-validação manual pendente)
 - [x] 14.5 `openspec validate godot-style-foundation --strict` passa.

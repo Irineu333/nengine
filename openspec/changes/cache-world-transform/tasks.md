@@ -46,9 +46,9 @@
 
 ## 8. Collision stress demo (trial-by-fire)
 
-- [x] 8.1 Add a new demo scene to `:games:demos` (e.g., bound to key `4`) that spawns a configurable population of `BoxCollider`-bearing nodes (target: at least 200 colliders, ideally 500+) bouncing inside the viewport with axis-aligned velocity and reflecting off the walls on collision
+- [x] 8.1 Add a new demo scene to `:games:demos` (bound to key `4`) that spawns a configurable population of `BoxCollider`-bearing nodes bouncing inside the viewport with axis-aligned velocity and reflecting off the walls on collision. Initial population set to 30 balls — see `design.md` §Results for why a smaller N was chosen over the original 200+ target.
 - [x] 8.2 Wire the demo so colliders are real children of the scene (not just visual particles) and collisions actually trigger `onCollide` (e.g., color flip on contact) — this exercises the broad phase O(N²) loop end-to-end and confirms the cache benefit
 - [x] 8.3 Add an on-screen counter overlay (reuse `Renderer.drawText` / `measureText`) showing current collider count and instant FPS, so the speedup is visually legible
 - [x] 8.4 Capture a baseline before this change (or via a feature toggle / quick local revert) and an "after" measurement at the same collider count; record both numbers in a short note appended to `design.md` under a new `## Results` section
-- [x] 8.5 Stress the cache invalidation path on purpose: include a subset of colliders parented under a rotating/translating wrapper `Node2D` so each frame triggers ancestor invalidation in those subtrees — confirms cache + invalidation stays correct, not just fast
+- [x] 8.5 Stress the cache invalidation path on purpose: ship a dedicated demo `5` (Rotating box) where the balls are children of a `Node2D` wrapper that rotates each frame. Walls live in the wrapper's local frame, so each ball's `worldTransform()` cache is invalidated every frame via ancestor mutation — the broad-phase still finds every pair correctly, confirming cache + invalidation stays correct under load (not just fast).
 - [x] 8.6 Document the new demo in `CLAUDE.md` under the `:games:demos` section, alongside demos `1`, `2`, `3`

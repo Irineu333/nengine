@@ -81,6 +81,7 @@ Durante a execução:
 - `2` Scale hierarchy — pai com `scale` oscilando faz o filho crescer e encolher (composição de scale via `Shape.onRender`, A1)
 - `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2)
 - `4` Collision stress — 30 `BoxCollider`s colidindo em broad phase O(N²); valida o cache de `worldTransform()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS
+- `5` Rotating box — 12 bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da cena); o quique das bolinhas acontece em coordenadas locais (paredes giram e transladam com a caixa), e rotação+posição do pai compõem na posição mundial de cada bolinha via `worldTransform()` — exercita o invariante de invalidação por mutação de ancestral (D5 do design.md) sob carga real de colisão e em frame não-estacionário. F2 mostra os AABBs envelopados das `BoxCollider`s rotacionadas.
 - `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
 - `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 
@@ -203,7 +204,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | `drop-pong-tag-only-scripts` | Archived | Remove scripts vazios (`paddle-collider`, `walls`) que serviam só como tag; usa `BoxCollider` da engine por FQN no `pong.scene.json`; `Ball.onCollide` despacha por estrutura da cena; rename `Goal.GoalSide` → `Goal.Side`. |
 | `add-bundle-loader`   | Archived | Substitui `:engine-scripting` por `:engine-bundle`; introduz `BundleLoader.fromResources`/`fromPath`; `NodeRegistry` bidirecional; descoberta de scripts via tree-walk + round-robin no host. Pong passa a viver em `resources/pong/`. |
 | `add-python-scripting` | Active  | Substitui Kotlin Scripting por ScriptHost SPI agnóstica + GraalPy como primeira impl (`:engine-bundle-python`). Migra Pong inteiro para `.py`. Remove `kotlin-scripting-*` deps. Publica stubs `.pyi`. |
-| `cache-world-transform` | Active | Cache lazy + invalidação eager em `Node2D.worldTransform()`: corta o multiplicador O(N²) parasitário do broad phase; setter custom no `transform`; hooks em `applyAdd`/`applyRemove`; demo de stress (`4`) com 260 colliders. |
+| `cache-world-transform` | Active | Cache lazy + invalidação eager em `Node2D.worldTransform()`: corta o multiplicador O(N²) parasitário do broad phase; setter custom no `transform`; hooks em `applyAdd`/`applyRemove`; demos de stress (`4` com 30 colliders planos, `5` com 12 colliders dentro de caixa rotativa exercitando invalidação por ancestral). |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.

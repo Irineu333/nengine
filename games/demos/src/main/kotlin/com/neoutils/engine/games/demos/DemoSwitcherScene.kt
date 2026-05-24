@@ -14,13 +14,14 @@ import com.neoutils.engine.scene.Scene
  */
 class DemoSwitcherScene : Scene() {
 
-    enum class Slot { Orbit, Scale, Spawner, Stress }
+    enum class Slot { Orbit, Scale, Spawner, Stress, RotatingBox }
 
     private val factories: Map<Slot, () -> Node> = mapOf(
         Slot.Orbit to ::TransformOrbitDemo,
         Slot.Scale to ::ScaleHierarchyDemo,
         Slot.Spawner to ::SpawnerDemo,
         Slot.Stress to ::CollisionStressDemo,
+        Slot.RotatingBox to ::RotatingBoxDemo,
     )
 
     private var active: Slot = Slot.Orbit
@@ -48,6 +49,7 @@ class DemoSwitcherScene : Scene() {
             input.wasKeyPressed(Key.DIGIT_2) -> select(Slot.Scale)
             input.wasKeyPressed(Key.DIGIT_3) -> select(Slot.Spawner)
             input.wasKeyPressed(Key.DIGIT_4) -> select(Slot.Stress)
+            input.wasKeyPressed(Key.DIGIT_5) -> select(Slot.RotatingBox)
         }
     }
 }
@@ -60,10 +62,11 @@ private class HudOverlay(private val slot: () -> DemoSwitcherScene.Slot) : Node(
             DemoSwitcherScene.Slot.Scale -> "2. Scale hierarchy (parent scale -> child size)"
             DemoSwitcherScene.Slot.Spawner -> "3. Spawner (mutate during update/collide)"
             DemoSwitcherScene.Slot.Stress -> "4. Collision stress (world-transform cache)"
+            DemoSwitcherScene.Slot.RotatingBox -> "5. Rotating box (ancestor rotation composes into children)"
         }
         renderer.drawText(name, Vec2(8f, 18f), size = 16f, color = Color.WHITE)
         renderer.drawText(
-            "keys: 1/2/3/4 switch | F1 fps | F2 colliders",
+            "keys: 1/2/3/4/5 switch | F1 fps | F2 colliders",
             Vec2(8f, 38f),
             size = 12f,
             color = Color(1f, 1f, 1f, 0.7f),

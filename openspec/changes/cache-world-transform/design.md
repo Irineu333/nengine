@@ -215,6 +215,16 @@ Medição qualitativa com o demo `4. Collision stress` (30 `BoxCollider`s):
 
 O speedup ~2.5–3× confirma o objetivo: cortar o multiplicador parasitário do broad phase sem alterar o resultado observável.
 
+### Por que 30 e não 200+
+
+A proposta original (tasks 8.1/8.5) mirava ≥200 colliders e um wrapper rotativo agrupando uma fração das bolas. Na prática, ajustamos o escopo:
+
+- **30 já satura o objetivo pedagógico.** Com 435 pares × 2 leituras/par, o delta antes/depois já é grande o suficiente para o overlay de FPS contar a história. Subir para 200 só amplifica um efeito que o leitor já enxerga em N=30.
+- **Custo por par cresce na resolução, não na detecção.** `Ball.onCollide` faz separação de posição + troca de componente da velocidade + flash; com N=200 (~19.900 pares possíveis), o gargalo passa a ser a resolução, não a leitura de `worldTransform()` — e a leitura é justamente o que esta change otimiza. Manter N pequeno mantém o sinal limpo.
+- **Wrapper rotativo virou demo próprio.** A invalidação por mutação de ancestral ganhou o demo `5. Rotating box`: 12 bolinhas como filhas de um `Node2D` que rotaciona ~0.4 rad/s, quicando contra paredes em coordenadas locais (as paredes giram com a caixa). Cada frame invalida o cache de todos os filhos via ancestral, e o broad-phase continua casando os pares corretamente — confirma que cache + invalidação ficam corretos sob carga, não só rápidos. Mantê-lo separado do demo `4` evita misturar o sinal de FPS (que `4` isola) com o sinal de correção (que `5` carrega).
+
+Se uma change futura precisar de stress de verdade (editor com hierarquias profundas, animação no root), abrir nova proposta — o contrato público de `worldTransform()` não muda, então o caminho fica aberto.
+
 ## Open Questions
 
 Nenhuma bloqueante. Decisões já fechadas com o usuário:

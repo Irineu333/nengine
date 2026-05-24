@@ -42,9 +42,9 @@
 
 ## 7. Signal redesign
 
-- [ ] 7.1 Em `engine/.../serialization/Signal.kt`: reescrever para o shape `class Signal<T>` com `connect`, `disconnect`, `emit`. Remover `var path: NodeRef`. Manter `@Serializable` no marcador (mas o serializer ignora handlers — em uso real será `@Transient` em campos de Node).
-- [ ] 7.2 Adicionar `class Disposable internal constructor(private val onDispose: () -> Unit) { fun dispose() }` (ou alias `() -> Unit`).
-- [ ] 7.3 Testes unit em `engine/src/test`: `connect/emit/disconnect`, ordem de invocação, disconnect-from-handler safety.
+- [x] 7.1 Em `engine/.../serialization/Signal.kt`: reescrever para o shape `class Signal<T>` com `connect`, `disconnect`, `emit`. Remover `var path: NodeRef`. Manter `@Serializable` no marcador (mas o serializer ignora handlers — em uso real será `@Transient` em campos de Node).
+- [x] 7.2 Adicionar `class Disposable internal constructor(private val onDispose: () -> Unit) { fun dispose() }` (ou alias `() -> Unit`).
+- [x] 7.3 Testes unit em `engine/src/test`: `connect/emit/disconnect`, ordem de invocação, disconnect-from-handler safety.
 
 ## 8. Python bridge
 

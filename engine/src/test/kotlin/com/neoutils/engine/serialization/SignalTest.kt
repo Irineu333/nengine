@@ -8,21 +8,31 @@ import kotlin.test.assertTrue
 class SignalTest {
 
     @Test
-    fun `plusAssign registers a handler`() {
+    fun `connect registers a handler invoked on emit`() {
         val signal = Signal<Int>()
         var received: Int? = null
-        signal += { value -> received = value }
+        signal.connect { received = it }
         signal.emit(42)
         assertEquals(42, received)
     }
 
     @Test
-    fun `minusAssign unregisters a handler`() {
+    fun `disposable returned by connect unregisters the handler`() {
+        val signal = Signal<Int>()
+        var invoked = false
+        val sub = signal.connect { invoked = true }
+        sub.dispose()
+        signal.emit(5)
+        assertFalse(invoked)
+    }
+
+    @Test
+    fun `disconnect by lambda reference removes the handler`() {
         val signal = Signal<Int>()
         var invoked = false
         val handler: (Int) -> Unit = { invoked = true }
-        signal += handler
-        signal -= handler
+        signal.connect(handler)
+        signal.disconnect(handler)
         signal.emit(5)
         assertFalse(invoked)
     }
@@ -31,9 +41,9 @@ class SignalTest {
     fun `emit invokes handlers in registration order`() {
         val signal = Signal<Int>()
         val order = mutableListOf<String>()
-        signal += { order += "h1" }
-        signal += { order += "h2" }
-        signal += { order += "h3" }
+        signal.connect { order += "h1" }
+        signal.connect { order += "h2" }
+        signal.connect { order += "h3" }
         signal.emit(0)
         assertEquals(listOf("h1", "h2", "h3"), order)
     }
@@ -43,11 +53,10 @@ class SignalTest {
         val signal = Signal<Int>()
         val log = mutableListOf<String>()
         val h2: (Int) -> Unit = { log += "h2" }
-        val h1: (Int) -> Unit = {
+        signal.connect {
             log += "h1"
-            signal += h2
+            signal.connect(h2)
         }
-        signal += h1
         signal.emit(1)
         assertEquals(listOf("h1"), log)
         signal.emit(2)
@@ -55,17 +64,15 @@ class SignalTest {
     }
 
     @Test
-    fun `removal during emit does not affect the current snapshot`() {
+    fun `disconnect during emit does not affect the current snapshot`() {
         val signal = Signal<Int>()
         val log = mutableListOf<String>()
-        lateinit var h2: (Int) -> Unit
-        val h1: (Int) -> Unit = {
+        lateinit var sub2: Disposable
+        signal.connect {
             log += "h1"
-            signal -= h2
+            sub2.dispose()
         }
-        h2 = { log += "h2" }
-        signal += h1
-        signal += h2
+        sub2 = signal.connect { log += "h2" }
         signal.emit(1)
         assertEquals(listOf("h1", "h2"), log)
         signal.emit(2)

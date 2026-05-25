@@ -31,13 +31,13 @@ When a Kotlin `Node` subclass exposes a public `val` of type `Signal<T>` (e.g. `
 
 ### Requirement: PyI stubs include Timer and TimerMode
 
-The `.pyi` stubs published by `:engine-bundle-python` SHALL include a `Timer` class with the attributes `wait_time: float`, `autostart: bool`, `one_shot: bool`, `process_callback: TimerMode`, `time_left: float`, `is_stopped: bool`, the method `start(override: Optional[float] = None) -> None`, `stop() -> None`, and the attribute `timeout: Signal[None]`. The stubs SHALL include a `TimerMode` enum-like type with the entries `PHYSICS` and `IDLE`. Property names on the Python side MUST follow Python conventions (`snake_case`); the bridge MUST map `snake_case` Python names to the `camelCase` Kotlin property names (`wait_time` ↔ `waitTime`, etc.) consistent with the existing convention used by other native node properties.
+The `.pyi` stubs published by `:engine-bundle-python` SHALL include a `Timer` class with the attributes `waitTime: float`, `autostart: bool`, `oneShot: bool`, `processCallback: TimerMode`, `timeLeft: float`, `isStopped: bool`, the method `start(override: Optional[float] = None) -> None`, `stop() -> None`, and the attribute `timeout: Signal`. The stubs SHALL include a `TimerMode` enum-like type with the entries `PHYSICS` and `IDLE`. Property names on the Python side MUST match the Kotlin camelCase names verbatim: the Polyglot/EmulateJython bridge does not translate identifiers, so `timer.wait_time` would fail at runtime — scripts MUST use `timer.waitTime`. A global `snake_case` ↔ `camelCase` bridge is deferred to a future change; until it ships, every stub published by `:engine-bundle-python` follows the same camelCase rule.
 
 #### Scenario: Timer stub is published
 
 - **WHEN** the `:engine-bundle-python` JAR is inspected at `resources/stubs/engine/`
 - **THEN** a stub file declaring `class Timer` exists
-- **AND** the stub declares `wait_time`, `autostart`, `one_shot`, `process_callback`, `time_left`, `is_stopped`, `timeout`, `start`, `stop`
+- **AND** the stub declares `waitTime`, `autostart`, `oneShot`, `processCallback`, `timeLeft`, `isStopped`, `timeout`, `start`, `stop`
 
 #### Scenario: TimerMode stub is published
 

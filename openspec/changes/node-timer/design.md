@@ -106,6 +106,6 @@ Quando o Timer sai da live tree, `onExit` chama `stop()` internamente — defesa
 
 - **Erros de `start(override)` com `override <= 0`:** crash ou clamp? Recomendação: crash com mensagem clara (`IllegalArgumentException("Timer.start override must be positive, got X")`).
 
-- **Demo no `:games:demos`:** adicionar uma sexta tecla `6` "Timer demo" ou enxertar num demo existente. Recomendação: tecla nova, scene própria com dois labels piscando.
+- **Demo no `:games:demos`:** ~~adicionar uma sexta tecla `6` "Timer demo" ou enxertar num demo existente.~~ **Resolvido durante a implementação: nenhuma demo.** A slot 6 foi adicionada como bundle Python (`timer_demo/`) e depois removida — destoava do estilo code-only dos outros demos e o boot do GraalPy ao apertar `6` causava travada visível. A validação visual end-to-end fica no `PythonSignalBridgeTest`.
 
 - **Stub `.pyi`:** o stub do `Timer` precisa do tipo `Signal[None]` para `timeout`. Hoje os stubs do `:engine-bundle-python` têm `Signal` como tipo? Verificar e ajustar.

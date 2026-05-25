@@ -22,7 +22,7 @@ Esta change introduz um `Timer` Node estilo Godot — primeira capability nativa
 - `autostart=true` agenda o primeiro `timeout` após `waitTime` segundos (não dispara imediatamente). Início efetivo é em `onEnter`.
 - Ao sair da árvore (`onExit`), o Timer para automaticamente — o `timeLeft` interno zera; um `start()` futuro reinicia limpo.
 - O signal `timeout` é exposto ao Python via `script_of(node).timer.timeout.connect(callback)`; a ponte Python-Kotlin para signals **criados em Kotlin** é o primeiro caso desse fluxo.
-- `:games:demos` ganha cena de demonstração mostrando dois Timers lado-a-lado (um `PHYSICS`, outro `IDLE`) piscando labels.
+- Validação end-to-end via `PythonSignalBridgeTest` no `:engine-bundle-python` (cena programática + handler Python). Uma demo visual em `:games:demos` foi inicialmente adicionada e depois removida — misturava bundle Python com demos code-only (introduzindo travada de boot do GraalPy ao apertar a slot) e não agregava cobertura sobre o teste de integração.
 
 ## Capabilities
 
@@ -39,6 +39,6 @@ Esta change introduz um `Timer` Node estilo Godot — primeira capability nativa
 - **`:engine`**: adiciona `scene/Timer.kt`, `scene/TimerMode.kt`; registra o tipo no `NodeRegistry`. Sem impacto em `Node2D` ou no lifecycle existente.
 - **`:engine-bundle`**: nenhuma mudança de API esperada — `BundleLoader` já trata `Node` genérico via `NodeRegistry`.
 - **`:engine-bundle-python`**: stub `.pyi` para `Timer` em `resources/stubs/engine/`; documentação do padrão "signal Kotlin conectado em Python".
-- **`:games:demos`**: nova cena de demonstração consumindo `Timer`.
+- **`:games:demos`**: **sem mudanças** — uma slot Timer Demo foi cogitada (e implementada e removida durante a change) por inconsistência com as outras demos code-only e custo de boot do GraalPy.
 - **Sem mudanças** em `:engine-skiko`, `:engine-compose`, `:games:pong`, `:games:tictactoe`.
 - **Pré-requisito da change `game-snake`**: o tick lógico da cobra depende de `Timer`.

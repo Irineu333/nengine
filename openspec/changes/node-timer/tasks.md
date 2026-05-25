@@ -69,10 +69,10 @@
 
 ## 8. Demos: cena de Timer
 
-- [x] 8.1 Adicionar tecla `6` em `:games:demos` para abrir cena "Timer".
-- [x] 8.2 Cena contém dois `Timer`s — um `PHYSICS` (`waitTime=0.5f`), outro `IDLE` (`waitTime=0.5f`) — cada um conectado a um `Label` que alterna o texto entre "TICK" / "TOCK" a cada `timeout`.
-- [x] 8.3 Implementação 100% em script Python (`scripts/timer_demo.py`) consumindo `Timer.timeout` para validar o fluxo Kotlin signal → Python handler de ponta a ponta.
-- [x] 8.4 Adicionar entrada no `CLAUDE.md` (seção "Para rodar Demos") descrevendo a tecla `6`.
+- [~] 8.1 ~~Adicionar tecla `6` em `:games:demos` para abrir cena "Timer".~~ **Decidido remover.** A slot 6 foi inicialmente adicionada como bundle Python (único bundle entre demos code-only), o que: (a) introduziu inconsistência de estilo com as outras slots; (b) pagava o boot do `PythonScriptHost`/GraalPy na primeira pressão de `6`, causando travada visível; (c) não agregou validação além da que `PythonSignalBridgeTest` já cobre. Removido junto das deps `engineBundle`/`engineBundlePython` do `:games:demos`.
+- [~] 8.2 ~~Cena contém dois `Timer`s — um `PHYSICS` (`waitTime=0.5f`), outro `IDLE` (`waitTime=0.5f`) — cada um conectado a um `Label` que alterna o texto entre "TICK" / "TOCK" a cada `timeout`.~~ Removido junto com 8.1.
+- [~] 8.3 ~~Implementação 100% em script Python (`scripts/timer_demo.py`) consumindo `Timer.timeout` para validar o fluxo Kotlin signal → Python handler de ponta a ponta.~~ Removido junto com 8.1. Validação end-to-end fica em `PythonSignalBridgeTest` no `:engine-bundle-python` (`python connects to Timer timeout and handler is invoked with no args`, `python disconnect removes the handler`, `python handler exception propagates out of emit`).
+- [~] 8.4 ~~Adicionar entrada no `CLAUDE.md` (seção "Para rodar Demos") descrevendo a tecla `6`.~~ Removido junto com 8.1.
 
 ## 9. Documentação
 
@@ -84,4 +84,4 @@
 
 - [x] 10.1 Rodar `./gradlew :engine:test :engine-bundle:test :engine-bundle-python:test :games:demos:run` e confirmar que tudo passa. (Testes passam; `:games:demos:run` lança UI interativa — substituído por `:games:demos:assemble` que valida o classpath completo.)
 - [x] 10.2 Rodar `openspec verify node-timer` e confirmar que não há gaps. (Usado `openspec validate node-timer` — CLI atual; "Change 'node-timer' is valid".)
-- [ ] 10.3 Confirmar manualmente em `:games:demos` (tecla `6`) que ambos `PHYSICS` e `IDLE` Timers piscam labels — `IDLE` continua piscando se F1 desligar FPS overlay (Process roda), `PHYSICS` deve continuar piscando independente. **Pendente: requer execução manual da UI; pedi para você rodar `./gradlew :games:demos:run` e pressionar 6.**
+- [~] 10.3 ~~Confirmar manualmente em `:games:demos` (tecla `6`) que ambos `PHYSICS` e `IDLE` Timers piscam labels.~~ Não aplicável — demo removida (ver seção 8). Validação end-to-end do bridge fica em `PythonSignalBridgeTest`; usuário confirmou que rodou e funcionou antes de decidir remover.

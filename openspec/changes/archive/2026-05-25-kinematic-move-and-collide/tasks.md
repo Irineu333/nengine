@@ -95,5 +95,5 @@
 
 - [x] 11.1 `./gradlew check` passa (todos os testes novos verdes; testes antigos continuam verdes).
 - [x] 11.2 `openspec validate kinematic-move-and-collide --strict` passa.
-- [ ] 11.3 Smoke `./gradlew :games:demos:run`: tecla 4 mostra balls bouncing em alta velocidade sem tunelar nem oscilar; tecla 5 mostra balls dentro da caixa rotativa também sem tunelar.
+- [x] 11.3 Smoke `./gradlew :games:demos:run`: tecla 4 mostra balls bouncing em alta velocidade sem tunelar nem oscilar; tecla 5 mostra balls dentro da caixa rotativa também sem tunelar.
 - [x] 11.4 Stress quantitativo (9.3) confirma `capHits → 0`. Confirmado pelo benchmark: 0 capHits em 1799 steps com 80 balls a vmax=2000 px/s.

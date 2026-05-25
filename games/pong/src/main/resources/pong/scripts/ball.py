@@ -46,11 +46,11 @@ def _on_area_entered(self, area):
 
 
 def _on_body_entered(self, body):
-    if body.is_in_group("walls"):
+    if body.isInGroup("walls"):
         v = self.velocity
         self.velocity = Vec2(v.x, -v.y)
         return
-    if body.is_in_group("paddles"):
+    if body.isInGroup("paddles"):
         _bounce_off_paddle(self, body)
 
 

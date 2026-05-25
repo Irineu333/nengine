@@ -45,7 +45,7 @@
 - [ ] 6.1 Em `games/pong/src/main/resources/pong/scripts/paddle.py`: (a) na linha 41-45, substituir o bloco `self.transform = Transform(Vec2(pos.x, new_y), self.transform.scale, self.transform.rotation)` por `self.position = Vec2(pos.x, new_y)`; (b) na linha 49, substituir `wp = self.worldPosition()` por `wp = self.world().position`; (c) na linha 72, substituir `resolved.worldPosition().y` por `resolved.world().position.y`.
 - [ ] 6.2 Em `games/pong/src/main/resources/pong/scripts/ball.py`: substituir `self.worldPosition()` por `self.world().position`; aplicar a mesma migração de `self.transform = Transform(...)` para `self.position = ...` (e idem `rotation`/`scale` se houver).
 - [ ] 6.3 Em `games/pong/src/main/resources/pong/scripts/score.py`: substituir `self.worldPosition()` por `self.world().position`.
-- [ ] 6.4 Em `games/pong/src/main/resources/pong/scripts/goal.py` e `pong_scene.py` e `center_line.py`: varrer por `worldPosition` / `worldTransform` e migrar (mesmo critério).
+- [ ] 6.4 Em `games/pong/src/main/resources/pong/scripts/goal.py` e `pong_scene.py`: varrer por `worldPosition` / `worldTransform` / `self.transform = Transform(...)` e migrar (mesmo critério).
 - [ ] 6.5 Em `games/demos/src/main/kotlin/com/neoutils/engine/games/demos/RotatingBoxDemo.kt`, substituir as duas chamadas `worldTransform()` (linhas ~126 e ~188) por `world()`.
 - [ ] 6.6 Em `games/demos/src/main/kotlin/com/neoutils/engine/games/demos/ScaleHierarchyDemo.kt` e `TransformOrbitDemo.kt`, atualizar KDocs que referenciam `worldTransform()`.
 - [ ] 6.7 Em `games/tictactoe/src/main/kotlin/` e `games/hello-world/src/main/kotlin/`, varrer por `worldTransform` / `worldPosition` e migrar (provavelmente zero hits, mas confirmar).

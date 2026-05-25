@@ -17,9 +17,11 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 
 | Change           | Resumo                                                                                                                                                                                                |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lua-scripting`  | Segunda implementação do `ScriptHost` SPI usando Lua. Prova que a SPI é genuinamente agnóstica de linguagem (não acomodada ao GraalPy); bundle de exemplo com `.lua` carregado lado-a-lado com `.py`. |
-| `game-asteroids` | Validador da `collision-overhaul` + integração com a fundação Godot-style: `Area2D` para balas, `CharacterBody2D` para nave/asteróides, `CollisionShape2D` + `CircleShape2D`, múltiplas shapes por objeto, signal cascade (asteróide quebra em pedaços), `Camera2D.bounds` para wrap-around, `Polygon2D`/`Line2D` wireframe; vai puxar `Renderer.withTransform` quando for implementado. |
-| editor           | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição.                                                                    |
+| `lua-scripting`               | Segunda implementação do `ScriptHost` SPI usando Lua. Prova que a SPI é genuinamente agnóstica de linguagem (não acomodada ao GraalPy); bundle de exemplo com `.lua` carregado lado-a-lado com `.py`. |
+| `collision-rotated-shapes`    | Fix da regressão KR2 do `collision-overhaul`: `overlap(RectangleShape2D, RectangleShape2D)` quando `rotation != 0` usa OBB-vs-OBB exato (separating-axis theorem) em vez do AABB-envelope. Desbloqueia Demo 5 (RotatingBox) e qualquer jogo futuro com corpos retangulares rotacionados. |
+| `collision-iterative-resolution` | Fix da regressão KR1 do `collision-overhaul`: `PhysicsSystem.step` itera até convergência dentro do mesmo step (re-snapshot + re-dispatch enquanto `currentOverlapping` muda), eliminando pares grudados em pile-ups de 3+ corpos. Desbloqueia Demo 4 (CollisionStress) sob carga densa. |
+| `game-asteroids`              | Validador da `collision-overhaul` + integração com a fundação Godot-style: `Area2D` para balas, `CharacterBody2D` para nave/asteróides, `CollisionShape2D` + `CircleShape2D`, múltiplas shapes por objeto, signal cascade (asteróide quebra em pedaços), `Camera2D.bounds` para wrap-around, `Polygon2D`/`Line2D` wireframe; vai puxar `Renderer.withTransform` quando for implementado. |
+| editor                        | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição.                                                                    |
 
 ## Como manter
 

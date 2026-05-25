@@ -134,13 +134,14 @@ class Ball(
         }
     }
 
-    // Enter-only dispatch (single fire per begin-of-overlap) replaces the
-    // continuous `onCollide` of pre-overhaul. Position correction in
-    // `separate` is enough — after the swap the balls separate, the pair
-    // exits, and the next overlap fires `_entered` again.
+    // Known regression of `collision-overhaul`: `_entered` is one-shot per
+    // begin-of-overlap, so a pile-up of 3+ balls can leave a pair stuck
+    // overlapping with no new event firing — they tunnel. The proper fix
+    // (iterative resolution in `PhysicsSystem.step`) is tracked as
+    // follow-up `collision-iterative-resolution` (see ROADMAP).
     override fun onAreaEntered(area: Area2D) {
         if (area !is Ball) return
-        if (area.id <= id) return  // each pair handled once
+        if (area.id <= id) return
 
         separate(area)
 

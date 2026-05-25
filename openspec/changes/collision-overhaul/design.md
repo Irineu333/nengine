@@ -166,6 +166,26 @@ O entry no roadmap deixa claras essas dependências para implementação futura.
 - **R5. Demos `SpawnerDemo` perde `BoxCollider`.** Reescrever para Area2D+Shape; comportamento idêntico mas com semântica clara de "trap = trigger".
 - **R6. `CollisionShape2D` filho não-visual no editor futuro** — sem visual, é difícil ver "onde está a hitbox". Mitigação: overlay de debug (`F2`) passa a desenhar bounds das shapes, não dos colliders antigos. Tarefa explícita.
 
+## Known Regressions
+
+Documentadas durante a implementação (não eram previstas no design original) e **aceitas** como custo do escopo enxuto desta change. Cada uma tem follow-up dedicada no ROADMAP:
+
+### KR1. Tunneling em pile-ups de 3+ objetos (Demo 4 — CollisionStress)
+
+**Sintoma:** algumas bolinhas atravessam outras durante encontros simultâneos.
+
+**Causa:** `_entered` é one-shot por begin-of-overlap. Quando 3+ corpos colidem dentro de um único `PhysicsSystem.step`, o dispatcher itera pares numa ordem que pode deixar algum par ainda sobreposto após a resposta do script. Como esse par já está em `previousOverlapping`, nenhum `_entered` dispara no próximo step — e como nunca saiu, nenhum `_exited` também. O par fica grudado e eventualmente tunela quando as velocidades os atravessam.
+
+**Fix proposto:** iteração-até-convergência no `PhysicsSystem.step` (re-snapshot e re-dispatch até `currentOverlapping` estabilizar dentro do mesmo step), ou um hook adicional `onAreaStaying`/`onBodyStaying`. Follow-up `collision-iterative-resolution`.
+
+### KR2. Retângulos rotacionados ficam permanentemente "sobrepostos" (Demo 5 — RotatingBox)
+
+**Sintoma:** várias bolinhas atravessam outras quando o wrapper rotaciona.
+
+**Causa:** `RectangleShape2D.bounds(world, ...)` quando `world.rotation != 0f` retorna o AABB-envelope dos 4 cantos rotacionados. `overlap(rect, rect)` cai no caminho rect-rect que apenas intersecta esses AABBs. Para um par de quadrados rotacionados a ~45°, os AABBs sempre se sobrepõem mesmo quando os retângulos locais estão muito longe. Resultado: o par entra em `previousOverlapping` na primeira frame e nunca mais sai (AABBs nunca separam), então `_entered` não refire — bolinhas atravessam livremente após a primeira separação parcial.
+
+**Fix proposto:** `overlap(RectangleShape2D, RectangleShape2D)` quando ambas têm `rotation != 0f` deve usar **OBB-vs-OBB exato** (separating-axis theorem nos 4 eixos perpendiculares aos lados). Follow-up `collision-rotated-shapes`. Estava listado como Non-Goal desta change ("Asteroids puxa rotação OBB depois se precisar"), mas Demo 5 já expõe o problema.
+
 ## Migration Plan
 
 1. Adicionar todas as classes novas (`CollisionObject2D`, `Area2D`, `PhysicsBody2D`, `StaticBody2D`, `CharacterBody2D`, `CollisionShape2D`, `Shape2D` + sub-tipos) ao `:engine`, com `BoxCollider`/`Collider` ainda vivos lado-a-lado.

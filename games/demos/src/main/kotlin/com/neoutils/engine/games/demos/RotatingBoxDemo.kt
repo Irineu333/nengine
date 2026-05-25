@@ -224,11 +224,12 @@ class BoxedBall(
         }
     }
 
-    // Broad phase produces false positives here because every ball shares the
-    // wrapper's world rotation, so AABBs of rotated squares balloon and overlap
-    // before the squares themselves touch. We re-check overlap in the local
-    // frame — siblings under the same parent, so positions are directly
-    // comparable — and bail out if it was a phantom contact.
+    // Known regression of `collision-overhaul`: under wrapper rotation, the
+    // AABB envelopes of `RectangleShape2D` stay permanently overlapping,
+    // so pairs never exit and no further `_entered` events fire — many
+    // balls tunnel. The proper fix (OBB-exact rect-rect overlap when
+    // `rotation != 0`) is tracked as follow-up
+    // `collision-rotated-shapes` (see ROADMAP).
     override fun onAreaEntered(area: Area2D) {
         if (area !is BoxedBall) return
         if (area.id <= id) return

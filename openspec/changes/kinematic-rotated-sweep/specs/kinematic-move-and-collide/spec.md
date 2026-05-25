@@ -1,0 +1,144 @@
+## MODIFIED Requirements
+
+### Requirement: Shape2D supports sweepOverlap for axis-aligned shape pairs
+
+The engine SHALL provide a top-level function `fun sweepOverlap(a: Shape2D, aWorld: Transform, motion: Vec2, b: Shape2D, bWorld: Transform): SweepResult?` in `com.neoutils.engine.physics`. `SweepResult` MUST be a data class with `toi: Float` (in `[0f, 1f]`), `point: Vec2`, `normal: Vec2`, and `depenetration: Vec2` (defaulting to `Vec2.ZERO`). The function MUST return a non-null result with the smallest valid TOI when shape `a` swept by `motion` from `aWorld` would intersect shape `b` at `bWorld`, for any of the following pairs: (a) `CircleShape2D` vs `CircleShape2D`; (b) `CircleShape2D` vs `RectangleShape2D` (rect axis-aligned OR rotated); (c) `RectangleShape2D` vs `RectangleShape2D` (any combination of rotations on both transforms).
+
+When the pair is `RectangleShape2D` vs `RectangleShape2D` and at least one transform has `rotation != 0f`, the function MUST use a temporal SAT (Separating Axis Theorem with motion-projection per axis) on the four candidate axes (two normals per OBB). When the pair is `CircleShape2D` vs `RectangleShape2D` (in either order) with the rect rotated, the function MUST transform the problem into the rect's local frame (inverse-rotate circle position and motion), reuse the axis-aligned circle-vs-rect math, and rotate the resulting `point` and `normal` back into the original frame.
+
+For shapes returning `null`, the call MUST not panic — it MUST simply indicate "no swept contact found in `[0, 1]`". Callers (e.g. `CharacterBody2D.moveAndCollide`) interpret `null` as "advance the full motion".
+
+#### Scenario: Swept circle-vs-circle returns the analytic TOI
+
+- **GIVEN** circle A radius `5f` at `(0f, 0f)`, motion `(20f, 0f)`, circle B radius `5f` at `(12f, 0f)`
+- **WHEN** code calls `sweepOverlap(a, aWorld, motion, b, bWorld)`
+- **THEN** the result's `toi` is approximately `0.1f` (i.e. A travels `2f` of the `20f` motion before contact)
+- **AND** the result's `normal` is approximately `Vec2(-1f, 0f)`
+
+#### Scenario: Swept circle-vs-rect axis-aligned returns the analytic TOI
+
+- **GIVEN** circle A radius `3f` at `(0f, 0f)`, motion `(10f, 0f)`, rect B `size=(4f, 4f)` at `(8f, 0f)`
+- **WHEN** code calls `sweepOverlap(a, aWorld, motion, b, bWorld)` with both transforms at `rotation=0f`
+- **THEN** the result's `toi` is approximately `0.5f`
+- **AND** the result's `normal` is approximately `Vec2(-1f, 0f)`
+
+#### Scenario: Swept rect-vs-rect axis-aligned returns the analytic TOI
+
+- **GIVEN** rect A `size=(4f, 4f)` at `(0f, 0f)`, motion `(20f, 0f)`, rect B `size=(4f, 4f)` at `(10f, 0f)`
+- **WHEN** code calls `sweepOverlap(a, aWorld, motion, b, bWorld)` with both transforms at `rotation=0f`
+- **THEN** the result's `toi` is approximately `0.3f`
+- **AND** the result's `normal` is approximately `Vec2(-1f, 0f)`
+
+#### Scenario: Swept shape returns null when motion does not intersect
+
+- **GIVEN** circle A radius `5f` at `(0f, 0f)`, motion `(10f, 0f)`, circle B radius `5f` at `(0f, 100f)`
+- **WHEN** code calls `sweepOverlap(...)`
+- **THEN** the function returns `null`
+
+#### Scenario: Swept circle-vs-rotated-rect returns the analytic TOI in the rect's local frame
+
+- **GIVEN** circle A radius `2f` at `(0f, 0f)`, motion `(20f, 0f)`, rect B `size=(4f, 4f)` at `(10f, 0f)` with `bWorld.rotation = π / 2` (B rotated 90° — local x becomes world y)
+- **AND** in B's local frame the relevant face of B that A approaches is the local-bottom face at world `(10f, 0f)`
+- **WHEN** code calls `sweepOverlap(...)`
+- **THEN** the function returns a non-null `SweepResult`
+- **AND** the `normal` corresponds to B's local-bottom-face normal rotated back to world (the value depends on the rotated geometry — the normal is the unit vector that the script can use to reflect)
+
+#### Scenario: Swept rotated-rect-vs-rotated-rect returns the analytic TOI on aligned faces
+
+- **GIVEN** rect A `size=(4f, 4f)` at `(0f, 0f)` with `aWorld.rotation = π / 4`, motion `(20f, 0f)`, rect B `size=(4f, 4f)` at `(10f, 0f)` with `bWorld.rotation = π / 4` (same rotation)
+- **WHEN** code calls `sweepOverlap(...)`
+- **THEN** the function returns a non-null `SweepResult`
+- **AND** the `toi` is consistent with the geometric contact distance in the rotated frame
+
+#### Scenario: Swept rotated-rect-vs-rotated-rect returns null when motion misses
+
+- **GIVEN** rect A `size=(4f, 4f)` at `(0f, 0f)` with `aWorld.rotation = π / 4`, motion `(20f, 0f)`, rect B `size=(4f, 4f)` at `(0f, 100f)` with `bWorld.rotation = π / 4`
+- **WHEN** code calls `sweepOverlap(...)`
+- **THEN** the function returns `null`
+
+#### Scenario: Starting-overlap on rotated pair returns toi=0 with depenetration
+
+- **GIVEN** rect A `size=(10f, 10f)` at `(0f, 0f)` with `aWorld.rotation = π / 6` and rect B `size=(10f, 10f)` at `(5f, 0f)` with `bWorld.rotation = π / 6` (same rotation; deep overlap)
+- **WHEN** code calls `sweepOverlap(a, aWorld, motion, b, bWorld)` with any `motion`
+- **THEN** the function returns a non-null `SweepResult` with `toi == 0f`
+- **AND** `depenetration` is a non-zero vector along the SAT axis of least overlap (the minimum-translation vector pointing from B toward A)
+
+### Requirement: CharacterBody2D exposes moveAndCollide
+
+The engine SHALL add a public method `fun moveAndCollide(motion: Vec2): KinematicCollision2D?` on `CharacterBody2D`. The method MUST perform a swept-shape test from the body's current world position along `motion` against every other live `PhysicsBody2D` (both `StaticBody2D` and `CharacterBody2D`) in the tree with `disabled == false` whose parent matches `this.parent`. `Area2D` instances MUST be ignored by `moveAndCollide` (areas are triggers, not blockers). If no collision is detected, the body's `transform.position` MUST be advanced by `motion` and the method MUST return `null`. If a collision is detected with smallest time-of-impact `toi` in `[0f, 1f]`, the body's `transform.position` MUST be advanced by `motion * toi + sweepResult.depenetration` (the body stops at the contact and, when starting-overlapping, is pushed out by the depenetration vector) and the method MUST return a `KinematicCollision2D` whose `remainder` equals `motion * (1f - toi)`.
+
+The method MUST support arbitrary rotations of `this` and of target bodies, provided they share the same parent (so the sweep is performed in the common parent frame). Rotations local to `this` or to the target NO LONGER cause the swept test to fall through.
+
+#### Scenario: moveAndCollide with no obstacles advances the full motion
+
+- **GIVEN** a `CharacterBody2D` at world position `(0f, 0f)` with a `CollisionShape2D + CircleShape2D(radius=5f)` and an empty tree of other bodies
+- **WHEN** the script calls `body.moveAndCollide(Vec2(100f, 0f))`
+- **THEN** the call returns `null`
+- **AND** `body.transform.position` equals `Vec2(100f, 0f)` after the call
+
+#### Scenario: moveAndCollide stops at the contact with a static body
+
+- **GIVEN** a `CharacterBody2D` A at world position `(0f, 0f)` with `CircleShape2D(radius=5f)`
+- **AND** a `StaticBody2D` B at world position `(20f, 0f)` with `CircleShape2D(radius=5f)`
+- **WHEN** the script calls `A.moveAndCollide(Vec2(20f, 0f))`
+- **THEN** the call returns a non-null `KinematicCollision2D`
+- **AND** `A.transform.position.x` is approximately `10f` (A's edge touches B's edge)
+- **AND** the returned `normal` is approximately `Vec2(-1f, 0f)`
+- **AND** the returned `collider` is B
+- **AND** the returned `remainder` is approximately `Vec2(10f, 0f)` (half the requested motion)
+
+#### Scenario: moveAndCollide ignores Area2D in the path
+
+- **GIVEN** a `CharacterBody2D` A at `(0f, 0f)` with `CircleShape2D(radius=5f)`
+- **AND** an `Area2D` T at `(10f, 0f)` with `CircleShape2D(radius=5f)`
+- **WHEN** the script calls `A.moveAndCollide(Vec2(40f, 0f))`
+- **THEN** the call returns `null`
+- **AND** `A.transform.position` equals `Vec2(40f, 0f)`
+
+#### Scenario: moveAndCollide returns TOI=0 with depenetration when bodies start overlapping
+
+- **GIVEN** two `CharacterBody2D` A and B both with overlapping `CircleShape2D` (radius=5f each), with B center 4f away from A center
+- **WHEN** the script calls `A.moveAndCollide(Vec2.ZERO)`
+- **THEN** the call returns a non-null `KinematicCollision2D` with `toi == 0f` and `remainder == Vec2.ZERO`
+- **AND** `A.transform.position` is advanced by the depenetration vector (separating A from B by the penetration depth along the contact normal)
+
+#### Scenario: moveAndCollide on a rotated body bounces against a rotated wall
+
+- **GIVEN** a `CharacterBody2D` A with `aWorld.rotation = π / 6` and `RectangleShape2D` size `(10f, 10f)`
+- **AND** a `StaticBody2D` B in the path with `bWorld.rotation = π / 6` and `RectangleShape2D` size `(10f, 60f)`
+- **WHEN** the script calls `A.moveAndCollide(motion)` with motion approaching B frontally in the shared rotated frame
+- **THEN** the call returns a non-null `KinematicCollision2D` with a `toi` in `(0f, 1f)`
+- **AND** the returned `normal` is the contact normal in the parent frame
+- **AND** A's position advances by `motion * toi` (stops at contact, no tunneling)
+
+## ADDED Requirements
+
+### Requirement: Behavioral integration test harness validates multi-frame sweep correctness
+
+The engine test suite SHALL include a `BehavioralSweepTest` (or analogous) file in `engine/src/test/.../physics/` that exercises `CharacterBody2D.moveAndCollide` across **multiple frames** via a real `GameLoop` with a stub `Renderer` and stub `Input`. Each scenario MUST construct a scene, run N ticks at fixed `dt` (16.666 ms), record positions/velocities across frames, and assert **trajectory properties** rather than single-call outputs. The harness MUST cover at minimum:
+
+- A bouncing body that should separate from a contact within K frames (no oscillation in place — guards against the tangent-leaving freeze pattern).
+- A pair of bodies spawned overlapping that should reach mutual non-overlap within K frames (guards against the spawn-overlap freeze pattern).
+- A body inside a rotated walled arena that, after N frames of bouncing, has covered measurable distance (guards against any rotated-sweep regression that re-introduces freezing).
+
+The harness MUST NOT depend on `Skiko`, `Compose`, or any backend with display side-effects — it MUST run within `./gradlew :engine:test`.
+
+#### Scenario: Bounce-then-separate harness asserts post-contact motion
+
+- **GIVEN** a `CharacterBody2D` with initial velocity directed at a `StaticBody2D` wall
+- **WHEN** the harness runs 30 frames via `GameLoop.tick(16_666_666L)`
+- **THEN** at some frame `f` the body's position changes direction (bounce detected)
+- **AND** for every frame `f+1` through `f+K`, the body's distance to the wall is strictly greater than at frame `f` (no re-collision within `K = 3` frames)
+
+#### Scenario: Spawn-overlap harness asserts eventual separation
+
+- **GIVEN** two `CharacterBody2D` spawned with overlapping shapes
+- **WHEN** the harness runs `K = 5` frames
+- **THEN** by the last frame the two bodies' shapes no longer overlap
+- **AND** at no intermediate frame did the body's velocity oscillate (sign-flip more than once on the same axis without crossing a contact event)
+
+#### Scenario: Rotated arena harness asserts measurable trajectory distance
+
+- **GIVEN** a `CharacterBody2D` inside an arena bounded by four `StaticBody2D` walls at rotation `π / 4` (45°)
+- **WHEN** the harness runs 60 frames with initial velocity at moderate speed
+- **THEN** the cumulative Euclidean distance traveled by the body across all frames exceeds a threshold proportional to `|velocity| * dt * 60 * 0.5` (i.e. the body moves at least half the free-flight distance — confirming it is not frozen)

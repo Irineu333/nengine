@@ -26,12 +26,12 @@ class TransformOrbitDemo : Node2D() {
     }
 
     override fun onProcess(dt: Float) {
-        val scene = rootScene() ?: return
-        if (scene.size == lastSize) return
-        lastSize = scene.size
+        val tree = tree ?: return
+        if (tree.size == lastSize) return
+        lastSize = tree.size
         val pivot = findChild("OrbitPivot") as? Node2D ?: return
         pivot.transform = pivot.transform.copy(
-            position = Vec2(scene.width / 2f, scene.height / 2f),
+            position = Vec2(tree.width / 2f, tree.height / 2f),
         )
     }
 

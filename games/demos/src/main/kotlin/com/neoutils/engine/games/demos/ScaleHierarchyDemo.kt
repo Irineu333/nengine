@@ -29,11 +29,11 @@ class ScaleHierarchyDemo : Node2D() {
     }
 
     override fun onProcess(dt: Float) {
-        val scene = rootScene() ?: return
-        if (scene.size == lastSize) return
-        lastSize = scene.size
-        val cx = scene.width / 2f
-        val cy = scene.height / 2f
+        val tree = tree ?: return
+        if (tree.size == lastSize) return
+        lastSize = tree.size
+        val cx = tree.width / 2f
+        val cy = tree.height / 2f
         (findChild("ScaleParent") as? Node2D)?.let { pivot ->
             pivot.transform = pivot.transform.copy(position = Vec2(cx, cy))
         }

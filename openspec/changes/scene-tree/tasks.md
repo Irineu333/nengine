@@ -66,11 +66,11 @@
 
 ## 12. Demos sample
 
-- [ ] 12.1 Criar `games/demos/.../DemoSwitcherRoot.kt` (`class DemoSwitcherRoot : Node()`) cujo `onEnter()` popula a árvore como o `DemoSwitcherScene` fazia.
-- [ ] 12.2 Apagar `games/demos/.../DemoSwitcherScene.kt`.
-- [ ] 12.3 Editar `games/demos/.../Main.kt`: `SkikoHost().run(SceneTree(root = DemoSwitcherRoot()), config)`.
-- [ ] 12.4 Em todos os demos (`TransformOrbitDemo.kt`, `ScaleHierarchyDemo.kt`, `SpawnerDemo.kt`, `CollisionStressDemo.kt`, `RotatingBoxDemo.kt`), substituir cada `rootScene()?.x` por `tree?.x`. Atualizar `rootScene() as? DemoSwitcherScene` para `tree?.root as? DemoSwitcherRoot` quando o tipo do root for consultado.
-- [ ] 12.5 Auditar HUD overlays e similares dentro de demos — qualquer chamada residual a `Scene`/`rootScene()` deve estar 0.
+- [x] 12.1 Criar `games/demos/.../DemoSwitcherRoot.kt` (`class DemoSwitcherRoot : Node()`) cujo `onEnter()` popula a árvore como o `DemoSwitcherScene` fazia.
+- [x] 12.2 Apagar `games/demos/.../DemoSwitcherScene.kt`.
+- [x] 12.3 Editar `games/demos/.../Main.kt`: `SkikoHost().run(SceneTree(root = DemoSwitcherRoot()), config)`.
+- [x] 12.4 Em todos os demos (`TransformOrbitDemo.kt`, `ScaleHierarchyDemo.kt`, `SpawnerDemo.kt`, `CollisionStressDemo.kt`, `RotatingBoxDemo.kt`), substituir cada `rootScene()?.x` por `tree?.x`. Atualizar `rootScene() as? DemoSwitcherScene` para `tree?.root as? DemoSwitcherRoot` quando o tipo do root for consultado.
+- [x] 12.5 Auditar HUD overlays e similares dentro de demos — qualquer chamada residual a `Scene`/`rootScene()` deve estar 0.
 
 ## 13. Testes existentes
 

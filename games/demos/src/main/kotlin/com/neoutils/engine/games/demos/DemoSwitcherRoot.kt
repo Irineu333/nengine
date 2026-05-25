@@ -5,14 +5,13 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scene.Scene
 
 /**
- * Hosts the three engine-consistency demos and swaps between them at runtime
- * with addChild/removeChild — the switch itself doubles as a tiny stress test
- * of the lifecycle paths added by this change.
+ * Hosts the engine-consistency demos and swaps between them at runtime with
+ * addChild/removeChild — the switch itself doubles as a tiny stress test of
+ * the lifecycle paths.
  */
-class DemoSwitcherScene : Scene() {
+class DemoSwitcherRoot : Node() {
 
     enum class Slot { Orbit, Scale, Spawner, Stress, RotatingBox }
 
@@ -25,15 +24,21 @@ class DemoSwitcherScene : Scene() {
     )
 
     private var active: Slot = Slot.Orbit
-    private var activeNode: Node = factories.getValue(active)()
+    private lateinit var activeNode: Node
     private val hud = HudOverlay { active }
 
     init {
         name = "DemoSwitcher"
+    }
+
+    override fun onEnter() {
+        super.onEnter()
+        if (children.isNotEmpty()) return
         // Demos run in raw surface pixels (no Camera2D) by design: they're
         // physics/collision exercises whose visuals follow the window, not a
         // fixed virtual world. Adding a camera would double-scale ball
-        // bouncing bounds and HUD positions that read scene.size directly.
+        // bouncing bounds and HUD positions that read tree.size directly.
+        activeNode = factories.getValue(active)()
         addChild(activeNode)
         addChild(hud)
     }
@@ -47,7 +52,8 @@ class DemoSwitcherScene : Scene() {
     }
 
     override fun onProcess(dt: Float) {
-        val input = this.input ?: return
+        super.onProcess(dt)
+        val input = tree?.input ?: return
         when {
             input.wasKeyPressed(Key.DIGIT_1) -> select(Slot.Orbit)
             input.wasKeyPressed(Key.DIGIT_2) -> select(Slot.Scale)
@@ -58,15 +64,15 @@ class DemoSwitcherScene : Scene() {
     }
 }
 
-private class HudOverlay(private val slot: () -> DemoSwitcherScene.Slot) : Node() {
+private class HudOverlay(private val slot: () -> DemoSwitcherRoot.Slot) : Node() {
 
     override fun onDraw(renderer: Renderer) {
         val name = when (slot()) {
-            DemoSwitcherScene.Slot.Orbit -> "1. Transform orbit (rotation -> position)"
-            DemoSwitcherScene.Slot.Scale -> "2. Scale hierarchy (parent scale -> child size)"
-            DemoSwitcherScene.Slot.Spawner -> "3. Spawner (mutate during update/collide)"
-            DemoSwitcherScene.Slot.Stress -> "4. Collision stress (world-transform cache)"
-            DemoSwitcherScene.Slot.RotatingBox -> "5. Rotating box (ancestor rotation composes into children)"
+            DemoSwitcherRoot.Slot.Orbit -> "1. Transform orbit (rotation -> position)"
+            DemoSwitcherRoot.Slot.Scale -> "2. Scale hierarchy (parent scale -> child size)"
+            DemoSwitcherRoot.Slot.Spawner -> "3. Spawner (mutate during update/collide)"
+            DemoSwitcherRoot.Slot.Stress -> "4. Collision stress (world-transform cache)"
+            DemoSwitcherRoot.Slot.RotatingBox -> "5. Rotating box (ancestor rotation composes into children)"
         }
         renderer.drawText(name, Vec2(8f, 18f), size = 16f, color = Color.WHITE)
         renderer.drawText(

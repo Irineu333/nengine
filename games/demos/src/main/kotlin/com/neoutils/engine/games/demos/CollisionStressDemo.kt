@@ -30,9 +30,9 @@ class CollisionStressDemo : Node2D() {
     }
 
     override fun onEnter() {
-        val scene = rootScene() ?: return
-        val w = scene.width
-        val h = scene.height
+        val tree = tree ?: return
+        val w = tree.width
+        val h = tree.height
         repeat(BALL_COUNT) { i ->
             val px = BALL_SIZE + rng.nextFloat() * (w - BALL_SIZE * 2)
             val py = BALL_SIZE + rng.nextFloat() * (h - BALL_SIZE * 2)
@@ -57,7 +57,7 @@ class CollisionStressDemo : Node2D() {
     override fun onDraw(renderer: Renderer) {
         val text = "balls: $BALL_COUNT | fps: ${instantFps.roundToInt()}"
         val textSize = 14f
-        val sceneW = rootScene()?.width ?: 800f
+        val sceneW = tree?.width ?: 800f
         val textW = renderer.measureText(text, textSize).x
         renderer.drawText(
             text,
@@ -114,13 +114,13 @@ class Ball(
     }
 
     override fun onProcess(dt: Float) {
-        val scene = rootScene() ?: return
+        val tree = tree ?: return
         var nx = transform.position.x + vx * dt
         var ny = transform.position.y + vy * dt
         if (nx < 0f) { nx = 0f; vx = -vx }
-        if (nx + BALL_SIZE > scene.width) { nx = scene.width - BALL_SIZE; vx = -vx }
+        if (nx + BALL_SIZE > tree.width) { nx = tree.width - BALL_SIZE; vx = -vx }
         if (ny < 0f) { ny = 0f; vy = -vy }
-        if (ny + BALL_SIZE > scene.height) { ny = scene.height - BALL_SIZE; vy = -vy }
+        if (ny + BALL_SIZE > tree.height) { ny = tree.height - BALL_SIZE; vy = -vy }
         transform = transform.copy(position = Vec2(nx, ny))
 
         if (flashTimer > 0f) {

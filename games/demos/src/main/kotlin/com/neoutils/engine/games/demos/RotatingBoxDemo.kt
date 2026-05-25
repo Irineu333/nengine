@@ -35,9 +35,9 @@ class RotatingBoxDemo : Node2D() {
     }
 
     override fun onEnter() {
-        val scene = rootScene() ?: return
+        val tree = tree ?: return
         val wrapper = RotatingBox().apply {
-            transform = Transform(position = Vec2(scene.width / 2f, scene.height / 2f))
+            transform = Transform(position = Vec2(tree.width / 2f, tree.height / 2f))
         }
         addChild(wrapper)
         repeat(BALL_COUNT) { i ->
@@ -64,7 +64,7 @@ class RotatingBoxDemo : Node2D() {
     override fun onDraw(renderer: Renderer) {
         val text = "balls: $BALL_COUNT | fps: ${instantFps.roundToInt()}"
         val textSize = 14f
-        val sceneW = rootScene()?.width ?: 800f
+        val sceneW = tree?.width ?: 800f
         val textW = renderer.measureText(text, textSize).x
         renderer.drawText(
             text,
@@ -104,7 +104,7 @@ class RotatingBox : Node2D() {
     // Single transform assignment per frame so the world-transform cache
     // invalidation cascade fires once (rotation + translation in one go).
     override fun onProcess(dt: Float) {
-        val scene = rootScene() ?: return
+        val tree = tree ?: return
         val newRotation = transform.rotation + ANGULAR_VELOCITY * dt
         val c = cos(newRotation)
         val s = sin(newRotation)
@@ -115,9 +115,9 @@ class RotatingBox : Node2D() {
         var nx = transform.position.x + vx * dt
         var ny = transform.position.y + vy * dt
         if (nx - halfExtent < 0f) { nx = halfExtent; vx = -vx }
-        if (nx + halfExtent > scene.width) { nx = scene.width - halfExtent; vx = -vx }
+        if (nx + halfExtent > tree.width) { nx = tree.width - halfExtent; vx = -vx }
         if (ny - halfExtent < 0f) { ny = halfExtent; vy = -vy }
-        if (ny + halfExtent > scene.height) { ny = scene.height - halfExtent; vy = -vy }
+        if (ny + halfExtent > tree.height) { ny = tree.height - halfExtent; vy = -vy }
 
         transform = Transform(position = Vec2(nx, ny), rotation = newRotation)
     }

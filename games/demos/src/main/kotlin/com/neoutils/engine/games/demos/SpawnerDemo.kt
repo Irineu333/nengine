@@ -44,12 +44,12 @@ class SpawnerDemo : Node2D() {
     }
 
     override fun onProcess(dt: Float) {
-        val scene = rootScene() ?: return
-        if (scene.size == lastSize) return
-        lastSize = scene.size
+        val tree = tree ?: return
+        if (tree.size == lastSize) return
+        lastSize = tree.size
         val trap = findChild("Trap") as? Trap ?: return
         trap.transform = Transform(
-            position = Vec2(scene.width / 2f - Trap.SIZE / 2f, scene.height / 2f - Trap.SIZE / 2f),
+            position = Vec2(tree.width / 2f - Trap.SIZE / 2f, tree.height / 2f - Trap.SIZE / 2f),
         )
     }
 }
@@ -70,8 +70,8 @@ class Spawner : Node2D() {
     private var autoCooldown: Float = 0f
 
     override fun onProcess(dt: Float) {
-        val scene = rootScene() ?: return
-        val input = scene.input ?: return
+        val tree = tree ?: return
+        val input = tree.input ?: return
         val leftDown = input.isMouseDown(MouseButton.Left)
         if (leftDown && !leftWasDown) {
             spawn(at = input.pointerPosition)
@@ -80,7 +80,7 @@ class Spawner : Node2D() {
 
         autoCooldown -= dt
         if (autoCooldown <= 0f) {
-            spawn(at = Vec2(rng.nextFloat() * scene.width, rng.nextFloat() * scene.height))
+            spawn(at = Vec2(rng.nextFloat() * tree.width, rng.nextFloat() * tree.height))
             autoCooldown = autoSpawnInterval
         }
     }
@@ -161,9 +161,9 @@ class SpawnerBall : BoxCollider() {
     }
 
     override fun onProcess(dt: Float) {
-        val scene = rootScene() ?: return
-        val maxX = scene.width
-        val maxY = scene.height
+        val tree = tree ?: return
+        val maxX = tree.width
+        val maxY = tree.height
         var vx = velocity.x
         var vy = velocity.y
         var nx = transform.position.x + vx * dt

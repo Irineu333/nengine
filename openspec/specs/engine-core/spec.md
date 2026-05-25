@@ -359,7 +359,7 @@ The engine SHALL define an `Input` interface providing read-only access to curre
 
 ### Requirement: Collision as Collider nodes
 
-The engine SHALL provide an abstract `Collider` subclass of `Node2D` exposing a `bounds(): Rect` method computed in world space. The engine SHALL provide at least one concrete subclass, `BoxCollider`, whose bounds are derived from the node's `worldTransform()` and a configurable local size. `BoxCollider.bounds()` MUST honor `scale` inherited along the ancestor chain. When `worldTransform()` includes a non-zero rotation along the chain, `BoxCollider.bounds()` MUST return the axis-aligned bounding box of the rotated rectangle (AABB-of-OBB); this is a known conservative approximation documented as an evolution point for the future collision-lifecycle change. `Collider` MUST expose an open `onCollide(other: Collider)` hook invoked by the physics system; default implementation MUST be empty.
+The engine SHALL provide an abstract `Collider` subclass of `Node2D` exposing a `bounds(): Rect` method computed in world space. The engine SHALL provide at least one concrete subclass, `BoxCollider`, whose bounds are derived from the node's `world()` and a configurable local size. `BoxCollider.bounds()` MUST honor `scale` inherited along the ancestor chain. When `world()` includes a non-zero rotation along the chain, `BoxCollider.bounds()` MUST return the axis-aligned bounding box of the rotated rectangle (AABB-of-OBB); this is a known conservative approximation documented as an evolution point for the future collision-lifecycle change. `Collider` MUST expose an open `onCollide(other: Collider)` hook invoked by the physics system; default implementation MUST be empty.
 
 #### Scenario: BoxCollider bounds reflect transform
 
@@ -452,68 +452,130 @@ The engine SHALL provide a `GameLoop` class that, given a `SceneTree`, a `Render
 - **AND** `victim.onExit()` runs before subsequent traversals see it
 - **AND** `tree.render` sees `spawn` and does not see `victim`
 
+### Requirement: Node2D leaf subclasses default to open
+
+The engine SHALL declare every concrete `Node2D` subclass shipped by `:engine` as `open class` by default, so game code MAY extend any of them without restriction. The same default SHALL apply to concrete non-`Node2D` `Node` subclasses shipped by `:engine` (such as `Timer`). Declaring a shipped leaf as `final` (non-`open`) is permitted only when accompanied by a KDoc comment on the class explaining the invariant that herança quebraria; absent that justification, leaves MUST remain `open`.
+
+#### Scenario: Camera2D is open
+
+- **WHEN** game code declares `class FollowCamera : Camera2D()`
+- **THEN** the declaration compiles
+- **AND** `FollowCamera` inherits `bounds`, `current`, `aspectMode`, and the world/transform API
+
+#### Scenario: Polygon2D, Circle2D, ColorRect, Line2D are open
+
+- **WHEN** game code declares any of `class X : Polygon2D()`, `class X : Circle2D()`, `class X : ColorRect()`, `class X : Line2D()`
+- **THEN** each declaration compiles
+- **AND** the subclass inherits the parent's `@Inspect var` properties and `onDraw` behavior
+
+#### Scenario: Timer is open
+
+- **WHEN** game code declares `class IntervalTimer : Timer()`
+- **THEN** the declaration compiles
+- **AND** `IntervalTimer` inherits `waitTime`, `autostart`, `oneShot`, `processCallback`, and the `timeout: Signal<Unit>` field
+
+### Requirement: Node2D exposes ergonomic local transform accessors
+
+`Node2D` SHALL expose three `var` properties that read from and write to its local `transform`: `position: Vec2`, `rotation: Float`, and `scale: Vec2`. Each property's getter MUST return the corresponding field of `this.transform`. Each property's setter MUST assign a new `Transform` to `this.transform` via the existing `copy(...)` of the immutable `Transform` data class, preserving the other two fields. Because the `transform` setter is the single invalidation point for the world-transform cache (`invalidateWorldTransformRecursive()`), assigning through any of the three new accessors MUST invalidate the cache identically to a direct `transform = ...` assignment. `Transform` and `Vec2` MUST remain immutable value types; the accessors are pure sugar over `transform.copy(...)`.
+
+#### Scenario: position getter mirrors transform.position
+
+- **GIVEN** a `Node2D` with `transform.position = (10, 20)`
+- **WHEN** code reads `node.position`
+- **THEN** the result equals `Vec2(10, 20)`
+
+#### Scenario: position setter reassigns transform with other fields preserved
+
+- **GIVEN** a `Node2D` with `transform.position = (10, 20)`, `transform.scale = (2, 2)`, `transform.rotation = π`
+- **WHEN** code assigns `node.position = Vec2(50, 60)`
+- **THEN** `node.transform.position` equals `Vec2(50, 60)`
+- **AND** `node.transform.scale` equals `Vec2(2, 2)`
+- **AND** `node.transform.rotation` equals `π`
+
+#### Scenario: rotation setter reassigns transform with other fields preserved
+
+- **GIVEN** a `Node2D` with `transform.position = (10, 20)`, `transform.rotation = 0f`
+- **WHEN** code assigns `node.rotation = 1.5f`
+- **THEN** `node.transform.rotation` equals `1.5f`
+- **AND** `node.transform.position` equals `Vec2(10, 20)`
+
+#### Scenario: scale setter reassigns transform with other fields preserved
+
+- **GIVEN** a `Node2D` with `transform.scale = (1, 1)`, `transform.position = (10, 20)`
+- **WHEN** code assigns `node.scale = Vec2(3, 4)`
+- **THEN** `node.transform.scale` equals `Vec2(3, 4)`
+- **AND** `node.transform.position` equals `Vec2(10, 20)`
+
+#### Scenario: Writing through any accessor invalidates world cache like a direct transform assignment
+
+- **GIVEN** a parent `Node2D` with a child `Node2D`, both with cached `world()` already populated
+- **WHEN** code assigns `parent.position = Vec2(99, 99)` (or `parent.rotation = ...` or `parent.scale = ...`)
+- **THEN** the next `child.world()` reflects the new parent transform, identically to what `parent.transform = parent.transform.copy(position = Vec2(99, 99))` would produce
+
+#### Scenario: Vec2 remains immutable — partial component write through accessor is impossible
+
+- **WHEN** code writes `node.position = Vec2(node.position.x, 50f)`
+- **THEN** the assignment compiles and `node.position.y` becomes `50f`
+- **AND** attempting `node.position.y = 50f` does NOT compile in Kotlin (Vec2.y is val)
+- **AND** the same expression in Python (`self.position.y = 50.0`) raises `AttributeError` at runtime
+
 ### Requirement: Transform composition by ancestry
 
-The engine SHALL compose `Transform`s along the chain of `Node2D` ancestors so that `position`, `scale` and `rotation` of a parent affect the world-space transform of its descendants. `Node2D` MUST expose `worldTransform(): Transform` that returns the composed transform from the topmost `Node2D` ancestor down to `this`, applying `scale` and `rotation` of each ancestor to the local frame of the next descendant. `Node2D.worldPosition()` SHALL be equivalent to `worldTransform().position`. `Transform` MUST expose a pure `compose(child: Transform): Transform` (or equivalent operator) that, given a parent transform, returns the world transform for a child described in the parent's local frame.
+The engine SHALL compose `Transform`s along the chain of `Node2D` ancestors so that `position`, `scale` and `rotation` of a parent affect the world-space transform of its descendants. `Node2D` MUST expose `world(): Transform` that returns the composed transform from the topmost `Node2D` ancestor down to `this`, applying `scale` and `rotation` of each ancestor to the local frame of the next descendant. `Transform` MUST expose a pure `compose(child: Transform): Transform` (or equivalent operator) that, given a parent transform, returns the world transform for a child described in the parent's local frame.
 
-`Node2D` MUST cache the result of `worldTransform()` per-node so that consecutive reads without any intervening mutation return the cached value in O(1). The cache MUST be invalidated when (a) the node's own `transform` property is assigned a new value, (b) the node is attached to or detached from a parent (reparenting), or (c) any ancestor's `transform` is assigned a new value. Cache invalidation MUST propagate from the mutated node to all `Node2D` descendants, traversing through non-`Node2D` nodes in the chain. The cached value MUST NOT be persisted by `SceneLoader` — it is runtime-only state that begins unset after deserialization and is populated lazily on first read.
+`Node2D` MUST cache the result of `world()` per-node so that consecutive reads without any intervening mutation return the cached value in O(1). The cache MUST be invalidated when (a) the node's own `transform` property is assigned a new value (including assignments via the `position`, `rotation`, `scale` accessor properties), (b) the node is attached to or detached from a parent (reparenting), or (c) any ancestor's `transform` is assigned a new value. Cache invalidation MUST propagate from the mutated node to all `Node2D` descendants, traversing through non-`Node2D` nodes in the chain. The cached value MUST NOT be persisted by `SceneLoader` — it is runtime-only state that begins unset after deserialization and is populated lazily on first read.
 
-The cached value MUST be observably indistinguishable from a fresh computation: any sequence of mutations followed by a read MUST yield the same `Transform` as if `worldTransform()` had been computed from scratch. `Transform`, `Vec2` and `compose` MUST remain immutable value types; the cache is the only state added to support caching.
+The cached value MUST be observably indistinguishable from a fresh computation: any sequence of mutations followed by a read MUST yield the same `Transform` as if `world()` had been computed from scratch. `Transform`, `Vec2` and `compose` MUST remain immutable value types; the cache is the only state added to support caching.
 
 #### Scenario: Translation only composes additively
 
 - **WHEN** a parent `Node2D` has `transform.position = (10, 20)`, no rotation and unit scale, and a child `Node2D` has `transform.position = (3, 4)` and unit transform otherwise
-- **THEN** `child.worldTransform().position` equals `(13, 24)`
-- **AND** `child.worldTransform().scale` equals `(1, 1)`
-- **AND** `child.worldTransform().rotation` equals `0`
+- **THEN** `child.world().position` equals `(13, 24)`
+- **AND** `child.world().scale` equals `(1, 1)`
+- **AND** `child.world().rotation` equals `0`
 
 #### Scenario: Parent scale scales child position and size
 
 - **WHEN** a parent `Node2D` has `transform.scale = (2, 3)` and the child has `transform.position = (10, 0)` and `transform.scale = (1, 1)`
-- **THEN** `child.worldTransform().position` equals `(20, 0)`
-- **AND** `child.worldTransform().scale` equals `(2, 3)`
+- **THEN** `child.world().position` equals `(20, 0)`
+- **AND** `child.world().scale` equals `(2, 3)`
 
 #### Scenario: Parent rotation rotates child position
 
 - **WHEN** a parent `Node2D` has `transform.rotation = π / 2` (90° counter-clockwise in engine convention) and the child has `transform.position = (10, 0)` and identity otherwise
-- **THEN** `child.worldTransform().position` is approximately `(0, 10)` within floating-point tolerance
-- **AND** `child.worldTransform().rotation` equals `π / 2`
+- **THEN** `child.world().position` is approximately `(0, 10)` within floating-point tolerance
+- **AND** `child.world().rotation` equals `π / 2`
 
 #### Scenario: Composition is associative across three levels
 
 - **WHEN** three nested `Node2D`s `a → b → c` each carry non-identity translation, scale and rotation
-- **THEN** `c.worldTransform()` equals the composition `a.transform ∘ b.transform ∘ c.transform` as defined by `Transform.compose`
-
-#### Scenario: worldPosition delegates to worldTransform
-
-- **WHEN** any `Node2D` `n` is queried via `n.worldPosition()`
-- **THEN** the result equals `n.worldTransform().position`
+- **THEN** `c.world()` equals the composition `a.transform ∘ b.transform ∘ c.transform` as defined by `Transform.compose`
 
 #### Scenario: Repeated reads without mutation return cached value
 
-- **WHEN** `n.worldTransform()` is called twice in a row without any intervening mutation to `n.transform`, `n.parent`, or any ancestor's `transform`
+- **WHEN** `n.world()` is called twice in a row without any intervening mutation to `n.transform`, `n.parent`, or any ancestor's `transform`
 - **THEN** both calls return a `Transform` equal in `position`, `scale` and `rotation`
 - **AND** the second call MUST NOT walk the ancestor chain or compose any transforms
 
 #### Scenario: Assigning a new local transform invalidates self and descendants
 
-- **WHEN** `parent.transform = parent.transform.copy(position = (50, 50))` is executed after both `parent.worldTransform()` and `child.worldTransform()` have been called
-- **THEN** the next `parent.worldTransform()` reflects the new position
-- **AND** the next `child.worldTransform().position` reflects the parent's new position composed with the child's local transform
+- **WHEN** `parent.transform = parent.transform.copy(position = (50, 50))` is executed after both `parent.world()` and `child.world()` have been called
+- **THEN** the next `parent.world()` reflects the new position
+- **AND** the next `child.world().position` reflects the parent's new position composed with the child's local transform
 
 #### Scenario: Invalidation propagates through non-Node2D intermediates
 
-- **WHEN** a hierarchy `grandparent: Node2D → middle: Node (not Node2D) → grandchild: Node2D` exists, both `grandparent.worldTransform()` and `grandchild.worldTransform()` have been called, and `grandparent.transform` is then reassigned
-- **THEN** the next `grandchild.worldTransform()` reflects the grandparent's new transform composed with the grandchild's local transform
+- **WHEN** a hierarchy `grandparent: Node2D → middle: Node (not Node2D) → grandchild: Node2D` exists, both `grandparent.world()` and `grandchild.world()` have been called, and `grandparent.transform` is then reassigned
+- **THEN** the next `grandchild.world()` reflects the grandparent's new transform composed with the grandchild's local transform
 
 #### Scenario: Reparenting invalidates the moved subtree
 
-- **WHEN** a node `child` whose `worldTransform()` has already been computed is removed from its current parent and added to a different parent with a different transform
-- **THEN** the next `child.worldTransform()` reflects the composition with the new parent's transform, not the old one
+- **WHEN** a node `child` whose `world()` has already been computed is removed from its current parent and added to a different parent with a different transform
+- **THEN** the next `child.world()` reflects the composition with the new parent's transform, not the old one
 
 #### Scenario: Loading a scene yields nodes whose cache is unpopulated
 
-- **WHEN** a scene is loaded via `SceneLoader.load(...)` and `worldTransform()` is called on a freshly loaded node
+- **WHEN** a scene is loaded via `SceneLoader.load(...)` and `world()` is called on a freshly loaded node
 - **THEN** the returned `Transform` is computed from the live ancestor chain (not from any persisted cache)
 - **AND** the produced JSON from `SceneLoader.save(scene)` does not contain any field for the cached world transform
 
@@ -817,11 +879,11 @@ Both helpers MUST honor `bounds` and `aspectMode`: for `FIT` they use the unifor
 
 The engine SHALL provide concrete `Node2D` subclasses dedicated to common 2D visuals, each `@Serializable` with no-args public primary constructor and configuration via `@Inspect var` properties:
 
-- `ColorRect`: `size: Vec2`, `color: Color`. `onDraw` issues a filled `drawRect(Rect(worldPosition(), worldScaledSize()), color)`.
+- `ColorRect`: `size: Vec2`, `color: Color`. `onDraw` issues a filled `drawRect(Rect(world().position, worldScaledSize()), color)`.
 - `Circle2D`: `radius: Float`, `color: Color`. `onDraw` issues a filled `drawCircle(worldCenter(), worldRadius(), color, filled = true)` where center accounts for parent scale.
 - `Line2D`: `points: List<Vec2>` (local-space), `thickness: Float`, `color: Color`. `onDraw` issues consecutive `drawLine` calls between adjacent points after applying world translation (rotation/scale of ancestors NOT applied to points in this change — known limitation).
-- `Polygon2D`: `points: List<Vec2>` (local-space), `color: Color`. `onDraw` issues `drawPolygon` of points translated by `worldPosition()`.
-- `Label`: `text: String`, `size: Float`, `color: Color`. `onDraw` issues `drawText(text, worldPosition(), size, color)`.
+- `Polygon2D`: `points: List<Vec2>` (local-space), `color: Color`. `onDraw` issues `drawPolygon` of points translated by `world().position`.
+- `Label`: `text: String`, `size: Float`, `color: Color`. `onDraw` issues `drawText(text, world().position, size, color)`.
 
 None of these nodes apply ancestor `rotation` visually in this change; this matches the previous `Shape` limitation and is a documented evolution point for a future renderer `withTransform` capability.
 

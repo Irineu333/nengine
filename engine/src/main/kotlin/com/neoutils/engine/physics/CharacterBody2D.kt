@@ -102,7 +102,13 @@ open class CharacterBody2D : PhysicsBody2D() {
             null
         } else {
             val toi = bestHit.toi
-            position = position + motion * toi
+            // On starting-overlap (toi == 0) the sweep also returns a
+            // depenetration vector. Applying it here separates the body from
+            // the colliding target so the script's reflect (or any follow-up)
+            // moves away from a *non-overlapping* contact next frame — without
+            // this push, a body spawned overlapping freezes oscillating its
+            // velocity in place.
+            position = position + motion * toi + bestHit.depenetration
             KinematicCollision2D(
                 point = bestHit.point,
                 normal = bestHit.normal,

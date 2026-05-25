@@ -75,7 +75,7 @@ class CharacterBody2DTest {
     }
 
     @Test
-    fun `moveAndCollide on starting overlap returns TOI 0 with separation normal`() {
+    fun `moveAndCollide on starting overlap returns TOI 0 with separation normal and pushes body out`() {
         val root = Node()
         val body = makeCharacter(Vec2(10f, 10f), position = Vec2(0f, 0f))
         val other = makeStatic(Vec2(10f, 10f), position = Vec2(3f, 0f))
@@ -83,10 +83,10 @@ class CharacterBody2DTest {
         SceneTree(root).start()
         val collision = body.moveAndCollide(Vec2(0f, 0f))
         assertNotNull(collision)
-        // Position unchanged on TOI=0.
-        assertEquals(0f, body.position.x, EPS)
+        // Smallest-penetration: A starts 7 inside on the left edge (rect-rect
+        // expanded slab penLeft = 0 − (3 − 10) = 7) → push -x by 7.
+        assertEquals(-7f, body.position.x, EPS)
         assertEquals(0f, body.position.y, EPS)
-        // Smallest-penetration: A starts 3 inside on the left edge → push -x.
         assertEquals(-1f, collision.normal.x, EPS)
     }
 

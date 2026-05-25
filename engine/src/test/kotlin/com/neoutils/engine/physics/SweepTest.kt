@@ -96,6 +96,36 @@ class SweepTest {
     }
 
     @Test
+    fun `rect tangent to wall moving outward does not report a bogus collision`() {
+        // Reproduces the freeze pattern: ball sits exactly at a wall's face
+        // moving AWAY. The slab method's tEnter is in the past (<= 0) and
+        // tExit == 0; without the tangent-leaving guard this would be reported
+        // as toi=0 with the wall's inward normal, causing the script to
+        // reflect velocity back into the wall every frame.
+        val ball = rect(Vec2(12f, 12f))
+        val wall = rect(Vec2(10f, 600f))
+        // Ball top-left at (0, 100), moving RIGHT. Wall at (-10, 0) size (10, 600).
+        // Wall's right edge is x=0, so ball is touching wall on its left side.
+        val ballWorld = Transform(position = Vec2(0f, 100f))
+        val wallWorld = Transform(position = Vec2(-10f, 0f))
+        val motion = Vec2(50f, 0f) // moving away to the right
+        assertNull(sweepOverlap(ball, ballWorld, motion, wall, wallWorld))
+    }
+
+    @Test
+    fun `circle tangent to rect moving outward does not report a bogus collision`() {
+        val c = circle(6f)
+        val r = rect(Vec2(10f, 600f))
+        // Circle center at (0, 100) — touching right face of expanded rect at x = -10 + 6.
+        // Wait: rect at (-10, 0), size (10, 600) → right edge x=0. Circle radius 6 with
+        // center at cx tangent to right edge requires cx = 0 + 6 = 6. Moving right (away).
+        val cWorld = Transform(position = Vec2(6f, 100f))
+        val rWorld = Transform(position = Vec2(-10f, 0f))
+        val motion = Vec2(80f, 0f)
+        assertNull(sweepOverlap(c, cWorld, motion, r, rWorld))
+    }
+
+    @Test
     fun `swept rect-vs-circle is symmetric with circle-vs-rect`() {
         val r = rect(Vec2(4f, 4f)); val c = circle(3f)
         // Rect at (0,0) moves right by (20,0); circle stationary at (10, 2).

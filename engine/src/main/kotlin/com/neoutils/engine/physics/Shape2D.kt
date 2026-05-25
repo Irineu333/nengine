@@ -192,9 +192,16 @@ private fun rectCircleOverlap(
  * Result of a successful swept-overlap test: time-of-impact along the motion
  * span (`toi ∈ [0, 1]`, with `0` meaning starting-overlap), world-space
  * contact `point`, and unit `normal` pointing from the stationary target
- * outward toward the moving body.
+ * outward toward the moving body. [depenetration] is the displacement the
+ * mover should add to its position to resolve a pre-existing overlap; it is
+ * [Vec2.ZERO] for sweeps that genuinely cross a face during [0, 1].
  */
-data class SweepResult(val toi: Float, val point: Vec2, val normal: Vec2)
+data class SweepResult(
+    val toi: Float,
+    val point: Vec2,
+    val normal: Vec2,
+    val depenetration: Vec2 = Vec2.ZERO,
+)
 
 /**
  * Continuous swept-overlap test for the three axis-aligned shape pairs
@@ -245,7 +252,9 @@ private fun sweepCircleCircle(
     if (distSq < rSumSq) {
         val sep = if (distSq == 0f) Vec2(1f, 0f) else Vec2(dx, dy).normalized
         val point = Vec2(bWorld.position.x + sep.x * rb, bWorld.position.y + sep.y * rb)
-        return SweepResult(toi = 0f, point = point, normal = sep)
+        val penetration = rSum - kotlin.math.sqrt(distSq)
+        val depen = Vec2(sep.x * penetration, sep.y * penetration)
+        return SweepResult(toi = 0f, point = point, normal = sep, depenetration = depen)
     }
 
     val mLenSq = motion.x * motion.x + motion.y * motion.y
@@ -317,7 +326,8 @@ private fun sweepRectRect(
             else -> Vec2(0f, 1f)
         }
         val point = Vec2(ax0 + aw / 2f, ay0 + ah / 2f)
-        return SweepResult(toi = 0f, point = point, normal = normal)
+        val depen = Vec2(normal.x * minPen, normal.y * minPen)
+        return SweepResult(toi = 0f, point = point, normal = normal, depenetration = depen)
     }
 
     val xSlab = slab(ax0, motion.x, ex0, ex1) ?: return null
@@ -328,6 +338,13 @@ private fun sweepRectRect(
     if (tEnter > 1f || tExit < 0f) return null
     val toi = max(tEnter, 0f)
 
+    // Tangent-leaving guard: tEnter < 0 means the body was already inside the
+    // expanded slab before t=0 and is now exiting — not a new collision. The
+    // genuine deep-starting-overlap case is handled by the strict-inside branch
+    // above. Without this guard a body touching a wall and moving away gets a
+    // bogus toi=0, the script reflects velocity back into the wall, and the
+    // body oscillates in place (freezing).
+    if (tEnter < 0f) return null
     val normal = if (xSlab.first >= ySlab.first) {
         Vec2(if (motion.x > 0f) -1f else 1f, 0f)
     } else {
@@ -357,23 +374,28 @@ private fun sweepCircleRect(
     val dx0 = cx - nearestX0
     val dy0 = cy - nearestY0
     if (dx0 * dx0 + dy0 * dy0 < r * r) {
-        val sep = if (dx0 == 0f && dy0 == 0f) {
+        val sep: Vec2
+        val penetration: Float
+        if (dx0 == 0f && dy0 == 0f) {
             // Circle center strictly inside rect — pick smallest-penetration face.
             val penLeft = cx - rx0
             val penRight = rx1 - cx
             val penTop = cy - ry0
             val penBottom = ry1 - cy
             val minPen = minOf(penLeft, penRight, penTop, penBottom)
-            when (minPen) {
+            sep = when (minPen) {
                 penLeft -> Vec2(-1f, 0f)
                 penRight -> Vec2(1f, 0f)
                 penTop -> Vec2(0f, -1f)
                 else -> Vec2(0f, 1f)
             }
+            penetration = r + minPen
         } else {
-            Vec2(dx0, dy0).normalized
+            sep = Vec2(dx0, dy0).normalized
+            penetration = r - kotlin.math.sqrt(dx0 * dx0 + dy0 * dy0)
         }
-        return SweepResult(toi = 0f, point = Vec2(nearestX0, nearestY0), normal = sep)
+        val depen = Vec2(sep.x * penetration, sep.y * penetration)
+        return SweepResult(toi = 0f, point = Vec2(nearestX0, nearestY0), normal = sep, depenetration = depen)
     }
 
     // Ray vs Minkowski-expanded rect, then refine rounded corners.
@@ -388,7 +410,10 @@ private fun sweepCircleRect(
     val tExit = min(xSlab.second, ySlab.second)
     if (tEnter > tExit) return null
     if (tEnter > 1f || tExit < 0f) return null
-    var toi = max(tEnter, 0f)
+    // Tangent-leaving guard (see sweepRectRect): tEnter < 0 means the circle
+    // was already inside the expanded rect before t=0 — not a new contact.
+    if (tEnter < 0f) return null
+    var toi = tEnter
 
     val xControlled = xSlab.first >= ySlab.first
     var normal = if (xControlled) {
@@ -465,5 +490,9 @@ private fun sweepRectVsCircle(
         circleWorld.position.x + normal.x * r,
         circleWorld.position.y + normal.y * r,
     )
-    return SweepResult(toi = swapped.toi, point = point, normal = normal)
+    // The swapped result's depenetration moves the circle outward; in the
+    // original framing the mover is the rect, which must travel in the
+    // opposite direction to achieve the same separation.
+    val depen = -swapped.depenetration
+    return SweepResult(toi = swapped.toi, point = point, normal = normal, depenetration = depen)
 }

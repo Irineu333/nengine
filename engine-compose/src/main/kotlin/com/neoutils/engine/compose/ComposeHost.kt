@@ -11,7 +11,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.neoutils.engine.runtime.GameConfig
 import com.neoutils.engine.runtime.GameHost
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 
 /**
  * `GameHost` implementation backed by Compose Multiplatform Desktop. Opens an
@@ -21,7 +21,7 @@ import com.neoutils.engine.scene.Scene
  */
 class ComposeHost : GameHost {
 
-    override fun run(scene: Scene, config: GameConfig) {
+    override fun run(tree: SceneTree, config: GameConfig) {
         application {
             val state = rememberWindowState(
                 width = config.width.dp,
@@ -38,7 +38,7 @@ class ComposeHost : GameHost {
                         .background(Color.Black),
                 ) {
                     GameSurface(
-                        scene = scene,
+                        tree = tree,
                         modifier = Modifier.fillMaxSize(),
                         config = config,
                     )

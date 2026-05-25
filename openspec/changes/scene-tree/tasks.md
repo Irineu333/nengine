@@ -47,9 +47,9 @@
 
 ## 9. Compose backend
 
-- [ ] 9.1 `GameSurface(tree: SceneTree)`: mudar assinatura. Atualizar `withFrameNanos` para alimentar `loop.tick(...)` com o `tree` recebido.
-- [ ] 9.2 `ComposeHost.run(tree: SceneTree, config: GameConfig)`: mudar assinatura. Atualizar wiring de `Window`, key handling e chamada para `renderDebugOverlay(renderer, tree)`.
-- [ ] 9.3 Conferir que `:engine-compose` não importa nem referencia o símbolo `Scene` após a mudança.
+- [x] 9.1 `GameSurface(tree: SceneTree)`: mudar assinatura. Atualizar `withFrameNanos` para alimentar `loop.tick(...)` com o `tree` recebido.
+- [x] 9.2 `ComposeHost.run(tree: SceneTree, config: GameConfig)`: mudar assinatura. Atualizar wiring de `Window`, key handling e chamada para `renderDebugOverlay(renderer, tree)`.
+- [x] 9.3 Conferir que `:engine-compose` não importa nem referencia o símbolo `Scene` após a mudança.
 
 ## 10. Pong sample
 

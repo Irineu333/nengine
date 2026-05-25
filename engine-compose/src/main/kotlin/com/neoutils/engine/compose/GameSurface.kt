@@ -28,12 +28,12 @@ import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.runtime.GameConfig
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun GameSurface(
-    scene: Scene,
+    tree: SceneTree,
     modifier: Modifier = Modifier,
     config: GameConfig = GameConfig(),
 ) {
@@ -47,14 +47,14 @@ fun GameSurface(
     // instance. The Canvas lambda then binds the new renderer's DrawScope
     // but `loop.tick` draws into the old (unbound) one and crashes with
     // "ComposeRenderer used outside a DrawScope".
-    val loop = remember(scene, renderer) { GameLoop(scene, renderer, input, physics, physicsHz = config.physicsHz) }
+    val loop = remember(tree, renderer) { GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz) }
     val fps = remember { FpsCounter() }
     val focusRequester = remember { FocusRequester() }
 
     var frameNanos by remember { mutableStateOf(0L) }
     var pendingDt by remember { mutableStateOf(0L) }
 
-    LaunchedEffect(scene) {
+    LaunchedEffect(tree) {
         var lastNanos = 0L
         while (true) {
             withFrameNanos { now ->
@@ -67,8 +67,8 @@ fun GameSurface(
         }
     }
 
-    DisposableEffect(scene) {
-        onDispose { scene.stop() }
+    DisposableEffect(tree) {
+        onDispose { tree.stop() }
     }
 
     Canvas(
@@ -77,7 +77,7 @@ fun GameSurface(
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { input.onKeyEvent(it) }
-            .onSizeChanged { scene.resize(it.width.toFloat(), it.height.toFloat()) }
+            .onSizeChanged { tree.resize(it.width.toFloat(), it.height.toFloat()) }
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
@@ -98,7 +98,7 @@ fun GameSurface(
     ) {
         // `frameNanos` is monotonic, so reading it here subscribes the draw
         // block to every withFrameNanos pulse without the side-effect smell of
-        // resizing the scene from inside DrawScope.
+        // resizing the tree from inside DrawScope.
         @Suppress("UNUSED_VARIABLE") val recomposeTrigger = frameNanos
         renderer.bind(this)
         try {
@@ -107,7 +107,7 @@ fun GameSurface(
             if (input.wasKeyPressed(config.toggleCollidersKey)) {
                 Debug.colliderVisualization = !Debug.colliderVisualization
             }
-            renderDebugOverlay(renderer, scene)
+            renderDebugOverlay(renderer, tree)
         } finally {
             renderer.unbind()
         }

@@ -12,25 +12,33 @@ import com.neoutils.engine.scene.Node2D
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
  * Enxame de quadrados com velocidade linear **e** angular, colidindo
  * elasticamente contra paredes e entre si com **resposta rotacional por
- * impulso** — o tipo de comportamento que Demo 4 (reflect-pela-normal) não
- * consegue expressar.
+ * impulso + fricção de Coulomb** — o tipo de comportamento que Demo 4
+ * (reflect-pela-normal) não consegue expressar.
  *
- * Para cada contato em ponto P com normal `n`:
+ * Cada contato em ponto P com normal `n` aplica dois impulsos:
  *
- *   j = -(1+e)·(v_rel · n) / (1/mA + 1/mB + (rA×n)²/IA + (rB×n)²/IB)
+ *  - **Normal** (e = 1, elástico):
+ *    `jn = -2·(v_rel·n) / (1/mA + 1/mB + (rA×n)²/IA + (rB×n)²/IB)`
+ *  - **Tangencial** (fricção de Coulomb, capped):
+ *    `jt = min(velTang/denomT, MU·|jn|)`, aplicado oposto à direção de
+ *    deslizamento.
  *
- * com `e=1` (elástico perfeito), `rA = P - centroA`, e velocidade no ponto
- * `vAP = vA + ω × rA`. Aplicar `j·n` no ponto P muda velocidade linear e
- * angular simultaneamente: uma batida na quina gera spin, uma batida frontal
- * só inverte direção, e o spin se transfere de um quadrado para o outro
- * conservando momento + energia.
+ * Com `rA = P - centroA` e `vAP = vA + ω × rA`. Aplicar `jn·n + jt·t` no
+ * ponto P muda velocidade linear E angular simultaneamente — bater na quina
+ * gera spin (lever arm tangencial não-zero), bater face-a-face só inverte
+ * direção (lever arm paralelo a `n`), e a fricção tangencial acopla
+ * sliding ↔ spin: quadrado raspando numa parede converte parte da
+ * velocidade tangencial em rotação (rolling), e quadrados se atritam ao
+ * encostarem.
  *
  * O ponto de contato é aproximado por **canto mais avançado**: dos 4 cantos
  * world-space do quadrado, escolhemos o que tem menor projeção na normal
@@ -56,6 +64,12 @@ private const val WALL_THICKNESS = 10f
 // mass = 1, momento de inércia uniforme de um quadrado: I = m·(w² + h²)/12.
 // Para w == h == SIZE: I = SIZE²/6.
 private const val SQUARE_INERTIA = SQUARE_SIZE * SQUARE_SIZE / 6f
+
+// Coeficiente de fricção de Coulomb no contato. Cap do impulso tangencial:
+// |j_t| <= MU · |j_n|. ~0.4 é típico de plástico/madeira; baixo → desliza,
+// alto → "agarra" e rola.
+private const val MU = 0.4f
+private const val FRICTION_EPS = 1e-3f
 
 @Serializable
 class TumblingSwarmDemo : Node2D() {
@@ -248,6 +262,9 @@ private fun leadingOffset(rotation: Float, halfSize: Float, normal: Vec2): Vec2 
 // Wall (mass = ∞): only the square accumulates impulse. The lever arm
 // `rA` comes from the leading corner of the rotated square, so a quina
 // hit produces non-zero `rA × n` and the wall imparts spin onto the body.
+// After the normal impulse we also apply a tangential (Coulomb) friction
+// impulse — what couples linear sliding and angular spin so a square
+// scraping along a wall picks up roll instead of just bouncing.
 private fun resolveSquareWall(a: TumblingSquare, n: Vec2) {
     val rA = leadingOffset(a.transform.rotation, SQUARE_SIZE / 2f, n)
     // velocity at contact = vA + ω × rA (2D cross: ω × r = (-ω·ry, ω·rx))
@@ -258,12 +275,28 @@ private fun resolveSquareWall(a: TumblingSquare, n: Vec2) {
 
     // 2D scalar cross: r × n = rx·ny - ry·nx
     val rAxN = rA.x * n.y - rA.y * n.x
-    val denom = 1f /* 1/mA */ + (rAxN * rAxN) / SQUARE_INERTIA
-    val j = -2f * velRelN / denom // e = 1 (elastic)
-    a.vx += j * n.x
-    a.vy += j * n.y
-    // Angular impulse: ω += (r × (j·n)) / I = j · (r × n) / I
-    a.angularVel += j * rAxN / SQUARE_INERTIA
+    val denomN = 1f /* 1/mA */ + (rAxN * rAxN) / SQUARE_INERTIA
+    val jn = -2f * velRelN / denomN // e = 1 (elastic)
+    a.vx += jn * n.x
+    a.vy += jn * n.y
+    a.angularVel += jn * rAxN / SQUARE_INERTIA
+
+    // Coulomb friction at contact. Tangent unit vector points in the
+    // direction A is sliding; apply an opposite impulse that tries to
+    // brake the tangential velocity to zero, capped at MU·|jn|.
+    val velTangX = vAPx - velRelN * n.x
+    val velTangY = vAPy - velRelN * n.y
+    val velTangLen = sqrt(velTangX * velTangX + velTangY * velTangY)
+    if (velTangLen < FRICTION_EPS) return
+    val tx = velTangX / velTangLen
+    val ty = velTangY / velTangLen
+    val rAxT = rA.x * ty - rA.y * tx
+    val denomT = 1f + (rAxT * rAxT) / SQUARE_INERTIA
+    val jtBrake = velTangLen / denomT // magnitude that would fully stop sliding
+    val jt = min(jtBrake, MU * jn)
+    a.vx -= jt * tx
+    a.vy -= jt * ty
+    a.angularVel -= jt * rAxT / SQUARE_INERTIA
 }
 
 // Equal-mass square-vs-square. Contact point is A's leading corner toward
@@ -293,12 +326,34 @@ private fun resolveSquareSquare(a: TumblingSquare, b: TumblingSquare, n: Vec2) {
 
     val rAxN = rAx * n.y - rAy * n.x
     val rBxN = rBx * n.y - rBy * n.x
-    val denom = 1f + 1f + (rAxN * rAxN) / SQUARE_INERTIA + (rBxN * rBxN) / SQUARE_INERTIA
-    val j = -2f * velRelN / denom
-    a.vx += j * n.x
-    a.vy += j * n.y
-    b.vx -= j * n.x
-    b.vy -= j * n.y
-    a.angularVel += j * rAxN / SQUARE_INERTIA
-    b.angularVel -= j * rBxN / SQUARE_INERTIA
+    val denomN = 1f + 1f + (rAxN * rAxN) / SQUARE_INERTIA + (rBxN * rBxN) / SQUARE_INERTIA
+    val jn = -2f * velRelN / denomN
+    a.vx += jn * n.x
+    a.vy += jn * n.y
+    b.vx -= jn * n.x
+    b.vy -= jn * n.y
+    a.angularVel += jn * rAxN / SQUARE_INERTIA
+    b.angularVel -= jn * rBxN / SQUARE_INERTIA
+
+    // Coulomb friction at contact between the two squares. Tangent unit
+    // vector points in A's sliding direction relative to B; A brakes,
+    // B picks up the opposite kick so total tangential momentum is
+    // preserved. Both lever arms produce angular reaction.
+    val velTangX = velRelX - velRelN * n.x
+    val velTangY = velRelY - velRelN * n.y
+    val velTangLen = sqrt(velTangX * velTangX + velTangY * velTangY)
+    if (velTangLen < FRICTION_EPS) return
+    val tx = velTangX / velTangLen
+    val ty = velTangY / velTangLen
+    val rAxT = rAx * ty - rAy * tx
+    val rBxT = rBx * ty - rBy * tx
+    val denomT = 1f + 1f + (rAxT * rAxT) / SQUARE_INERTIA + (rBxT * rBxT) / SQUARE_INERTIA
+    val jtBrake = velTangLen / denomT
+    val jt = min(jtBrake, MU * jn)
+    a.vx -= jt * tx
+    a.vy -= jt * ty
+    b.vx += jt * tx
+    b.vy += jt * ty
+    a.angularVel -= jt * rAxT / SQUARE_INERTIA
+    b.angularVel += jt * rBxT / SQUARE_INERTIA
 }

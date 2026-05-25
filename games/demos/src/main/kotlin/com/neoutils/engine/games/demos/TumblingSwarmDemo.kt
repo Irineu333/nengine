@@ -21,24 +21,31 @@ import kotlin.random.Random
 /**
  * Enxame de quadrados com velocidade linear **e** angular, colidindo
  * elasticamente contra paredes e entre si com **resposta rotacional por
- * impulso + fricção de Coulomb** — o tipo de comportamento que Demo 4
- * (reflect-pela-normal) não consegue expressar.
+ * impulso** — o tipo de comportamento que Demo 4 (reflect-pela-normal)
+ * não consegue expressar.
  *
- * Cada contato em ponto P com normal `n` aplica dois impulsos:
+ * Modelo de contato com dois sabores:
  *
- *  - **Normal** (e = 1, elástico):
- *    `jn = -2·(v_rel·n) / (1/mA + 1/mB + (rA×n)²/IA + (rB×n)²/IB)`
- *  - **Tangencial** (fricção de Coulomb, capped):
- *    `jt = min(velTang/denomT, MU·|jn|)`, aplicado oposto à direção de
- *    deslizamento.
+ *  - **Wall hit** (square-vs-StaticBody2D): impulso normal elástico
+ *    (`e = 1`) + impulso tangencial de **Coulomb** capped em `MU·|jn|`,
+ *    aplicados no canto líder de A na direção `-n`. Quadrado raspando a
+ *    parede converte sliding em rolling; quina batida gera spin pelo
+ *    lever arm tangencial.
+ *  - **Pair hit** (square-vs-square): só impulso normal elástico, sem
+ *    fricção. Friction inter-corpos é fisicamente válida mas acopla
+ *    sliding → spin "do nada" e fazia os dois quadrados ganharem rotação
+ *    em pares simples. Sem ela, o par fica tipo bilhar: troca momento
+ *    linear, troca momento angular via lever arm do contato, mas não
+ *    gera spin a partir de movimento tangencial. O ponto de contato é o
+ *    **midpoint dos cantos líderes** de A e B na direção um do outro,
+ *    deixando `rA ≈ -rB` e impulsos angulares balanceados.
  *
- * Com `rA = P - centroA` e `vAP = vA + ω × rA`. Aplicar `jn·n + jt·t` no
- * ponto P muda velocidade linear E angular simultaneamente — bater na quina
- * gera spin (lever arm tangencial não-zero), bater face-a-face só inverte
- * direção (lever arm paralelo a `n`), e a fricção tangencial acopla
- * sliding ↔ spin: quadrado raspando numa parede converte parte da
- * velocidade tangencial em rotação (rolling), e quadrados se atritam ao
- * encostarem.
+ * Fórmula do impulso normal:
+ *
+ *   `jn = -(1+e)·(v_rel · n) / (1/mA + 1/mB + (rA×n)²/IA + (rB×n)²/IB)`
+ *
+ * com `rA = P - centroA` e `vAP = vA + ω × rA`. Aplicar `jn·n` no ponto P
+ * muda velocidade linear E angular simultaneamente.
  *
  * O ponto de contato é aproximado por **canto mais avançado**: dos 4 cantos
  * world-space do quadrado, escolhemos o que tem menor projeção na normal
@@ -302,17 +309,34 @@ private fun resolveSquareWall(a: TumblingSquare, n: Vec2) {
 // Equal-mass square-vs-square. Contact point is A's leading corner toward
 // B (along `-n`); B's lever arm is taken relative to that same world point.
 // Glancing hits (corner-into-face) thus generate spin on both bodies.
+// Square-vs-square elastic impulse. Two design choices keep the angular
+// behavior recognizable:
+//
+//  - **Symmetric contact point**: `P = midpoint(centroA + leadA, centroB +
+//    leadB)`. With the old asymmetric `P = centroA + leadA`, `rB` grew
+//    with the distance between centers and the angular impulse on B
+//    scaled with that lever — distant offset hits spun B disproportion-
+//    ally. The midpoint keeps `rA ≈ -rB`, so the angular impulses are
+//    balanced and look like co-rotation about the contact (Newton's
+//    third law on the lever).
+//  - **No Coulomb friction between squares**. Friction is what converts
+//    linear sliding into spin at the contact (rolling) — physically
+//    correct, but it makes pair hits feel like both bodies "spin up from
+//    nowhere". Wall hits still use friction (great for scraping/rolling
+//    against the arena); pair hits stay clean billiard-elastic.
 private fun resolveSquareSquare(a: TumblingSquare, b: TumblingSquare, n: Vec2) {
     val centerA = a.position
     val centerB = b.position
-    // A's leading offset toward B is along -n in A's frame.
-    val rA = leadingOffset(a.transform.rotation, SQUARE_SIZE / 2f, n)
-    // Contact point in world; B's lever arm is the same point measured from
-    // B's center. (n points from B toward A, so contact lies near A's surface.)
-    val pX = centerA.x + rA.x
-    val pY = centerA.y + rA.y
-    val rAx = rA.x
-    val rAy = rA.y
+    val h = SQUARE_SIZE / 2f
+    val leadA = leadingOffset(a.transform.rotation, h, n)
+    // B's leading toward A is in the direction opposite to n (n points from
+    // B outward toward A; B's "leading face" toward A lies on B's side
+    // closest to A, i.e., where -n projects most into B).
+    val leadB = leadingOffset(b.transform.rotation, h, Vec2(-n.x, -n.y))
+    val pX = (centerA.x + leadA.x + centerB.x + leadB.x) * 0.5f
+    val pY = (centerA.y + leadA.y + centerB.y + leadB.y) * 0.5f
+    val rAx = pX - centerA.x
+    val rAy = pY - centerA.y
     val rBx = pX - centerB.x
     val rBy = pY - centerB.y
     val vAPx = a.vx - a.angularVel * rAy
@@ -334,26 +358,4 @@ private fun resolveSquareSquare(a: TumblingSquare, b: TumblingSquare, n: Vec2) {
     b.vy -= jn * n.y
     a.angularVel += jn * rAxN / SQUARE_INERTIA
     b.angularVel -= jn * rBxN / SQUARE_INERTIA
-
-    // Coulomb friction at contact between the two squares. Tangent unit
-    // vector points in A's sliding direction relative to B; A brakes,
-    // B picks up the opposite kick so total tangential momentum is
-    // preserved. Both lever arms produce angular reaction.
-    val velTangX = velRelX - velRelN * n.x
-    val velTangY = velRelY - velRelN * n.y
-    val velTangLen = sqrt(velTangX * velTangX + velTangY * velTangY)
-    if (velTangLen < FRICTION_EPS) return
-    val tx = velTangX / velTangLen
-    val ty = velTangY / velTangLen
-    val rAxT = rAx * ty - rAy * tx
-    val rBxT = rBx * ty - rBy * tx
-    val denomT = 1f + 1f + (rAxT * rAxT) / SQUARE_INERTIA + (rBxT * rBxT) / SQUARE_INERTIA
-    val jtBrake = velTangLen / denomT
-    val jt = min(jtBrake, MU * jn)
-    a.vx -= jt * tx
-    a.vy -= jt * ty
-    b.vx += jt * tx
-    b.vy += jt * ty
-    a.angularVel -= jt * rAxT / SQUARE_INERTIA
-    b.angularVel += jt * rBxT / SQUARE_INERTIA
 }

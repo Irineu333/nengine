@@ -16,7 +16,7 @@ class WorldTransformTest {
         val b = Node2D().apply { transform = Transform(position = Vec2(3f, 4f)) }
         root.addChild(a)
         a.addChild(b)
-        val world = b.worldTransform()
+        val world = b.world()
         assertEquals(Vec2(13f, 24f), world.position)
         assertEquals(Vec2(1f, 1f), world.scale)
         assertEquals(0f, world.rotation)
@@ -29,7 +29,7 @@ class WorldTransformTest {
         val child = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
         root.addChild(parent)
         parent.addChild(child)
-        val world = child.worldTransform()
+        val world = child.world()
         assertEquals(Vec2(20f, 0f), world.position)
         assertEquals(Vec2(2f, 3f), world.scale)
     }
@@ -43,7 +43,7 @@ class WorldTransformTest {
         val child = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
         root.addChild(parent)
         parent.addChild(child)
-        val world = child.worldTransform()
+        val world = child.world()
         assertApprox(Vec2(0f, 10f), world.position)
         assertEquals((PI / 2.0).toFloat(), world.rotation)
     }
@@ -58,7 +58,7 @@ class WorldTransformTest {
         a.addChild(b)
         b.addChild(c)
         val expected = a.transform.compose(b.transform).compose(c.transform)
-        val actual = c.worldTransform()
+        val actual = c.world()
         assertApprox(expected.position, actual.position)
         assertEquals(expected.scale, actual.scale)
         assertEquals(expected.rotation, actual.rotation)

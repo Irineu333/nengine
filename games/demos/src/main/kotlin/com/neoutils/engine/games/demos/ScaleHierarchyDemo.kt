@@ -14,7 +14,7 @@ import kotlin.math.sin
  * A parent `Node2D` with a scale that oscillates between MIN_SCALE and
  * MAX_SCALE. The child `ColorRect` keeps a fixed local size — the rendered
  * size grows and shrinks because `ColorRect.onDraw` reads
- * `worldTransform().scale`. This would have stayed visually static before
+ * `world().scale`. This would have stayed visually static before
  * the change since the old code only honored the child's own scale.
  */
 @Serializable

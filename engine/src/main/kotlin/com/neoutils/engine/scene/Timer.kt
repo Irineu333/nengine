@@ -22,7 +22,7 @@ import kotlinx.serialization.Transient
  * only; subsequent emissions (when `oneShot == false`) use [waitTime].
  */
 @Serializable
-class Timer : Node() {
+open class Timer : Node() {
 
     @Inspect
     var waitTime: Float = 1f

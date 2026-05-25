@@ -27,14 +27,14 @@ class WorldTransformCacheTest {
 
     // 4.2: Two consecutive reads without mutation return equal Transforms
     @Test
-    fun `consecutive worldTransform calls return equal result`() {
+    fun `consecutive world calls return equal result`() {
         val root = Node()
         val parent = Node2D().apply { transform = Transform(position = Vec2(10f, 20f)) }
         val child = Node2D().apply { transform = Transform(position = Vec2(3f, 4f)) }
         root.addChild(parent)
         parent.addChild(child)
-        val first = child.worldTransform()
-        val second = child.worldTransform()
+        val first = child.world()
+        val second = child.world()
         assertEquals(first.position, second.position)
         assertEquals(first.scale, second.scale)
         assertEquals(first.rotation, second.rotation)
@@ -48,11 +48,11 @@ class WorldTransformCacheTest {
         val child = Node2D().apply { transform = Transform(position = Vec2(5f, 0f)) }
         root.addChild(parent)
         parent.addChild(child)
-        parent.worldTransform()
-        child.worldTransform()
+        parent.world()
+        child.world()
         parent.transform = parent.transform.copy(position = Vec2(50f, 50f))
-        assertEquals(Vec2(50f, 50f), parent.worldTransform().position)
-        assertEquals(Vec2(55f, 50f), child.worldTransform().position)
+        assertEquals(Vec2(50f, 50f), parent.world().position)
+        assertEquals(Vec2(55f, 50f), child.world().position)
     }
 
     // 4.4: grandparent (Node2D) → middle (raw Node) → grandchild (Node2D)
@@ -65,14 +65,14 @@ class WorldTransformCacheTest {
         root.addChild(grandparent)
         grandparent.addChild(middle)
         middle.addChild(grandchild)
-        grandparent.worldTransform()
-        grandchild.worldTransform()
+        grandparent.world()
+        grandchild.world()
         grandparent.transform = grandparent.transform.copy(position = Vec2(100f, 0f))
-        assertEquals(Vec2(100f, 0f), grandparent.worldTransform().position)
-        assertEquals(Vec2(105f, 0f), grandchild.worldTransform().position)
+        assertEquals(Vec2(100f, 0f), grandparent.world().position)
+        assertEquals(Vec2(105f, 0f), grandchild.world().position)
     }
 
-    // 4.5: After reparenting, child.worldTransform reflects new parent
+    // 4.5: After reparenting, child.world() reflects new parent
     @Test
     fun `reparenting invalidates child world transform`() {
         val root = Node()
@@ -82,10 +82,10 @@ class WorldTransformCacheTest {
         root.addChild(p1)
         root.addChild(p2)
         p1.addChild(child)
-        assertEquals(Vec2(15f, 0f), child.worldTransform().position)
+        assertEquals(Vec2(15f, 0f), child.world().position)
         p1.removeChild(child)
         p2.addChild(child)
-        assertEquals(Vec2(105f, 0f), child.worldTransform().position)
+        assertEquals(Vec2(105f, 0f), child.world().position)
     }
 
     // 4.6: Sibling's cache is not affected by another sibling's transform change
@@ -98,45 +98,45 @@ class WorldTransformCacheTest {
         root.addChild(parent)
         parent.addChild(child1)
         parent.addChild(child2)
-        child1.worldTransform()
-        child2.worldTransform()
+        child1.world()
+        child2.world()
         child1.transform = child1.transform.copy(position = Vec2(99f, 0f))
-        assertEquals(Vec2(12f, 0f), child2.worldTransform().position)
-        assertEquals(Vec2(109f, 0f), child1.worldTransform().position)
+        assertEquals(Vec2(12f, 0f), child2.world().position)
+        assertEquals(Vec2(109f, 0f), child1.world().position)
     }
 
     // 4.7: SceneLoader.save does not include the cache field, and load yields
     // a node whose cache is unpopulated until the first read.
     @Test
-    fun `saved JSON does not contain cachedWorldTransform field`() {
+    fun `saved JSON does not contain cachedWorld field`() {
         val root = Node()
         val node = Node2D().apply { transform = Transform(position = Vec2(5f, 10f)) }
         root.addChild(node)
-        node.worldTransform()
+        node.world()
         val json = SceneLoader.save(root)
-        assertFalse(json.contains("cachedWorldTransform"), "JSON must not contain cachedWorldTransform")
+        assertFalse(json.contains("cachedWorld"), "JSON must not contain cachedWorld")
 
         val loaded = SceneLoader.load(json)
         val loadedNode = loaded.children.single() as Node2D
-        val field = Node2D::class.java.getDeclaredField("cachedWorldTransform")
+        val field = Node2D::class.java.getDeclaredField("cachedWorld")
         field.isAccessible = true
         assertNull(field.get(loadedNode), "loaded node's cache must start null")
-        loadedNode.worldTransform()
+        loadedNode.world()
         assertNotNull(field.get(loadedNode), "loaded node's cache must populate on first read")
     }
 
     // 5.2: Use reflection to assert cache is populated after first read and unchanged after second
     @Test
-    fun `cache is populated after first worldTransform call and stable on second`() {
+    fun `cache is populated after first world call and stable on second`() {
         val node = Node2D().apply { transform = Transform(position = Vec2(1f, 2f)) }
-        val field = Node2D::class.java.getDeclaredField("cachedWorldTransform")
+        val field = Node2D::class.java.getDeclaredField("cachedWorld")
         field.isAccessible = true
         assertNull(field.get(node), "cache should be null before any call")
-        val result = node.worldTransform()
+        val result = node.world()
         val cached = field.get(node) as? Transform
         assertNotNull(cached, "cache should be populated after first call")
         assertEquals(result.position, cached.position)
-        node.worldTransform()
+        node.world()
         assertEquals(cached, field.get(node), "cache object must not change on second call")
     }
 }

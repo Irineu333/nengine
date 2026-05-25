@@ -8,10 +8,10 @@ import kotlinx.serialization.Serializable
 
 /**
  * Polyline drawn by chaining consecutive points with `Renderer.drawLine`.
- * Each point is interpreted as an offset from `worldPosition()`.
+ * Each point is interpreted as an offset from `world().position`.
  */
 @Serializable
-class Line2D : Node2D() {
+open class Line2D : Node2D() {
 
     @Inspect
     var points: List<Vec2> = emptyList()
@@ -24,7 +24,7 @@ class Line2D : Node2D() {
 
     override fun onDraw(renderer: Renderer) {
         if (points.size >= 2) {
-            val origin = worldPosition()
+            val origin = world().position
             for (i in 1 until points.size) {
                 val a = points[i - 1]
                 val b = points[i]

@@ -20,8 +20,35 @@ open class Node2D : Node() {
             invalidateWorldTransformRecursive()
         }
 
+    /**
+     * Sugar over `transform.position` / `transform = transform.copy(position = ...)`.
+     * Writes go through the `transform` setter, so the world-transform cache
+     * is invalidated automatically.
+     */
+    var position: Vec2
+        get() = transform.position
+        set(value) { transform = transform.copy(position = value) }
+
+    /**
+     * Sugar over `transform.rotation` (radians) / `transform = transform.copy(rotation = ...)`.
+     * Writes go through the `transform` setter, so the world-transform cache
+     * is invalidated automatically.
+     */
+    var rotation: Float
+        get() = transform.rotation
+        set(value) { transform = transform.copy(rotation = value) }
+
+    /**
+     * Sugar over `transform.scale` / `transform = transform.copy(scale = ...)`.
+     * Writes go through the `transform` setter, so the world-transform cache
+     * is invalidated automatically.
+     */
+    var scale: Vec2
+        get() = transform.scale
+        set(value) { transform = transform.copy(scale = value) }
+
     @Transient
-    private var cachedWorldTransform: Transform? = null
+    private var cachedWorld: Transform? = null
 
     /**
      * Returns the world-space `Transform` by composing every `Node2D`
@@ -29,16 +56,17 @@ open class Node2D : Node() {
      * node; the cache is invalidated on local `transform` assignment,
      * reparenting, or any ancestor's `transform` assignment. Cache is
      * runtime-only and never serialized.
+     *
+     * Function (not property) to signal that the value is computed/cached
+     * rather than a bare field read.
      */
-    fun worldTransform(): Transform {
-        cachedWorldTransform?.let { return it }
+    fun world(): Transform {
+        cachedWorld?.let { return it }
         val ancestor = nearestNode2DAncestor()
-        val world = ancestor?.worldTransform()?.compose(transform) ?: transform
-        cachedWorldTransform = world
+        val world = ancestor?.world()?.compose(transform) ?: transform
+        cachedWorld = world
         return world
     }
-
-    fun worldPosition(): Vec2 = worldTransform().position
 
     private fun nearestNode2DAncestor(): Node2D? {
         var c = parent
@@ -50,14 +78,14 @@ open class Node2D : Node() {
     }
 
     internal fun invalidateWorldTransformRecursive() {
-        cachedWorldTransform = null
+        cachedWorld = null
         invalidateDescendants(this)
     }
 
     private fun invalidateDescendants(node: Node) {
         for (child in node.children) {
             if (child is Node2D) {
-                child.cachedWorldTransform = null
+                child.cachedWorld = null
                 invalidateDescendants(child)
             } else {
                 invalidateDescendants(child)

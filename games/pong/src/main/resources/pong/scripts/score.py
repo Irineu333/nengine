@@ -9,7 +9,7 @@ def _ready(self):
 
 
 def _draw(self, renderer):
-    renderer.drawText(str(self._value), self.worldPosition(), self.textSize, self.color)
+    renderer.drawText(str(self._value), self.world().position, self.textSize, self.color)
 
 
 def increment(self):

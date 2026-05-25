@@ -26,13 +26,12 @@ def _ready(self):
 def _physics_process(self, dt):
     self._scored_this_tick = False
     self.size = Vec2(self.ballSize, self.ballSize)
-    pos = self.transform.position
-    new_pos = Vec2(pos.x + self._velocity.x * dt, pos.y + self._velocity.y * dt)
-    self.transform = Transform(new_pos, self.transform.scale, self.transform.rotation)
+    pos = self.position
+    self.position = Vec2(pos.x + self._velocity.x * dt, pos.y + self._velocity.y * dt)
 
 
 def _draw(self, renderer):
-    wp = self.worldPosition()
+    wp = self.world().position
     center = Vec2(wp.x + self.ballSize / 2.0, wp.y + self.ballSize / 2.0)
     renderer.drawCircle(center, self.ballSize / 2.0, Color(1.0, 1.0, 1.0, 1.0), True, 1.0)
 
@@ -58,7 +57,7 @@ def _on_collide(self, other):
     if parent is not None and parent.name in ("left", "right"):
         paddle_bounds = other.bounds()
         paddle_center_y = paddle_bounds.top + paddle_bounds.size.y / 2.0
-        ball_center_y = self.transform.position.y + self.ballSize / 2.0
+        ball_center_y = self.position.y + self.ballSize / 2.0
         rel = (ball_center_y - paddle_center_y) / (paddle_bounds.size.y / 2.0)
         if rel < -1.0:
             rel = -1.0
@@ -72,15 +71,14 @@ def _on_collide(self, other):
         max_angle = math.pi / 3.0
         angle = rel * max_angle
         self._velocity = Vec2(h_sign * new_speed * math.cos(angle), new_speed * math.sin(angle))
-        ball_pos = self.transform.position
+        ball_pos = self.position
         ball_right = ball_pos.x + self.ballSize
         ball_left = ball_pos.x
         if h_sign < 0.0:
             shift = paddle_bounds.left - ball_right - 0.5
         else:
             shift = paddle_bounds.right - ball_left + 0.5
-        new_x = ball_pos.x + shift
-        self.transform = Transform(Vec2(new_x, ball_pos.y), self.transform.scale, self.transform.rotation)
+        self.position = Vec2(ball_pos.x + shift, ball_pos.y)
         return
     # Fall-through: walls (topWall / bottomWall) flip the vertical component.
     self._velocity = Vec2(self._velocity.x, -self._velocity.y)
@@ -92,11 +90,10 @@ def reset(self, serve_toward):
 
 def _reset(self, serve_toward):
     self.size = Vec2(self.ballSize, self.ballSize)
-    new_pos = Vec2(
+    self.position = Vec2(
         self.fieldCenter.x - self.ballSize / 2.0,
         self.fieldCenter.y - self.ballSize / 2.0,
     )
-    self.transform = Transform(new_pos, self.transform.scale, self.transform.rotation)
     angle = (_random.random() - 0.5) * 1.4
     sx = 1.0 if serve_toward >= 0.0 else -1.0
     self._velocity = Vec2(

@@ -20,7 +20,7 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 
 ## Performance Notes
 
-`Node2D.worldTransform()` cacheia o resultado por nó (campo `@Transient cachedWorldTransform`). O cache começa `null` e é populado na primeira leitura; leituras consecutivas sem mutação retornam em O(1). O cache é invalidado de forma **eager** — o nó mutado e todos os seus descendentes `Node2D` (atravessando `Node` puros no meio do caminho) são marcados dirty imediatamente — nos seguintes momentos:
+`Node2D.world()` cacheia o resultado por nó (campo `@Transient cachedWorld`). O cache começa `null` e é populado na primeira leitura; leituras consecutivas sem mutação retornam em O(1). O cache é invalidado de forma **eager** — o nó mutado e todos os seus descendentes `Node2D` (atravessando `Node` puros no meio do caminho) são marcados dirty imediatamente — nos seguintes momentos:
 
 1. **Atribuição do `transform` local** (`node.transform = ...`) — o setter custom de `Node2D.transform` chama `invalidateWorldTransformRecursive()`.
 2. **Mudança de hierarquia** (`addChild`/`removeChild`, incluindo caminhos diferidos via `pendingAdd`/`pendingRemove`) — `Node.applyAdd` e `Node.applyRemove` chamam `invalidateWorldTransformRecursive()` no filho.
@@ -84,8 +84,8 @@ Durante a execução:
 - `1` Transform orbit — pai rotacionando faz os filhos orbitarem (composição de rotação sobre posição, A1)
 - `2` Scale hierarchy — pai com `scale` oscilando faz o filho crescer e encolher (composição de scale via `Shape.onRender`, A1)
 - `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2)
-- `4` Collision stress — 30 `BoxCollider`s colidindo em broad phase O(N²); valida o cache de `worldTransform()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS
-- `5` Rotating box — 12 bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da cena); o quique das bolinhas acontece em coordenadas locais (paredes giram e transladam com a caixa), e rotação+posição do pai compõem na posição mundial de cada bolinha via `worldTransform()` — exercita o invariante de invalidação por mutação de ancestral (D5 do design.md) sob carga real de colisão e em frame não-estacionário. F2 mostra os AABBs envelopados das `BoxCollider`s rotacionadas.
+- `4` Collision stress — 30 `BoxCollider`s colidindo em broad phase O(N²); valida o cache de `world()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS
+- `5` Rotating box — 12 bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da cena); o quique das bolinhas acontece em coordenadas locais (paredes giram e transladam com a caixa), e rotação+posição do pai compõem na posição mundial de cada bolinha via `world()` — exercita o invariante de invalidação por mutação de ancestral (D5 do design.md) sob carga real de colisão e em frame não-estacionário. F2 mostra os AABBs envelopados das `BoxCollider`s rotacionadas.
 - `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
 - `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 
@@ -102,7 +102,8 @@ Janela 800×600 com `Hello, world!` centralizado; sem input — o texto se recen
 - **Comentários só para o "por quê" não-óbvio.** Nunca para o "o quê" (nomes já dizem). Evite docstrings cerimoniais.
 - **Identificadores em inglês.** Texto in-game e mensagens ao usuário podem ser em português; nomes de classe/função/variável devem permanecer em inglês.
 - **API pública de `:engine` documentada com KDoc** quando o uso pretendido não for óbvio.
-- **Imutabilidade onde for barata.** `Vec2`, `Rect`, `Transform`, `Color` são data classes; operações retornam novas instâncias.
+- **Imutabilidade onde for barata.** `Vec2`, `Rect`, `Transform`, `Color` são data classes; operações retornam novas instâncias. Para ergonomia de escrita, `Node2D` expõe as properties `position: Vec2`, `rotation: Float` e `scale: Vec2`, que são puro açúcar sobre `transform = transform.copy(...)` — o invariante de imutabilidade dos valores não muda (escrever `vec2.y = X` continua proibido; em Kotlin não compila, em Python lança `AttributeError`).
+- **Folhas `Node2D` shipped por `:engine` são `open` por default.** A política existe para coerência com o invariante #1 ("comportamento é adicionado por herança"). Tornar uma folha `final` exige justificativa documentada no KDoc da classe explicando que invariante quebraria sob herança; absente isso, mantenha `open class`.
 - **Sem dependências escondidas.** Se um módulo precisa de Compose, declara no `build.gradle.kts` daquele módulo. Se `:engine` ganhar uma dependência transitiva proibida, é bug.
 - **Em `:engine-compose`, use APIs do Compose, não Skia direto.** `org.jetbrains.skia.*` só com justificativa documentada.
 - **Testes para regras invariantes.** Cada decisão arquitetural com risco de regressão (lifecycle ordering, broad phase) tem teste unitário.
@@ -175,6 +176,7 @@ def _on_collide(self, other):           ← apenas relevante para BoxCollider e 
   - `_exit_tree(self)` — limpeza ao sair da live tree.
   - `_on_collide(self, other)` — disparado pelo `PhysicsSystem` para `BoxCollider`s em contato.
 - **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Signal`, `signal`.
+- **Acessar/escrever transform local**: `Node2D` expõe `position`, `rotation`, `scale` como properties — `self.position = Vec2(...)`, `self.rotation = math.pi / 4`, `self.scale = Vec2(2.0, 2.0)`. Não escreva componente individual: `self.position.y = 5.0` lança `AttributeError` em runtime porque `Vec2.y` é `val` Kotlin (fail-fast intencional). O idioma correto é reconstruir o `Vec2`: `self.position = Vec2(self.position.x, 5.0)`. Para ler a transform composta (mundo), use `self.world(): Transform`; ex.: `wp = self.world().position`.
 - **Coordenadas surface ↔ mundo**: scripts que precisam converter input em pixels (mouse) para coordenadas do mundo (ou vice-versa) usam `Camera2D.screenToWorld(screenPosition, sceneSize)` e `Camera2D.worldToScreen(worldPosition, sceneSize)`. Ambos honram `bounds` + `aspectMode` e caem em identity quando `bounds.size <= 0`. Não usados em Pong/Demos/Tic hoje, mas é o caminho documentado para qualquer jogo novo com clique-no-mundo.
 - **Fail-fast**: qualquer erro (parse, `extends` desconhecido, exception num hook) propaga até o `Main.kt` e crasha o processo.
 

@@ -30,7 +30,7 @@ enum class AspectMode { FIT, FILL, STRETCH }
  * conversion.
  */
 @Serializable
-class Camera2D : Node2D() {
+open class Camera2D : Node2D() {
 
     @Inspect
     var bounds: Rect = Rect(Vec2.ZERO, Vec2.ZERO)

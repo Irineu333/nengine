@@ -90,13 +90,13 @@ class NodeTest {
     }
 
     @Test
-    fun `worldPosition sums ancestor transforms`() {
+    fun `world() position sums ancestor transforms`() {
         val root = Node()
         val parent = Node2D().apply { transform = transform.copy(position = Vec2(100f, 50f)) }
         val child = Node2D().apply { transform = transform.copy(position = Vec2(5f, 7f)) }
         root.addChild(parent)
         parent.addChild(child)
-        assertEquals(Vec2(105f, 57f), child.worldPosition())
+        assertEquals(Vec2(105f, 57f), child.world().position)
     }
 
     @Test

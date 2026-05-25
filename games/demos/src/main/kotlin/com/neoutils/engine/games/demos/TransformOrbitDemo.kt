@@ -10,7 +10,7 @@ import kotlinx.serialization.Transient
 
 /**
  * Two child shapes sit at fixed local positions on a parent that rotates at
- * a constant angular velocity. Because `worldTransform()` composes the
+ * a constant angular velocity. Because `world()` composes the
  * parent's rotation into the children's positions, the kids orbit the
  * parent's origin — a regression visual for A1.
  */

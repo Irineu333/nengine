@@ -29,7 +29,7 @@ def _physics_process(self, dt):
         dy = _compute_human(self, dt)
     if dy == 0.0:
         return
-    pos = self.transform.position
+    pos = self.position
     new_y = pos.y + dy
     tree = self.tree
     play_field_height = tree.viewport.size.y if tree is not None else 0.0
@@ -38,15 +38,11 @@ def _physics_process(self, dt):
         new_y = 0.0
     elif new_y > max_y:
         new_y = max_y
-    self.transform = Transform(
-        Vec2(pos.x, new_y),
-        self.transform.scale,
-        self.transform.rotation,
-    )
+    self.position = Vec2(pos.x, new_y)
 
 
 def _draw(self, renderer):
-    wp = self.worldPosition()
+    wp = self.world().position
     renderer.drawRect(Rect(wp, self.size), Color(1.0, 1.0, 1.0, 1.0), True)
 
 
@@ -69,8 +65,8 @@ def _compute_ai(self, dt):
     resolved = self.target.resolve(self._node)
     if resolved is None:
         return 0.0
-    target_y = resolved.worldPosition().y
-    center = self.transform.position.y + self.size.y / 2.0
+    target_y = resolved.world().position.y
+    center = self.position.y + self.size.y / 2.0
     delta = target_y - center
     if delta > self.aiTolerance:
         direction = 1.0

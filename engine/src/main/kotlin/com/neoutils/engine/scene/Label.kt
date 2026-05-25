@@ -22,7 +22,7 @@ open class Label : Node2D() {
     var color: Color = Color.WHITE
 
     override fun onDraw(renderer: Renderer) {
-        renderer.drawText(text, worldPosition(), size, color)
+        renderer.drawText(text, world().position, size, color)
         super.onDraw(renderer)
     }
 }

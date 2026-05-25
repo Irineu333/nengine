@@ -17,7 +17,7 @@ open class BoxCollider : Collider() {
     var size: Vec2 = Vec2(10f, 10f)
 
     override fun bounds(): Rect {
-        val world = worldTransform()
+        val world = world()
         val w = size.x * world.scale.x
         val h = size.y * world.scale.y
         if (world.rotation == 0f) return Rect(world.position, Vec2(w, h))

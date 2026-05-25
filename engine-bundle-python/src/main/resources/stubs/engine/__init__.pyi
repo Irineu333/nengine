@@ -10,7 +10,7 @@ Configure your IDE:
   VS Code settings    →  "python.analysis.extraPaths": ["engine-bundle-python/src/main/resources/stubs"]
 """
 
-from engine.math import Vec2 as Vec2, Rect as Rect
+from engine.math import Vec2 as Vec2, Rect as Rect, Transform as Transform
 from engine.render import Color as Color, Renderer as Renderer
 from engine.input import Key as Key, Input as Input
 from engine.scene import (
@@ -37,6 +37,7 @@ from engine.tree import SceneTree as SceneTree
 __all__ = [
     "Vec2",
     "Rect",
+    "Transform",
     "Color",
     "Renderer",
     "Key",

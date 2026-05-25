@@ -204,7 +204,7 @@ class _SignalProxy:
 class _ScriptNode:
     """
     Wraps the host Kotlin `Node` so that scripts can read engine-side
-    accessors (`self.transform`, `self.worldPosition()`) and also keep
+    accessors (`self.transform`, `self.world().position`) and also keep
     per-instance Python state (anything starting with `_`).
 
     Attribute lookup order on `self.<name>`:

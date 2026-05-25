@@ -123,7 +123,7 @@ class RotatingBox : Node2D() {
     }
 
     override fun onDraw(renderer: Renderer) {
-        val world = worldTransform()
+        val world = world()
         val c = cos(world.rotation)
         val s = sin(world.rotation)
         val cx = world.position.x
@@ -185,7 +185,7 @@ class BoxedBall(
     // shifts the ball by up to `BALL_SIZE` from its logical local position
     // when the parent rotates, leaking through the box outline.
     override fun onDraw(renderer: Renderer) {
-        val world = worldTransform()
+        val world = world()
         val c = cos(world.rotation)
         val s = sin(world.rotation)
         val ox = BALL_SIZE / 2f

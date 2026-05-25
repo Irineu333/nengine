@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING
 
-from engine.math import Rect, Vec2
+from engine.math import Rect, Transform, Vec2
 from engine.render import Color, Renderer
 from engine.serialization import Signal
 
@@ -49,10 +49,32 @@ class Node2D(Node):
     Most gameplay scripts extend this type::
 
         # extends Node2D
+
+    ``position``, ``rotation`` and ``scale`` are convenience properties that
+    read from and write to ``transform``. Each setter rebuilds an immutable
+    :class:`Transform` via ``transform.copy(...)``, so the world-transform
+    cache invalidates exactly as it would for a direct ``self.transform = ...``
+    assignment.
+
+    Because ``Vec2`` is immutable, writing a single component fails::
+
+        self.position.y = 5.0  # raises AttributeError at runtime
+
+    The correct idiom is to assign a new ``Vec2``::
+
+        self.position = Vec2(self.position.x, 5.0)
     """
 
-    def world_transform(self) -> object: ...
-    def world_position(self) -> Vec2: ...
+    transform: Transform
+    position: Vec2
+    rotation: float
+    scale: Vec2
+
+    def world(self) -> Transform:
+        """Return the composed world-space transform from the topmost
+        ``Node2D`` ancestor down to ``self``. Result is cached per node;
+        consecutive reads without intervening mutation are O(1)."""
+        ...
 
 
 class AspectMode:
@@ -104,14 +126,14 @@ class ColorRect(Node2D):
 
 
 class Circle2D(Node2D):
-    """Filled circle whose center is ``world_position + (radius, radius)``."""
+    """Filled circle whose center is ``world().position + (radius, radius)``."""
 
     radius: float
     color: Color
 
 
 class Line2D(Node2D):
-    """Polyline drawn by chaining consecutive ``points`` offset by ``world_position``."""
+    """Polyline drawn by chaining consecutive ``points`` offset by ``world().position``."""
 
     points: List[Vec2]
     thickness: float
@@ -119,7 +141,7 @@ class Line2D(Node2D):
 
 
 class Polygon2D(Node2D):
-    """Filled polygon defined by ``points`` offset by ``world_position``."""
+    """Filled polygon defined by ``points`` offset by ``world().position``."""
 
     points: List[Vec2]
     color: Color

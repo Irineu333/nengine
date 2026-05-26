@@ -51,4 +51,4 @@
 ## 8. Verificação final
 
 - [x] 8.1 `openspec validate demos-resize-aware-walls --strict` passa
-- [ ] 8.2 `/opsx:verify demos-resize-aware-walls` confirma alinhamento entre artifacts e código
+- [x] 8.2 `/opsx:verify demos-resize-aware-walls` confirma alinhamento entre artifacts e código

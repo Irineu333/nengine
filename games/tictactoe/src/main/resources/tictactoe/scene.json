@@ -4,7 +4,7 @@
     "type": "com.neoutils.engine.scene.Node",
     "name": "TicTacToeRoot",
     "properties": {},
-    "script": "scripts/board.py",
+    "script": "scripts/board.lua",
     "children": [
       {
         "type": "com.neoutils.engine.scene.Camera2D",

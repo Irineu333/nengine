@@ -1,0 +1,34 @@
+---@meta
+
+---@class nengine
+---@field Vec2 fun(x: number, y: number): Vec2
+---@field Color fun(r: number, g: number, b: number, a?: number): Color
+---@field Rect fun(origin: Vec2, size: Vec2): Rect
+---@field Transform fun(position?: Vec2, scale?: Vec2, rotation?: number): Transform
+---@field NodeRef fun(path: string): NodeRef
+---@field signal fun(typeHint?: string): Signal
+---@field script_of fun(node: any): any
+---@field Key Key
+---@field MouseButton MouseButton
+---@field Node Node
+---@field Node2D Node2D
+---@field Camera2D Camera2D
+---@field Label Label
+---@field ColorRect ColorRect
+---@field Circle2D Circle2D
+---@field Line2D Line2D
+---@field Polygon2D Polygon2D
+---@field Area2D Area2D
+---@field StaticBody2D StaticBody2D
+---@field CharacterBody2D CharacterBody2D
+---@field RigidBody2D RigidBody2D
+---@field CollisionShape2D CollisionShape2D
+---@field CollisionObject2D CollisionObject2D
+---@field PhysicsBody2D PhysicsBody2D
+---@field Shape2D Shape2D
+---@field RectangleShape2D RectangleShape2D
+---@field CircleShape2D CircleShape2D
+---@field Timer Timer
+nengine = {}
+
+return nengine

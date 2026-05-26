@@ -35,6 +35,7 @@ plugins {
 include(":engine")
 include(":engine-bundle")
 include(":engine-bundle-python")
+include(":engine-bundle-lua")
 include(":engine-compose")
 include(":engine-skiko")
 include(":games:pong")

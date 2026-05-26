@@ -45,10 +45,11 @@ O cache é **estado runtime puro**: nunca persiste em `scene.json` (anotado com 
 :engine                ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX, GameHost SPI)
 :engine-bundle         ← carregamento de cena via bundle (scene.json + scripts/) + ScriptHost SPI agnóstica de linguagem
 :engine-bundle-python  ← implementação Python do ScriptHost via GraalPy 24.x; distribui stubs .pyi em resources/stubs/
+:engine-bundle-lua     ← implementação Lua do ScriptHost via LuaJ 3.0.x (JAR puro JVM); distribui stubs LuaCATS em resources/stubs/
 :engine-compose        ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface, ComposeHost) — segundo backend
 :engine-skiko          ← backend Skiko puro sobre SkiaLayer + JFrame (SkikoRenderer, SkikoInput, SkikoHost) — backend padrão
 :games:pong            ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
-:games:tictactoe       ← jogo Velha (humano vs humano), roda em Compose — sentinela do segundo backend
+:games:tictactoe       ← jogo Velha (humano vs humano), roda em Compose com scripting Lua — sentinela do segundo backend de render **e** do segundo backend de scripting
 :games:demos           ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
 :games:hello-world     ← exemplo code-only mínimo — único Label centralizado em Skiko, sem bundle nem scripting
 ```
@@ -75,7 +76,7 @@ Para rodar Velha:
 ./gradlew :games:tictactoe:run
 ```
 
-Velha carrega via `BundleLoader.fromResources("tictactoe", scripting = python)` (em `:games:tictactoe/src/main/resources/tictactoe/`, com `scene.json` na raiz e `scripts/board.py`) — mesma pipeline do Pong; aqui ela serve como prova viva de que `ComposeHost` consome o resultado de `BundleLoader` sem ajuste algum no backend. O root é um `Node` plain com `script = "scripts/board.py"` e quatro filhos: um `Camera2D` (`bounds = 600×600`), quatro `Line2D` formando a grade 3×3, e um `Label` `status`. Toda lógica de gameplay (estado das 9 células, hit-test, vitória/empate, ghost, linha vencedora) mora em `board.py` (`# extends Node`); o único Kotlin que sobrou no módulo é `Main.kt`, que instancia `PythonScriptHost.create()`, chama o `BundleLoader`, envolve o root em `SceneTree(root = ...)` e entrega ao `ComposeHost`.
+Velha carrega via `BundleLoader.fromResources("tictactoe", scripting = lua)` (em `:games:tictactoe/src/main/resources/tictactoe/`, com `scene.json` na raiz e `scripts/board.lua`) — mesma pipeline do Pong; aqui ela serve como prova viva de que `ComposeHost` consome o resultado de `BundleLoader` sem ajuste algum no backend **e** que `ScriptHost` é polimórfico (TTT usa `LuaScriptHost`, Pong usa `PythonScriptHost`). O root é um `Node` plain com `script = "scripts/board.lua"` e quatro filhos: um `Camera2D` (`bounds = 600×600`), quatro `Line2D` formando a grade 3×3, e um `Label` `status`. Toda lógica de gameplay (estado das 9 células, hit-test, vitória/empate, ghost, linha vencedora) mora em `board.lua` (chunk retorna `{ extends = "Node", _ready = ..., _process = ..., _draw = ... }`); o único Kotlin que sobrou no módulo é `Main.kt`, que instancia `LuaScriptHost.create()`, chama o `BundleLoader`, envolve o root em `SceneTree(root = ...)` e entrega ao `ComposeHost`.
 
 Durante o jogo:
 
@@ -278,6 +279,65 @@ O `:engine-bundle-python` publica stubs `.pyi` em `src/main/resources/stubs/engi
    { "extraPaths": ["engine-bundle-python/src/main/resources/stubs"] }
    ```
 3. Para Pylance (VS Code), configure `python.analysis.extraPaths` no `settings.json`.
+
+### Scripting contract (Lua)
+
+A engine também aceita **Lua via LuaJ 3.0.x** como segundo backend de scripting, ativado via `LuaScriptHost.create()` (em `:engine-bundle-lua`). LuaJ é JAR puro JVM — sem libs nativas, igual a Skiko/Compose no eixo de render. O contrato é Godot-style + LÖVE-style: cada `.lua` retorna uma **tabela** com `extends`, `exports`, `signals`, e hooks. Filosofia LÖVE: todos os símbolos da engine vivem numa tabela global **`nengine.*`** (factories, enums, tipos de Node, `script_of`).
+
+#### Estrutura de um script
+
+```lua
+return {
+    extends = "Node2D",                         -- obrigatório: string
+
+    exports = {                                 -- opcional
+        speed = { type = "float", default = 360 },
+        ai    = { type = "bool",  default = false },
+    },
+
+    signals = {                                 -- opcional
+        scored = "string",                      -- valor é typeHint puramente documental
+    },
+
+    _ready           = function(self) end,
+    _process         = function(self, dt) end,
+    _physics_process = function(self, dt) end,
+    _draw            = function(self, renderer) end,
+    _exit_tree       = function(self) end,
+    _on_area_entered = function(self, area) end,
+    _on_area_exited  = function(self, area) end,
+    _on_body_entered = function(self, body) end,
+    _on_body_exited  = function(self, body) end,
+}
+```
+
+- **`extends`** é string e é resolvido contra `NodeRegistry.findBySimpleName(...)`. Falha-rápido se ausente, não-string, ou tipo desconhecido.
+- **Exports** são entradas `{ type, default }` em `exports = {...}`. Tipos suportados: `"float"`, `"int"`, `"bool"`, `"string"`, `"Vec2"`, `"Color"`, `"Rect"`, `"NodeRef"`, `"Key"`. Padrões podem usar literais Lua ou `nengine.Vec2(...)`/`nengine.Color(...)`.
+- **Signals** declarados em `signals = {...}` viram `Signal<Any?>` por-instância em `attach`. Conecte com `self.scored:connect(handler)` e emita com `self.scored:emit("Left")`.
+- **`nengine.*` namespace**: `nengine.Vec2(x,y)`, `nengine.Color(r,g,b,a)`, `nengine.Rect(origin,size)`, `nengine.Transform(pos,scale,rot)`, `nengine.NodeRef(path)`, `nengine.signal(typeHint)`, `nengine.Key.W`, `nengine.MouseButton.Left`, e bindings dos tipos de Node (`nengine.Node2D`, `nengine.Area2D`, `nengine.Timer`, etc.).
+- **`self` é o instance wrapper** — uma `LuaTable` cuja metatable (`__index`/`__newindex`) roteia para o Node Kotlin via reflexão. Leituras/escritas de `self.position`, `self.rotation`, `self.scale` viram chamadas ao `Node2D` setter (que invalida o cache de world transform). Leituras de `self.tree`, `self.name`, etc. retornam wrappers idiomáticos. Para alcançar o Node Kotlin diretamente (por exemplo para `NodeRef:resolve(...)`), use `self.node`.
+- **`require` é sandboxado**: scripts só conseguem importar via `require "scripts.utils"` se `scripts/utils.lua` existir no mesmo bundle. Filesystem real, `package.path`, `package.cpath` e `dofile`/`loadfile` são removidos do `_G`.
+- **Fail-fast**: parse/compile errors, `extends` desconhecido, exception num hook — tudo propaga para o caller Kotlin com o path do script e linha quando disponível.
+
+#### Construindo o LuaScriptHost e passando ao BundleLoader
+
+```kotlin
+val lua = LuaScriptHost.create()
+val root = BundleLoader.fromResources("tictactoe", scripting = lua)
+val tree = SceneTree(root = root)
+```
+
+`LuaScriptHost.create()` constrói um `Globals` via `JsePlatform.standardGlobals()`, instala a tabela `nengine`, e wira `package.searchers` contra o `BundleSource` ativo. O host é seguro para reuso entre múltiplos loads — não reconstrua um por carregamento de bundle.
+
+#### Inspecting Lua scripts with IDE (LuaCATS)
+
+O `:engine-bundle-lua` publica stubs LuaCATS em `src/main/resources/stubs/engine/*.lua`. Para habilitar autocompletar e type-checking em `sumneko-lua` (VS Code):
+
+1. Crie `.luarc.json` na raiz do projeto:
+   ```json
+   { "workspace": { "library": ["engine-bundle-lua/src/main/resources/stubs"] } }
+   ```
+2. O language server passa a reconhecer `nengine.*`, `Node2D`, `Vec2`, `Signal`, etc.
 
 ## OpenSpec Workflow
 

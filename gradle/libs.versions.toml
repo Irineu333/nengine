@@ -6,6 +6,7 @@ junit = "4.13.2"
 kotlin = "2.3.21"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
+luaj = "3.0.1"
 material3 = "1.11.0-alpha07"
 skiko = "0.144.6"
 
@@ -26,6 +27,7 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+luaj-jse = { module = "org.luaj:luaj-jse", version.ref = "luaj" }
 kotlinx-serializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 skiko-awt = { module = "org.jetbrains.skiko:skiko-awt", version.ref = "skiko" }
 

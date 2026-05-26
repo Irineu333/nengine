@@ -2,7 +2,7 @@
 
 - [x] 1.1 Criar `games/demos/src/main/kotlin/com/neoutils/engine/games/demos/Rotator.kt` declarando `@Serializable class Rotator : Node2D()` com `var angularVelocity: Float = 1f` e `override fun onProcess(dt: Float) { transform = transform.copy(rotation = transform.rotation + angularVelocity * dt) }`. Mantém `name` default herdado (sem `init` que escreva `name`).
 - [x] 1.2 Remover a declaração `class Rotator` do antigo `TransformOrbitDemo.kt` (será deletado em 2.1, mas o passo 1.x precisa funcionar isoladamente; rodar `./gradlew :games:demos:compileKotlin` para garantir build verde antes de prosseguir).
-- [ ] 1.3 Rodar `./gradlew :games:demos:run` para confirmar que o demo atual continua funcional com o `Rotator` extraído (ainda usando `TransformOrbitDemo`).
+- [x] 1.3 Rodar `./gradlew :games:demos:run` para confirmar que o demo atual continua funcional com o `Rotator` extraído (ainda usando `TransformOrbitDemo`).
 
 ## 2. Replace TransformOrbitDemo with SolarSystemDemo
 
@@ -32,17 +32,17 @@
 
 ## 5. Smoke-test the demo end-to-end
 
-- [ ] 5.1 Rodar `./gradlew :games:demos:run`. Confirmar visualmente:
+- [x] 5.1 Rodar `./gradlew :games:demos:run`. Confirmar visualmente:
   - Sol amarelo no centro da janela.
   - 8 órbitas concêntricas com planetas diferenciáveis por cor.
   - Júpiter com 4 luas pequenas orbitando-o.
   - Saturno com anel elíptico achatado e Titã orbitando.
   - Terra com Lua, Netuno com Tritão.
   - Mercúrio mais rápido que Netuno (verificação por tempo de uma volta completa).
-- [ ] 5.2 Pressionar `1`, `2`, `3`, `4`, `5`, `6` em sequência — confirmar que o switcher continua trocando demos sem crash e que o slot 1 mostra o sistema solar.
-- [ ] 5.3 Pressionar `F1` (toggle FPS) e `F2` (toggle colliders) — confirmar que F1 funciona e que F2 não desenha nada (sistema solar não tem `CollisionObject2D`).
-- [ ] 5.4 Redimensionar a janela e confirmar que o `Center` segue para o novo centro da viewport (planetas movem em bloco; raios não escalam, conforme D4).
-- [ ] 5.5 Rodar `./gradlew :games:pong:run` e `./gradlew :games:tictactoe:run` rapidamente para confirmar que mudanças no `:games:demos` não vazaram para outros jogos (sanity check, deve ser instantâneo já que nenhuma dependência cruza).
+- [x] 5.2 Pressionar `1`, `2`, `3`, `4`, `5`, `6` em sequência — confirmar que o switcher continua trocando demos sem crash e que o slot 1 mostra o sistema solar.
+- [x] 5.3 Pressionar `F1` (toggle FPS) e `F2` (toggle colliders) — confirmar que F1 funciona e que F2 não desenha nada (sistema solar não tem `CollisionObject2D`).
+- [x] 5.4 Redimensionar a janela e confirmar que o `Center` segue para o novo centro da viewport (planetas movem em bloco; raios não escalam, conforme D4).
+- [x] 5.5 Rodar `./gradlew :games:pong:run` e `./gradlew :games:tictactoe:run` rapidamente para confirmar que mudanças no `:games:demos` não vazaram para outros jogos (sanity check, deve ser instantâneo já que nenhuma dependência cruza).
 
 ## 6. Validate change
 

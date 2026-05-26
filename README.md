@@ -27,11 +27,12 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 
 ### Jogos
 
-| Jogo          | Backend | Scripting | Função na engine                                     |
-|---------------|---------|-----------|------------------------------------------------------|
+| Jogo          | Backend | Scripting | Função na engine                                               |
+|---------------|---------|-----------|----------------------------------------------------------------|
 | Pong          | Skiko   | Python    | prova da fundação (loop, física, scripts, signals, `Camera2D`) |
-| Jogo da Velha | Compose | Kotlin    | sentinela do segundo backend; também roda sob `Camera2D`       |
-| Demos         | Skiko   | Kotlin    | 5 cenas exercitando invariantes (transform, colisão)           |
+| Jogo da Velha | Compose | Python    | sentinela do segundo backend; também roda sob `Camera2D`       |
+| Demos         | Skiko   | Kotlin    | 6 cenas exercitando invariantes (transform, colisão)           |
+| Hello World   | Skiko   | —         | exemplo code-only mínimo (um `Label` centralizado)             |
 
 ## O que pretendemos ter
 
@@ -46,9 +47,10 @@ Detalhe completo em [`ROADMAP.md`](./ROADMAP.md).
 ## Como rodar
 
 ```sh
-./gradlew :games:pong:run         # Skiko + Python
-./gradlew :games:tictactoe:run    # Compose
-./gradlew :games:demos:run        # cenas de demonstração visual
+./gradlew :games:pong:run          # Skiko + Python
+./gradlew :games:tictactoe:run     # Compose + Python
+./gradlew :games:demos:run         # cenas de demonstração visual
+./gradlew :games:hello-world:run   # exemplo code-only mínimo
 ```
 
 ## Usando a engine

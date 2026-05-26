@@ -10,7 +10,7 @@ Backend Compose Multiplatform da engine — implementações de `Renderer` e `In
 
 The `:engine-compose` module SHALL provide a concrete `Renderer` implementation, `ComposeRenderer`, that translates engine drawing calls into Compose `DrawScope` operations. `ComposeRenderer` MUST implement every method declared by the `Renderer` SPI in `:engine`, including `drawLine`, `measureText`, `pushTransform`, and `popTransform`. `ComposeRenderer` MUST NOT expose `DrawScope` or any other Compose type through the `Renderer` interface surface. `measureText` MUST use Compose's `TextMeasurer` so the reported width and height match what `drawText` will actually rasterize.
 
-`ComposeRenderer.pushTransform(translation, scale)` MUST apply the `translate` + `scale` to the underlying `DrawScope` (e.g. via the `DrawScope.translate(...)` / `DrawScope.scale(...)` builders, or by manipulating the active `DrawTransform`) so subsequent `draw*` calls render under the composed transform. `ComposeRenderer.popTransform()` MUST restore the transform that was active before the matching push, using `DrawScope`'s native save/restore semantics. The implementation MAY track a depth counter for `IllegalStateException` on empty-stack pop. The `DrawScope` lifecycle MUST end with an empty transform stack — every `pushTransform` matched by `popTransform` — so the next frame starts from a clean identity transform.
+`ComposeRenderer.pushTransform(translation, rotation, scale)` MUST apply `translate(translation)`, then `rotate(degrees, pivot = Offset.Zero)` (where `degrees = rotation * 180f / PI`, since Compose's `rotate` builder expects degrees and the engine's `Transform.rotation` is in radians), then `scale(scale, pivot = Offset.Zero)` to the underlying `DrawScope` — using `DrawScope.translate/rotate/scale` builders or by manipulating the active `DrawTransform` directly — so subsequent `draw*` calls render under the composed transform. The rotation pivot MUST be the new origin established by the preceding translation (i.e. `Offset.Zero` relative to the translated frame). `ComposeRenderer.popTransform()` MUST restore the transform that was active before the matching push, using `DrawScope`'s native save/restore semantics. The implementation MAY track a depth counter for `IllegalStateException` on empty-stack pop. The `DrawScope` lifecycle MUST end with an empty transform stack — every `pushTransform` matched by `popTransform` — so the next frame starts from a clean identity transform.
 
 #### Scenario: drawRect issues a Compose draw call
 
@@ -32,11 +32,17 @@ The `:engine-compose` module SHALL provide a concrete `Renderer` implementation,
 - **WHEN** `composeRenderer.measureText("score", size = 18f)` is called and `composeRenderer.drawText("score", position, 18f, color)` runs in the same frame
 - **THEN** the returned `Vec2` width and height equal the rendered glyph run's width and height in pixels (modulo subpixel rounding)
 
-#### Scenario: pushTransform translates and scales draws via DrawScope transform
+#### Scenario: pushTransform translates, rotates, and scales draws via DrawScope transform
 
-- **WHEN** `composeRenderer.pushTransform(Vec2(100f, 50f), Vec2(2f, 2f))` is called and then `composeRenderer.drawRect(Rect(Vec2(0f, 0f), Vec2(10f, 10f)), Color.WHITE, filled = true)` runs
-- **THEN** the underlying `DrawScope` renders the rect under the composed transform
+- **WHEN** `composeRenderer.pushTransform(Vec2(100f, 50f), rotation = 0f, Vec2(2f, 2f))` is called and then `composeRenderer.drawRect(Rect(Vec2(0f, 0f), Vec2(10f, 10f)), Color.WHITE, filled = true)` runs
+- **THEN** the underlying `DrawScope` renders the rect under the composed `translate → rotate(0°) → scale` transform
 - **AND** the rasterized rectangle occupies surface area equivalent to a rect at `(100, 50)` with size `(20, 20)`
+
+#### Scenario: pushTransform with rotation rotates draws via DrawScope.rotate in degrees
+
+- **WHEN** `composeRenderer.pushTransform(Vec2.ZERO, rotation = (PI / 2f).toFloat(), Vec2(1f, 1f))` is called and then `composeRenderer.drawLine(from = Vec2(0f, 0f), to = Vec2(10f, 0f), thickness = 1f, color = Color.WHITE)` runs
+- **THEN** the underlying `DrawScope` applies a `rotate(90f, pivot = Offset.Zero)` (degrees, equal to `(PI / 2) * 180 / PI`) under the composed transform
+- **AND** the rasterized line endpoint that was `(10, 0)` in local space appears on the surface at approximately `(0, 10)` within floating-point tolerance
 
 #### Scenario: popTransform restores the previous DrawScope transform
 

@@ -12,7 +12,7 @@ The `:engine-skiko` module SHALL provide a concrete `Renderer` implementation, `
 
 The renderer MUST follow the same `bind(canvas) / unbind()` pattern as `ComposeRenderer`, so a single instance can be reused across frames without allocations and the engine's `Renderer.required()` guarantee survives. Color conversion from engine `Color(r, g, b, a)` to packed ARGB `Int` MUST round each channel to its 8-bit representation.
 
-`SkikoRenderer.pushTransform(translation, scale)` MUST issue `canvas.save()` then `canvas.translate(translation.x, translation.y)` then `canvas.scale(scale.x, scale.y)` so the cumulative transform composes with any previously pushed transform on the Skia canvas's own state stack. `SkikoRenderer.popTransform()` MUST issue `canvas.restore()`. The implementation MAY track a depth counter for `IllegalStateException` on empty-stack pop, but MUST otherwise delegate the stack to Skia's `save`/`restore` semantics so backend-native culling and clipping behave correctly. `unbind()` MUST be invoked with the transform stack empty (every `pushTransform` matched by a `popTransform`); if not, the implementation MAY raise `IllegalStateException` to surface the imbalance early.
+`SkikoRenderer.pushTransform(translation, rotation, scale)` MUST issue `canvas.save()` then `canvas.translate(translation.x, translation.y)` then `canvas.rotate(degrees)` (where `degrees = rotation * 180f / PI`) then `canvas.scale(scale.x, scale.y)` so the cumulative transform composes with any previously pushed transform on the Skia canvas's own state stack. The conversion to degrees is required because `org.jetbrains.skia.Canvas.rotate` expects degrees while the engine's `Transform.rotation` is in radians. `SkikoRenderer.popTransform()` MUST issue `canvas.restore()`. The implementation MAY track a depth counter for `IllegalStateException` on empty-stack pop, but MUST otherwise delegate the stack to Skia's `save`/`restore` semantics so backend-native culling and clipping behave correctly. `unbind()` MUST be invoked with the transform stack empty (every `pushTransform` matched by a `popTransform`); if not, the implementation MAY raise `IllegalStateException` to surface the imbalance early.
 
 #### Scenario: drawRect issues a Skia draw call
 
@@ -41,11 +41,17 @@ The renderer MUST follow the same `bind(canvas) / unbind()` pattern as `ComposeR
 - **WHEN** any `Renderer` method is called on `skikoRenderer` without a prior `bind(canvas)`
 - **THEN** an `IllegalStateException` is raised with a message that names the missing `bind()` precondition
 
-#### Scenario: pushTransform translates and scales draws via Skia save/translate/scale
+#### Scenario: pushTransform translates, rotates, and scales draws via Skia save/translate/rotate/scale
 
-- **WHEN** `skikoRenderer.pushTransform(Vec2(100f, 50f), Vec2(2f, 2f))` is called and then `skikoRenderer.drawRect(Rect(Vec2(0f, 0f), Vec2(10f, 10f)), Color.WHITE, filled = true)` runs
-- **THEN** the underlying Skia `Canvas` has received a `save()` followed by a `translate(100f, 50f)` and `scale(2f, 2f)` before the `drawRect`
+- **WHEN** `skikoRenderer.pushTransform(Vec2(100f, 50f), rotation = 0f, Vec2(2f, 2f))` is called and then `skikoRenderer.drawRect(Rect(Vec2(0f, 0f), Vec2(10f, 10f)), Color.WHITE, filled = true)` runs
+- **THEN** the underlying Skia `Canvas` has received a `save()` followed by a `translate(100f, 50f)`, then a `rotate(0f)` (or equivalent no-op), then `scale(2f, 2f)` before the `drawRect`
 - **AND** the rasterized rectangle occupies surface area equivalent to a rect at `(100, 50)` with size `(20, 20)`
+
+#### Scenario: pushTransform with rotation rotates draws via canvas.rotate in degrees
+
+- **WHEN** `skikoRenderer.pushTransform(Vec2.ZERO, rotation = (PI / 2f).toFloat(), Vec2(1f, 1f))` is called and then `skikoRenderer.drawLine(from = Vec2(0f, 0f), to = Vec2(10f, 0f), thickness = 1f, color = Color.WHITE)` runs
+- **THEN** the underlying Skia `Canvas` has received a `save()` then `translate(0f, 0f)` then `rotate(90f)` (degrees, equal to `(PI / 2) * 180 / PI`) then `scale(1f, 1f)` before the `drawLine`
+- **AND** the rasterized line endpoint that was `(10, 0)` in local space appears on the surface at approximately `(0, 10)` within floating-point tolerance
 
 #### Scenario: popTransform issues canvas.restore
 

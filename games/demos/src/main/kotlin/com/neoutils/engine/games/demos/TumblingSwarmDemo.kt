@@ -5,7 +5,6 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.RectangleShape2D
-import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
@@ -66,7 +65,6 @@ import kotlin.random.Random
  */
 private const val SQUARE_COUNT = 16
 private const val SQUARE_SIZE = 24f
-private const val WALL_THICKNESS = 10f
 
 // mass = 1, momento de inércia uniforme de um quadrado: I = m·(w² + h²)/12.
 // Para w == h == SIZE: I = SIZE²/6.
@@ -95,10 +93,10 @@ class TumblingSwarmDemo : Node2D() {
         val tree = tree ?: return
         val w = tree.width
         val h = tree.height
-        addChild(makeWall(Vec2(-WALL_THICKNESS, -WALL_THICKNESS), Vec2(w + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
-        addChild(makeWall(Vec2(-WALL_THICKNESS, h), Vec2(w + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
-        addChild(makeWall(Vec2(-WALL_THICKNESS, 0f), Vec2(WALL_THICKNESS, h)).apply { name = "leftWall" })
-        addChild(makeWall(Vec2(w, 0f), Vec2(WALL_THICKNESS, h)).apply { name = "rightWall" })
+        // BoundaryWalls is the arena container: walls + squares share it as
+        // parent so moveAndCollide's same-parent sweep can find them, and the
+        // four walls keep tracking tree.size in real time during resize.
+        val arena = BoundaryWalls().also { addChild(it) }
         val padding = SQUARE_SIZE
         repeat(SQUARE_COUNT) { i ->
             val px = padding + rng.nextFloat() * (w - 2f * padding)
@@ -109,7 +107,7 @@ class TumblingSwarmDemo : Node2D() {
             // Initial angular velocity in ±2 rad/s — high enough that
             // contacts visibly transfer spin between squares.
             val angularVel = (rng.nextFloat() - 0.5f) * 4f
-            addChild(
+            arena.addChild(
                 TumblingSquare(
                     color = hue(i.toFloat() / SQUARE_COUNT),
                     initPos = Vec2(px, py),
@@ -120,16 +118,6 @@ class TumblingSwarmDemo : Node2D() {
                 ).apply { name = "TumblingSquare$i" }
             )
         }
-    }
-
-    private fun makeWall(position: Vec2, size: Vec2): StaticBody2D {
-        val body = StaticBody2D().apply { transform = Transform(position = position) }
-        body.addChild(
-            CollisionShape2D().apply {
-                shape = RectangleShape2D().apply { this.size = size }
-            }
-        )
-        return body
     }
 
     override fun onProcess(dt: Float) {

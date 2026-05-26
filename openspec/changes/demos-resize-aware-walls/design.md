@@ -39,6 +39,16 @@ A decisão arquitetural prévia de **não usar `Camera2D` nos demos** foi confir
 
 **Alternativa considerada**: hook em `SceneTree.onResize` instalado no `onEnter` e limpo no `onExit`. Rejeitada por dois motivos: (a) o slot é single-listener — se mais de um demo ou o `DemoSwitcherRoot` quiser escutar, o último ganha; (b) polling é mais simples (sem cleanup obrigatório, sem ordem-de-lifecycle frágil) e o custo é trivial (uma comparação `Vec2` por frame).
 
+### Decision 1b: `BoundaryWalls` é usada como **arena container** (atores são filhos dela)
+
+`CharacterBody2D.moveAndCollide` filtra alvos por `target.parent !== this.parent` (documentado em `CharacterBody2D.kt` — "Only same-parent targets are considered"). Essa restrição é estrutural: o sweep opera no **parent frame compartilhado** das duas shapes (motion + transforms expressas no mesmo sistema de coordenadas local), o que mantém a matemática simples (axis-aligned ou OBB no parent frame) e é exatamente o que demo 5 explora — wrapper rotativo onde walls + balls vivem no mesmo frame, sweep continua axis-aligned mesmo com world rotation.
+
+Logo, para `moveAndCollide` enxergar as 4 walls de `BoundaryWalls`, os atores **precisam compartilhar o mesmo parent que as walls** — ou seja, ser filhos da própria `BoundaryWalls`. Os demos 4 e 6 adicionam suas Balls/Squares como filhos diretos da instância de `BoundaryWalls`, não como siblings dela no nó do demo. `BoundaryWalls` funciona como "arena" — análogo a um nó arena em Godot/Unity que agrupa paredes + atores num mesmo subgrafo.
+
+**Alternativa considerada**: reparentar walls do `BoundaryWalls` para `parent` durante `onEnter`. Rejeitada — quebra o spec scenario "BoundaryWalls tem 4 filhos `StaticBody2D`", deixa ownership ambíguo (remover `BoundaryWalls` da árvore deixaria walls órfãs), e o KDoc precisaria explicar uma classe Node2D cujas children "fingidas" vivem no parent.
+
+**Alternativa considerada**: relaxar a constraint `target.parent !== parent` em `moveAndCollide` (Godot/Unity style — physics space global). Rejeitada — viola o invariante #3 do projeto (parent frame compartilhado garante a coerência matemática do sweep), exigiria transformar shapes para world space ou frame comum, e está fora do escopo desta change (`:engine` não é tocado).
+
 ### Decision 2: Polling em `onPhysicsProcess`, não em `onProcess`
 
 `onPhysicsProcess` roda no fixed-step (60Hz default). Atualizar as paredes antes do sweep da física garante que o frame que detecta o resize já tem geometria consistente para `moveAndCollide`. Se atualizássemos em `onProcess` (frame-step), poderia haver um sub-frame em que a física vê paredes antigas e o render desenha as novas.

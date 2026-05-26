@@ -5,7 +5,6 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.RectangleShape2D
-import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Circle2D
@@ -17,7 +16,6 @@ import kotlin.random.Random
 
 private const val BALL_COUNT = 30
 private const val BALL_SIZE = 20f
-private const val WALL_THICKNESS = 10f
 
 @Serializable
 class CollisionStressDemo : Node2D() {
@@ -36,19 +34,16 @@ class CollisionStressDemo : Node2D() {
         val tree = tree ?: return
         val w = tree.width
         val h = tree.height
-        // Walls bracket the play field. Each is a StaticBody2D + CollisionShape2D
-        // with a RectangleShape2D positioned in world coordinates; `moveAndCollide`
-        // sweeps balls against these and reflects them on the returned normal.
-        addChild(makeWall(Vec2(-WALL_THICKNESS, -WALL_THICKNESS), Vec2(w + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
-        addChild(makeWall(Vec2(-WALL_THICKNESS, h), Vec2(w + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
-        addChild(makeWall(Vec2(-WALL_THICKNESS, 0f), Vec2(WALL_THICKNESS, h)).apply { name = "leftWall" })
-        addChild(makeWall(Vec2(w, 0f), Vec2(WALL_THICKNESS, h)).apply { name = "rightWall" })
+        // BoundaryWalls is the arena container: walls + balls share it as
+        // parent so moveAndCollide's same-parent sweep can find them, and the
+        // four walls keep tracking tree.size in real time during resize.
+        val arena = BoundaryWalls().also { addChild(it) }
         repeat(BALL_COUNT) { i ->
             val px = BALL_SIZE + rng.nextFloat() * (w - BALL_SIZE * 2)
             val py = BALL_SIZE + rng.nextFloat() * (h - BALL_SIZE * 2)
             val speed = 80f + rng.nextFloat() * 120f
             val angle = rng.nextFloat() * 2f * Math.PI.toFloat()
-            addChild(
+            arena.addChild(
                 Ball(
                     id = i,
                     color = hue(i.toFloat() / BALL_COUNT),
@@ -58,16 +53,6 @@ class CollisionStressDemo : Node2D() {
                 ).apply { name = "Ball$i" }
             )
         }
-    }
-
-    private fun makeWall(position: Vec2, size: Vec2): StaticBody2D {
-        val body = StaticBody2D().apply { transform = Transform(position = position) }
-        body.addChild(
-            CollisionShape2D().apply {
-                shape = RectangleShape2D().apply { this.size = size }
-            }
-        )
-        return body
     }
 
     override fun onProcess(dt: Float) {

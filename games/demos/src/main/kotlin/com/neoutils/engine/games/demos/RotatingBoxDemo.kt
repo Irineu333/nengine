@@ -5,7 +5,6 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.RectangleShape2D
-import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
@@ -47,10 +46,10 @@ class RotatingBoxDemo : Node2D() {
         // shared parent frame (the wrapper's local space), so walls + balls
         // stay axis-aligned in that frame regardless of the wrapper's rotation
         // in world space — that's the whole reason Demo 5 is shaped this way.
-        wrapper.addChild(makeWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX - WALL_THICKNESS), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
-        wrapper.addChild(makeWall(Vec2(-HALF_BOX - WALL_THICKNESS, HALF_BOX), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
-        wrapper.addChild(makeWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "leftWall" })
-        wrapper.addChild(makeWall(Vec2(HALF_BOX, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "rightWall" })
+        wrapper.addChild(makeStaticWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX - WALL_THICKNESS), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
+        wrapper.addChild(makeStaticWall(Vec2(-HALF_BOX - WALL_THICKNESS, HALF_BOX), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
+        wrapper.addChild(makeStaticWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "leftWall" })
+        wrapper.addChild(makeStaticWall(Vec2(HALF_BOX, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "rightWall" })
         repeat(BALL_COUNT) { i ->
             val px = -HALF_BOX + BALL_SIZE + rng.nextFloat() * (BOX_SIZE - 2f * BALL_SIZE)
             val py = -HALF_BOX + BALL_SIZE + rng.nextFloat() * (BOX_SIZE - 2f * BALL_SIZE)
@@ -66,16 +65,6 @@ class RotatingBoxDemo : Node2D() {
                 ).apply { name = "BoxedBall$i" }
             )
         }
-    }
-
-    private fun makeWall(position: Vec2, size: Vec2): StaticBody2D {
-        val body = StaticBody2D().apply { transform = Transform(position = position) }
-        body.addChild(
-            CollisionShape2D().apply {
-                shape = RectangleShape2D().apply { this.size = size }
-            }
-        )
-        return body
     }
 
     override fun onProcess(dt: Float) {

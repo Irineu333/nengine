@@ -19,6 +19,8 @@ O projeto SHALL prover um módulo `:games:demos` que depende de `:engine` e `:en
 
 O módulo `:games:demos` SHALL prover uma classe `BoundaryWalls : Node2D` que, ao entrar na árvore, cria 4 `StaticBody2D` filhos nomeados `topWall`, `bottomWall`, `leftWall`, `rightWall`, cada um com um único `CollisionShape2D` carregando um `RectangleShape2D`. `BoundaryWalls` MUST manter o perímetro alinhado ao retângulo `(0, 0)..(tree.width, tree.height)` em tempo real: enquanto `tree.size` muda (por resize da janela), as 4 paredes MUST ser repositionadas e redimensionadas no mesmo frame de física em que o resize é percebido.
 
+`BoundaryWalls` MUST ser usada como **arena container**: atores físicos (e.g. bolinhas, quadrados) que devem colidir com as paredes MUST ser adicionados como filhos diretos da própria instância `BoundaryWalls`, não como siblings dela no parent do demo. Esse padrão respeita a restrição estrutural de `CharacterBody2D.moveAndCollide`, que só considera bodies-alvo cujo `parent` coincide com o `parent` do corpo se movendo — atores e paredes precisam compartilhar o mesmo parent frame (a própria `BoundaryWalls`) para o sweep encontrá-los.
+
 O construtor SHALL aceitar `thickness: Float = 10f` controlando a espessura das paredes. As paredes ocupam posições EXATAMENTE assim:
 
 - `topWall`: `position = (-thickness, -thickness)`, `size = (tree.width + 2*thickness, thickness)`
@@ -74,18 +76,20 @@ O módulo `:games:demos` SHALL prover uma função top-level `internal fun makeS
 
 ### Requirement: CollisionStressDemo and TumblingSwarmDemo use BoundaryWalls
 
-`CollisionStressDemo` (demo 4) e `TumblingSwarmDemo` (demo 6) SHALL adicionar uma única instância de `BoundaryWalls` em `onEnter` no lugar de criar 4 paredes manualmente. As bolinhas/quadrados de cada demo continuam batendo nas paredes via `moveAndCollide`, e o demo MUST funcionar corretamente quando a janela é redimensionada — bolinhas batem nas paredes nas novas posições no mesmo frame em que o resize é percebido.
+`CollisionStressDemo` (demo 4) e `TumblingSwarmDemo` (demo 6) SHALL adicionar uma única instância de `BoundaryWalls` em `onEnter` no lugar de criar 4 paredes manualmente, e SHALL adicionar seus atores físicos (bolinhas/quadrados) como filhos diretos dessa instância — não como siblings dela no `onEnter` do demo. As bolinhas/quadrados de cada demo continuam batendo nas paredes via `moveAndCollide`, e o demo MUST funcionar corretamente quando a janela é redimensionada — bolinhas batem nas paredes nas novas posições no mesmo frame em que o resize é percebido.
 
-#### Scenario: CollisionStressDemo wires BoundaryWalls
+#### Scenario: CollisionStressDemo wires BoundaryWalls as arena
 
 - **WHEN** o source de `CollisionStressDemo.kt` é inspecionado
-- **THEN** `onEnter` chama `addChild(BoundaryWalls())` exatamente uma vez
+- **THEN** `onEnter` instancia exatamente uma `BoundaryWalls` e a adiciona como filha do demo
+- **AND** as 30 `Ball`s são adicionadas como filhas dessa instância de `BoundaryWalls` (e.g. `arena.addChild(Ball(...))`), não como filhas diretas do demo
 - **AND** `onEnter` NÃO contém 4 chamadas separadas criando paredes manualmente
 
-#### Scenario: TumblingSwarmDemo wires BoundaryWalls
+#### Scenario: TumblingSwarmDemo wires BoundaryWalls as arena
 
 - **WHEN** o source de `TumblingSwarmDemo.kt` é inspecionado
-- **THEN** `onEnter` chama `addChild(BoundaryWalls())` exatamente uma vez
+- **THEN** `onEnter` instancia exatamente uma `BoundaryWalls` e a adiciona como filha do demo
+- **AND** os 16 `TumblingSquare`s são adicionados como filhos dessa instância de `BoundaryWalls`, não como filhas diretas do demo
 - **AND** `onEnter` NÃO contém 4 chamadas separadas criando paredes manualmente
 
 #### Scenario: Balls in demo 4 stay inside the resized window

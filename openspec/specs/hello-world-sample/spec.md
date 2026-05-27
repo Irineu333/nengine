@@ -8,7 +8,7 @@ Exemplo executável mínimo da engine: um módulo `:games:hello-world` code-only
 
 ### Requirement: Hello World is an executable standalone module
 
-O projeto SHALL prover um módulo `:games:hello-world` que depende exclusivamente de `:engine` e `:engine-skiko`, e contém um entry point `main()` que abre uma janela Skiko hospedando uma cena montada inteiramente em Kotlin. O módulo MUST ser executável via `./gradlew :games:hello-world:run`. O módulo MUST NOT declarar dependência em `:engine-bundle`, `:engine-bundle-python`, `:engine-compose` nem em qualquer outro módulo `:games:*`. O `Main.kt` MUST NOT referenciar `BundleLoader`, `ScriptHost`, `PythonScriptHost`, `NodeRegistry`, nem carregar nenhum recurso de classpath (`scene.json`, `.py`, etc.) — a cena é construída inteiramente in-code.
+O projeto SHALL prover um módulo `:games:hello-world` que depende exclusivamente de `:engine` e `:engine-skiko`, e contém um entry point `main()` que abre uma janela Skiko hospedando uma cena montada inteiramente em Kotlin. O módulo MUST ser executável via `./gradlew :games:hello-world:run`. O módulo MUST NOT declarar dependência em `:engine-bundle`, `:engine-bundle-python` nem em qualquer outro módulo `:games:*`. O `Main.kt` MUST NOT referenciar `BundleLoader`, `ScriptHost`, `PythonScriptHost`, `NodeRegistry`, nem carregar nenhum recurso de classpath (`scene.json`, `.py`, etc.) — a cena é construída inteiramente in-code.
 
 #### Scenario: Hello World runs from Gradle
 
@@ -20,7 +20,7 @@ O projeto SHALL prover um módulo `:games:hello-world` que depende exclusivament
 
 - **WHEN** `games/hello-world/build.gradle.kts` é inspecionado
 - **THEN** o bloco `dependencies` declara `implementation(projects.engine)` e `implementation(projects.engineSkiko)`
-- **AND** NÃO declara `projects.engineBundle`, `projects.engineBundlePython`, nem `projects.engineCompose`
+- **AND** NÃO declara `projects.engineBundle` nem `projects.engineBundlePython`
 - **AND** NÃO declara nenhum outro módulo `:games:*`
 
 #### Scenario: Main.kt is code-only

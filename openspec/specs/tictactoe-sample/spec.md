@@ -2,19 +2,19 @@
 
 ## Purpose
 
-Jogo da Velha (tic-tac-toe) humano vs humano em `:games:tictactoe`, exercitando entrada discreta por mouse, hit-test via `Rect.contains`, desenho de linhas via `Renderer.drawLine`, e medição de texto via `Renderer.measureText`. Toda a lógica de gameplay (estado das 9 células, jogador atual, vencedor, empate, linha vencedora, ghost) mora num único script Lua `scripts/board.lua` (chunk retorna `{ extends = "Node", ... }`); o root da cena é declarado em `scene.json` com `Camera2D` + grade de `Line2D` + `Label` para status. As nove células NÃO são nós do scene graph. O módulo serve como prova viva de que o pipeline `BundleLoader → SceneTree → ComposeHost` é backend-agnóstico **e** de que `ScriptHost` é polimórfico — TTT usa `LuaScriptHost`, Pong usa `PythonScriptHost`, ambos consumidos pelo mesmo `BundleLoader`.
+Jogo da Velha (tic-tac-toe) humano vs humano em `:games:tictactoe`, exercitando entrada discreta por mouse, hit-test via `Rect.contains`, desenho de linhas via `Renderer.drawLine`, e medição de texto via `Renderer.measureText`. Toda a lógica de gameplay (estado das 9 células, jogador atual, vencedor, empate, linha vencedora, ghost) mora num único script Lua `scripts/board.lua` (chunk retorna `{ extends = "Node", ... }`); o root da cena é declarado em `scene.json` com `Camera2D` + grade de `Line2D` + `Label` para status. As nove células NÃO são nós do scene graph. O módulo serve como prova viva de que `ScriptHost` é polimórfico (TTT usa `LuaScriptHost`, Pong usa `PythonScriptHost`) sob o mesmo backend de render (`SkikoHost`), todos consumidos pelo mesmo `BundleLoader`.
 
 ## Requirements
 
 ### Requirement: Tic-tac-toe is an executable standalone module
 
-The project SHALL provide a `:games:tictactoe` module that depends on `:engine`, `:engine-compose`, `:engine-bundle`, and `:engine-bundle-lua`, and contains a `main()` entry point that:
+The project SHALL provide a `:games:tictactoe` module that depends on `:engine`, `:engine-skiko`, `:engine-bundle`, and `:engine-bundle-lua`, and contains a `main()` entry point that:
 
 1. Constructs a `LuaScriptHost` via `LuaScriptHost.create()`.
 2. Loads the bundle via `BundleLoader.fromResources("tictactoe", scripting = lua)`, which returns the detached root `Node`.
-3. Wraps the root in `SceneTree(root = ...)` and passes the resulting `SceneTree` to `ComposeHost().run(tree, config)`.
+3. Wraps the root in `SceneTree(root = ...)` and passes the resulting `SceneTree` to `SkikoHost().run(tree, config)`.
 
-The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUST NOT depend on any other game module. The module MUST NOT depend on `:engine-bundle-python` (the migration to Lua removes the previous Python dependency).
+The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUST NOT depend on any other game module. The module MUST NOT depend on `:engine-bundle-python` (the migration to Lua removes the previous Python dependency). The module MUST NOT depend on `:engine-compose` (that module is removed).
 
 #### Scenario: Tic-tac-toe runs from Gradle
 
@@ -25,16 +25,19 @@ The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUS
 #### Scenario: Main.kt is a thin wiring entry point
 
 - **WHEN** `games/tictactoe/src/main/kotlin/.../Main.kt` is inspected
-- **THEN** `main()` calls `LuaScriptHost.create()`, then `BundleLoader.fromResources("tictactoe", scripting = lua)`, then wraps the result in `SceneTree(root = ...)` and passes the tree to `ComposeHost().run(...)`
+- **THEN** `main()` calls `LuaScriptHost.create()`, then `BundleLoader.fromResources("tictactoe", scripting = lua)`, then wraps the result in `SceneTree(root = ...)` and passes the tree to `SkikoHost().run(...)`
 - **AND** `main()` does not import any game-specific class (no `Board`, `TicTacToeRoot`, `StatusText`, `Mark`)
 - **AND** `main()` does not import `PythonScriptHost`
+- **AND** `main()` does not import `ComposeHost` or any symbol from `com.neoutils.engine.compose.*`
 
-#### Scenario: Build depends on Lua bundle module
+#### Scenario: Build depends on Skiko backend and Lua bundle module
 
 - **WHEN** `games/tictactoe/build.gradle.kts` is inspected
 - **THEN** the dependencies include `projects.engineBundle` and `projects.engineBundleLua`
-- **AND** the dependencies include `projects.engineCompose` (Compose remains the backend)
+- **AND** the dependencies include `projects.engineSkiko` (Skiko is the active backend)
+- **AND** the dependencies do NOT include `projects.engineCompose`
 - **AND** the dependencies do NOT include `projects.engineBundlePython`
+- **AND** the `plugins {}` block does NOT include `composeMultiplatform` or `composeCompiler`
 
 ### Requirement: Tic-tac-toe scene composition
 
@@ -45,7 +48,7 @@ The Tic-tac-toe scene SHALL be loaded from `src/main/resources/tictactoe/scene.j
 - Four `Line2D` children forming the grid (two vertical, two horizontal) declared with absolute coordinates.
 - A `Label` child named `status` holding the current status text.
 
-The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeRoot` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`. The previous Python script `scripts/board.py` MUST NOT exist anywhere under `games/tictactoe/src/main/resources/tictactoe/scripts/`.
+The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeRoot` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`. The previous Python script `scripts/board.py` MUST NOT exist anywhere under `games/tictactoe/src/main/resources/tictactoe/scripts/`. The bundle (scene.json + scripts/) MUST NOT change as part of the Compose→Skiko host migration — the proof point is that the same bundle runs identically in the new host.
 
 #### Scenario: Bundle directory layout
 
@@ -76,6 +79,12 @@ The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTa
 - **WHEN** `games/tictactoe/src/main/kotlin/` is inspected after this change
 - **THEN** no file named `Board.kt`, `Mark.kt`, `StatusText.kt`, or `TicTacToeRoot.kt` exists
 - **AND** the only `.kt` file present is `Main.kt`
+
+#### Scenario: Bundle survives host migration unchanged
+
+- **WHEN** the bundle files at `games/tictactoe/src/main/resources/tictactoe/` are compared against the previous Compose-hosted version
+- **THEN** `scene.json` is byte-equal
+- **AND** `scripts/board.lua` is byte-equal
 
 ### Requirement: Game state and rendering live in board.lua
 

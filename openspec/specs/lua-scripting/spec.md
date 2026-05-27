@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Implementação concreta de `ScriptHost` para scripts Lua `.lua` no módulo `:engine-bundle-lua`, usando LuaJ 3.0.x (JAR puro JVM). É a segunda impl da SPI definida em `script-host`, paralela à `python-scripting`. Encapsula tipos `org.luaj.vm2.*` — esses não vazam para `:engine`, `:engine-bundle`, outros backends ou para os jogos. Contrato é Godot-style (chunk retorna tabela com `extends`, `exports`, `signals`, hooks underscore-prefixed) + LÖVE-style (todos os símbolos da engine vivem sob a tabela global `nengine.*`). `:games:tictactoe` é o consumidor canônico — sentinela do segundo backend de scripting paralelamente ao segundo backend de render (`:engine-compose`).
+Implementação concreta de `ScriptHost` para scripts Lua `.lua` no módulo `:engine-bundle-lua`, usando LuaJ 3.0.x (JAR puro JVM). É a segunda impl da SPI definida em `script-host`, paralela à `python-scripting`. Encapsula tipos `org.luaj.vm2.*` — esses não vazam para `:engine`, `:engine-bundle`, outros backends ou para os jogos. Contrato é Godot-style (chunk retorna tabela com `extends`, `exports`, `signals`, hooks underscore-prefixed) + LÖVE-style (todos os símbolos da engine vivem sob a tabela global `nengine.*`). `:games:tictactoe` é o consumidor canônico — sentinela do segundo backend de scripting sob o mesmo backend de render (`:engine-skiko`) usado pelos outros jogos.
 
 ## Requirements
 
 
 ### Requirement: engine-bundle-lua module hosts the Lua ScriptHost
 
-O projeto SHALL prover um módulo Gradle `:engine-bundle-lua` que depende de `:engine`, `:engine-bundle` e de LuaJ 3.0.x (`org.luaj:luaj-jse`). Esse módulo MUST ser o único local que conhece tipos de `org.luaj.vm2.*` no projeto. O módulo MUST NOT ser dependência de `:engine`, `:engine-bundle`, `:engine-skiko`, `:engine-compose`, `:engine-bundle-python`, ou de jogos que não usem scripting Lua.
+O projeto SHALL prover um módulo Gradle `:engine-bundle-lua` que depende de `:engine`, `:engine-bundle` e de LuaJ 3.0.x (`org.luaj:luaj-jse`). Esse módulo MUST ser o único local que conhece tipos de `org.luaj.vm2.*` no projeto. O módulo MUST NOT ser dependência de `:engine`, `:engine-bundle`, `:engine-skiko`, `:engine-bundle-python`, ou de jogos que não usem scripting Lua.
 
 #### Scenario: engine-bundle-lua exists with the right dependencies
 
@@ -20,12 +20,12 @@ O projeto SHALL prover um módulo Gradle `:engine-bundle-lua` que depende de `:e
 
 #### Scenario: engine modules do not depend on engine-bundle-lua
 
-- **WHEN** a configuração de build de `:engine`, `:engine-bundle`, `:engine-skiko`, `:engine-compose` e `:engine-bundle-python` é inspecionada
+- **WHEN** a configuração de build de `:engine`, `:engine-bundle`, `:engine-skiko` e `:engine-bundle-python` é inspecionada
 - **THEN** nenhum deles declara `:engine-bundle-lua` como dependência
 
 #### Scenario: LuaJ is contained in engine-bundle-lua
 
-- **WHEN** o classpath de compilação de `:engine`, `:engine-bundle`, `:engine-skiko`, `:engine-compose` e `:engine-bundle-python` é resolvido
+- **WHEN** o classpath de compilação de `:engine`, `:engine-bundle`, `:engine-skiko` e `:engine-bundle-python` é resolvido
 - **THEN** nenhum artefato `org.luaj:*` está presente
 
 ### Requirement: LuaScriptHost implements ScriptHost for .lua files

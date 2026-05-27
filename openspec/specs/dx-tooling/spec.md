@@ -45,7 +45,7 @@ The engine SHALL provide a logging facility usable from `:engine` and dependent 
 
 ### Requirement: Collider debug visualization
 
-The engine SHALL provide a debug-render mode in which all `Collider` nodes in the active scene have their `bounds()` drawn as outlined rectangles using a visually distinct color. The mode MUST be togglable at runtime through `Debug.colliderVisualization` (default: disabled). When disabled, no additional rendering overhead MUST be incurred beyond a single flag check per frame. The drawing itself SHALL be performed by the integrating runtime (e.g. `:engine-compose`'s `GameSurface`), not by `:engine.scene.Scene` or any other core scene-graph traversal. The `:engine` module SHALL expose a utility (e.g. `collectColliders(scene): List<Collider>` or equivalent) that the runtime can call to enumerate the colliders to outline, without requiring the runtime to walk the tree itself.
+The engine SHALL provide a debug-render mode in which all `Collider` nodes in the active scene have their `bounds()` drawn as outlined rectangles using a visually distinct color. The mode MUST be togglable at runtime through `Debug.colliderVisualization` (default: disabled). When disabled, no additional rendering overhead MUST be incurred beyond a single flag check per frame. The drawing itself SHALL be performed by the integrating runtime (e.g. `:engine-skiko`'s `SkikoHost`), not by `:engine.scene.Scene` or any other core scene-graph traversal. The `:engine` module SHALL expose a utility (e.g. `collectColliders(scene): List<Collider>` or equivalent) that the runtime can call to enumerate the colliders to outline, without requiring the runtime to walk the tree itself.
 
 #### Scenario: Enabling collider debug draws bounds
 
@@ -75,7 +75,7 @@ The engine SHALL expose DX toggles (FPS overlay, collider debug) through a singl
 
 ### Requirement: Unified debug overlay rendering utility
 
-The engine SHALL expose a utility function in `:engine` (e.g. `renderDebugOverlay(renderer: Renderer, tree: SceneTree)`) that performs the debug overlay drawing in a single place, consulting `Debug.showFps` and `Debug.colliderVisualization` and issuing the corresponding `Renderer` calls. The utility MUST be backend-agnostic: it MUST accept the `Renderer` SPI and MUST NOT reference any concrete backend type. The utility MUST be invokable by an integrating runtime (e.g. `:engine-compose`'s `ComposeHost`, `:engine-skiko`'s `SkikoHost`) after `GameLoop.tick(...)` and before the renderer is unbound, so the overlay appears on top of the tree's own render output. When both flags are `false`, the utility MUST issue zero draw calls.
+The engine SHALL expose a utility function in `:engine` (e.g. `renderDebugOverlay(renderer: Renderer, tree: SceneTree)`) that performs the debug overlay drawing in a single place, consulting `Debug.showFps` and `Debug.colliderVisualization` and issuing the corresponding `Renderer` calls. The utility MUST be backend-agnostic: it MUST accept the `Renderer` SPI and MUST NOT reference any concrete backend type. The utility MUST be invokable by an integrating runtime (e.g. `:engine-skiko`'s `SkikoHost`) after `GameLoop.tick(...)` and before the renderer is unbound, so the overlay appears on top of the tree's own render output. When both flags are `false`, the utility MUST issue zero draw calls.
 
 When `Debug.colliderVisualization = true`, collider bounds SHALL be drawn in **world space**: the utility MUST, prior to issuing the collider `drawRect` calls, push the same view transform that `SceneTree.render` would push for the current camera (using `Camera2D.bounds`, `tree.size`, and `Camera2D.aspectMode` when a current camera exists, or no push when no current camera exists or its bounds are degenerate). After the collider draws complete, the utility MUST pop the transform it pushed, restoring identity for any subsequent HUD draws. The FPS overlay SHALL be drawn in **screen space** (identity transform), so it appears at the same surface location regardless of camera bounds.
 
@@ -118,9 +118,9 @@ The host SHALL remain responsible for keeping `Debug.currentFps` up to date each
 - **THEN** the only `Renderer`-related symbol referenced is the `Renderer` SPI from `:engine`
 - **AND** no import begins with `org.jetbrains.compose.*`, `androidx.compose.*`, `org.jetbrains.skia.*`, or `org.jetbrains.skiko.*`
 
-#### Scenario: Both backends call the same utility
+#### Scenario: Active backend calls the utility
 
-- **WHEN** `:engine-compose` and `:engine-skiko` are inspected
-- **THEN** each integrating runtime calls `renderDebugOverlay(renderer, tree)` once per frame after `GameLoop.tick(...)`
-- **AND** neither host duplicates the drawing logic locally
-- **AND** neither host issues its own `pushTransform`/`popTransform` calls around the call (the utility manages its own transform stack)
+- **WHEN** `:engine-skiko` is inspected
+- **THEN** the integrating runtime (`SkikoHost`) calls `renderDebugOverlay(renderer, tree)` once per frame after `GameLoop.tick(...)`
+- **AND** the host does not duplicate the drawing logic locally
+- **AND** the host does not issue its own `pushTransform`/`popTransform` calls around the call (the utility manages its own transform stack)

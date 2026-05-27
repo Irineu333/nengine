@@ -8,7 +8,7 @@ Carregamento de cena via **bundle**: uma pasta autocontida com `scene.json` na r
 
 ### Requirement: engine-bundle module hosts bundle loading and the ScriptHost SPI
 
-O projeto SHALL prover um módulo Gradle `:engine-bundle` que depende de `:engine` (e **nada mais** do ecossistema de scripting de runtime). Esse módulo MUST hospedar a API pública `BundleLoader` e a SPI `ScriptHost` / `Script` / `ScriptInstance` / `ExportedProperty` / `BundleSource`. O módulo MUST NOT declarar dependência em `org.jetbrains.kotlin:kotlin-scripting-*` (a infraestrutura Kotlin Scripting some integralmente). O módulo MUST NOT declarar dependência em GraalPy nem em qualquer outro runtime de scripting concreto. Apenas jogos que carregam cena via bundle dependem dele. O módulo MUST NOT ser dependência de `:engine`, `:engine-skiko`, ou `:engine-compose`.
+O projeto SHALL prover um módulo Gradle `:engine-bundle` que depende de `:engine` (e **nada mais** do ecossistema de scripting de runtime). Esse módulo MUST hospedar a API pública `BundleLoader` e a SPI `ScriptHost` / `Script` / `ScriptInstance` / `ExportedProperty` / `BundleSource`. O módulo MUST NOT declarar dependência em `org.jetbrains.kotlin:kotlin-scripting-*` (a infraestrutura Kotlin Scripting some integralmente). O módulo MUST NOT declarar dependência em GraalPy nem em qualquer outro runtime de scripting concreto. Apenas jogos que carregam cena via bundle dependem dele. O módulo MUST NOT ser dependência de `:engine` ou `:engine-skiko`.
 
 #### Scenario: engine-bundle has minimal dependencies
 
@@ -20,7 +20,7 @@ O projeto SHALL prover um módulo Gradle `:engine-bundle` que depende de `:engin
 
 #### Scenario: engine modules do not depend on engine-bundle
 
-- **WHEN** a configuração de build de `:engine`, `:engine-skiko` e `:engine-compose` é inspecionada
+- **WHEN** a configuração de build de `:engine` e `:engine-skiko` é inspecionada
 - **THEN** nenhum deles declara `:engine-bundle` como dependência, direta ou transitiva
 
 #### Scenario: Games without bundles do not pull engine-bundle transitively
@@ -237,7 +237,7 @@ O roteamento de `properties` (decisão `@Inspect` vs export, colisão fatal, cha
 
 ### Requirement: Bundle loading is backend-agnostic
 
-The `Node` produced by `BundleLoader.fromResources(name)` or `BundleLoader.fromPath(dir)` (wrapped by the caller in `SceneTree(root = ...)`) MUST be consumable by any `GameHost` implementation without ajuste — specifically, both `SkikoHost` (in `:engine-skiko`) and `ComposeHost` (in `:engine-compose`) MUST be able to receive the resulting `SceneTree` and run it via their normal `run(tree, config)` entry point. The bundle pipeline MUST NOT depend on backend-specific types or assumptions.
+The `Node` produced by `BundleLoader.fromResources(name)` or `BundleLoader.fromPath(dir)` (wrapped by the caller in `SceneTree(root = ...)`) MUST be consumable by any `GameHost` implementation without ajuste — currently `SkikoHost` (in `:engine-skiko`) is the only active `GameHost` and MUST be able to receive the resulting `SceneTree` and run it via its normal `run(tree, config)` entry point. The bundle pipeline MUST NOT depend on backend-specific types or assumptions, so that future `GameHost` implementations (e.g. the planned LWJGL backend) work without changes to `:engine-bundle`. Bundles MUST NOT reference any module from `org.jetbrains.compose.*`, `androidx.compose.*`, or other backend-specific symbol space.
 
 #### Scenario: Pong tree runs in SkikoHost
 
@@ -245,14 +245,14 @@ The `Node` produced by `BundleLoader.fromResources(name)` or `BundleLoader.fromP
 - **WHEN** `BundleLoader.fromResources("pong", scripting = python)` is wrapped in `SceneTree(root = ...)` and consumed by `SkikoHost().run(tree, config)`
 - **THEN** the game runs as expected (existing behavior, regression sentinel)
 
-#### Scenario: Tic-tac-toe tree runs in ComposeHost
+#### Scenario: Tic-tac-toe tree runs in SkikoHost
 
 - **GIVEN** the Tic-tac-toe bundle at `games/tictactoe/src/main/resources/tictactoe/`
-- **WHEN** `BundleLoader.fromResources("tictactoe", scripting = python)` is wrapped in `SceneTree(root = ...)` and consumed by `ComposeHost().run(tree, config)`
-- **THEN** the game runs as expected
-- **AND** the consumer (`:games:tictactoe`) does not call into any Skiko-specific or backend-specific code path
+- **WHEN** `BundleLoader.fromResources("tictactoe", scripting = lua)` is wrapped in `SceneTree(root = ...)` and consumed by `SkikoHost().run(tree, config)`
+- **THEN** the game runs as expected (X plays first, alternation works, click-to-restart works after end)
+- **AND** the consumer (`:games:tictactoe`) does not call into `:engine-compose` (that module is removed)
 
 #### Scenario: No backend-specific imports in BundleLoader
 
 - **WHEN** the `:engine-bundle` source tree is inspected
-- **THEN** no class references `androidx.compose.*`, `org.jetbrains.compose.*`, or `org.jetbrains.skiko.*`
+- **THEN** no class references `androidx.compose.*`, `org.jetbrains.compose.*`, `org.jetbrains.skia.*`, or `org.jetbrains.skiko.*`

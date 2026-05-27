@@ -8,7 +8,7 @@ Implementação concreta de `ScriptHost` para scripts Python `.py` no módulo `:
 
 ### Requirement: engine-bundle-python module hosts the Python ScriptHost
 
-O projeto SHALL prover um módulo Gradle `:engine-bundle-python` que depende de `:engine`, `:engine-bundle` e de GraalPy 24.x (`org.graalvm.polyglot:polyglot` + `org.graalvm.polyglot:python`). Esse módulo MUST ser o único local que conhece tipos de `org.graalvm.polyglot.*` no projeto. O módulo MUST NOT ser dependência de `:engine`, `:engine-bundle`, `:engine-skiko`, `:engine-compose`, ou de jogos que não usem scripting Python.
+O projeto SHALL prover um módulo Gradle `:engine-bundle-python` que depende de `:engine`, `:engine-bundle` e de GraalPy 24.x (`org.graalvm.polyglot:polyglot` + `org.graalvm.polyglot:python`). Esse módulo MUST ser o único local que conhece tipos de `org.graalvm.polyglot.*` no projeto. O módulo MUST NOT ser dependência de `:engine`, `:engine-bundle`, `:engine-skiko`, ou de jogos que não usem scripting Python.
 
 #### Scenario: engine-bundle-python exists with the right dependencies
 
@@ -19,12 +19,12 @@ O projeto SHALL prover um módulo Gradle `:engine-bundle-python` que depende de 
 
 #### Scenario: engine modules do not depend on engine-bundle-python
 
-- **WHEN** a configuração de build de `:engine`, `:engine-bundle`, `:engine-skiko` e `:engine-compose` é inspecionada
+- **WHEN** a configuração de build de `:engine`, `:engine-bundle` e `:engine-skiko` é inspecionada
 - **THEN** nenhum deles declara `:engine-bundle-python` como dependência
 
 #### Scenario: GraalPy is contained in engine-bundle-python
 
-- **WHEN** o classpath compilação de `:engine`, `:engine-bundle`, `:engine-skiko` e `:engine-compose` é resolvido
+- **WHEN** o classpath compilação de `:engine`, `:engine-bundle` e `:engine-skiko` é resolvido
 - **THEN** nenhum artefato `org.graalvm.polyglot:*` está presente
 
 ### Requirement: PythonScriptHost implements ScriptHost for .py files

@@ -6,7 +6,6 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 
 | Change              | Resumo                                                                                                                                                                                              |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `game-snake`        | Jogo Snake como `:games:snake`. Validador de gameplay discreto/grid-based, mutação dinâmica do scene graph via script, wraparound em `Camera2D.bounds`, e da ponte Kotlin Signal → Python (consome `Timer.timeout`). |
 
 ## Planned
 

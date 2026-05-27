@@ -62,7 +62,10 @@ def reset(self):
     self._dead = False
     _spawn_initial(self)
     self.restart.emit(None)
-    self._move_timer.start()
+    # Polyglot does not honour Kotlin default-arg synthetics, so the optional
+    # `override: Float?` parameter must be passed explicitly. `None` resets to
+    # `waitTime`, which is the natural restart behavior.
+    self._move_timer.start(None)
 
 
 def cells(self):

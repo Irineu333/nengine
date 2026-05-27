@@ -39,7 +39,6 @@ class SkikoHost : GameHost {
         SwingUtilities.invokeLater {
             val frame = JFrame(config.title).apply {
                 defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
-                preferredSize = Dimension(config.width, config.height)
                 layout = BorderLayout()
             }
 
@@ -81,6 +80,12 @@ class SkikoHost : GameHost {
             }
 
             skiaLayer.isFocusable = true
+            // Apply the requested size to the inner content (skiaLayer) so the
+            // viewport matches the configured `width × height` exactly; the
+            // outer JFrame grows by its OS chrome via `frame.pack()` below.
+            // Sizing the JFrame directly would shrink the content area by the
+            // titlebar/border insets and break `Camera2D.bounds` 1:1 mapping.
+            skiaLayer.preferredSize = Dimension(config.width, config.height)
             frame.contentPane.add(skiaLayer, BorderLayout.CENTER)
 
             val keyListener = object : KeyAdapter() {

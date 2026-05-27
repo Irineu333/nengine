@@ -5,6 +5,7 @@ kotlin = "2.3.21"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 luaj = "3.0.1"
+lwjgl = "3.3.6"
 skiko = "0.144.6"
 
 [libraries]
@@ -16,6 +17,10 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
 luaj-jse = { module = "org.luaj:luaj-jse", version.ref = "luaj" }
+lwjgl-core = { module = "org.lwjgl:lwjgl", version.ref = "lwjgl" }
+lwjgl-glfw = { module = "org.lwjgl:lwjgl-glfw", version.ref = "lwjgl" }
+lwjgl-opengl = { module = "org.lwjgl:lwjgl-opengl", version.ref = "lwjgl" }
+lwjgl-nanovg = { module = "org.lwjgl:lwjgl-nanovg", version.ref = "lwjgl" }
 kotlinx-serializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 skiko-awt = { module = "org.jetbrains.skiko:skiko-awt", version.ref = "skiko" }
 

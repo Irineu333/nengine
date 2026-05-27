@@ -63,8 +63,13 @@ class LwjglHost : GameHost {
             GLFW.glfwShowWindow(window)
 
             while (!GLFW.glfwWindowShouldClose(window)) {
-                GLFW.glfwPollEvents()
+                // `beginTick` clears the per-tick press/click sets BEFORE
+                // `glfwPollEvents` fires the callbacks that populate them —
+                // GLFW dispatches synchronously inside pollEvents (unlike AWT
+                // in SkikoHost, which queues events between frames). Inverting
+                // this order silently drops every press inside the same tick.
                 input.beginTick()
+                GLFW.glfwPollEvents()
 
                 val nanoTime = System.nanoTime()
                 val pendingDt = if (lastNanos == 0L) 16_666_666L else nanoTime - lastNanos

@@ -15,7 +15,7 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 | Backend | Status   | Módulo            | Jogo sentinela     |
 | ------- | -------- | ----------------- | ------------------ |
 | Skiko   | default  | `:engine-skiko`   | `:games:pong`      |
-| Compose | mantido  | `:engine-compose` | `:games:tictactoe` |
+| LWJGL   | planejado | —                | —                  |
 
 ### Scripting
 
@@ -23,14 +23,14 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 |---------------|------------|-------------------------|-----------------------------------------|
 | Kotlin        | native     | `:engine`               | biblioteca entra como dependência       |
 | Python        | default    | `:engine-bundle-python` | via GraalPy 24.x; stubs `.pyi` inclusos |
-| Kotlin Script | deprecated | —                       | experiência de desenvolvimento ruim     |
+| Lua           | suportado  | `:engine-bundle-lua`    | via LuaJ 3.0.x; stubs LuaCATS inclusos  |
 
 ### Jogos
 
 | Jogo          | Backend | Scripting | Função na engine                                               |
 |---------------|---------|-----------|----------------------------------------------------------------|
 | Pong          | Skiko   | Python    | prova da fundação (loop, física, scripts, signals, `Camera2D`) |
-| Jogo da Velha | Compose | Python    | sentinela do segundo backend; também roda sob `Camera2D`       |
+| Jogo da Velha | Skiko   | Lua       | sentinela do segundo backend de scripting; também roda sob `Camera2D` |
 | Demos         | Skiko   | Kotlin    | 6 cenas exercitando invariantes (transform, colisão)           |
 | Hello World   | Skiko   | —         | exemplo code-only mínimo (um `Label` centralizado)             |
 
@@ -38,7 +38,7 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 
 | Item          | Categoria | Estado                                                 |
 |---------------|-----------|--------------------------------------------------------|
-| Lua scripting | runtime   | planejado — prova que a SPI é genuinamente agnóstica   |
+| LWJGL backend | runtime   | planejado — segundo backend de render para revalidar a SPI |
 | Snake         | jogo      | planejado — validador de wraparound em `Camera2D.bounds`, signals e fixed-step |
 | Editor visual | tooling   | planejado — vai dirigir decisões de serialização       |
 
@@ -48,7 +48,7 @@ Detalhe completo em [`ROADMAP.md`](./ROADMAP.md).
 
 ```sh
 ./gradlew :games:pong:run          # Skiko + Python
-./gradlew :games:tictactoe:run     # Compose + Python
+./gradlew :games:tictactoe:run     # Skiko + Lua
 ./gradlew :games:demos:run         # cenas de demonstração visual
 ./gradlew :games:hello-world:run   # exemplo code-only mínimo
 ```

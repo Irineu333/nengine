@@ -6,14 +6,14 @@ Orientação perene para contribuidores (humanos ou agentes). Mantenha este arqu
 
 `nengine` é uma 2D game engine **construída para aprender arquitetura de engine**. Começa em modo code-only com jogos de exemplo (Pong é o primeiro) e evolui em direção a um editor visual. A meta é clareza didática e evolução incremental — não performance prematura.
 
-Stack: Kotlin + Skiko (JVM Desktop). Skiko é o **backend padrão** da engine; Compose Multiplatform é o **segundo backend**, mantido vivo via `:games:tictactoe`.
+Stack: Kotlin + Skiko (JVM Desktop). Skiko é o **único backend de render ativo no momento**; LWJGL está planejado como **segundo backend experimental** para revalidar a SPI (`Renderer`/`Input`/`GameHost`).
 
 ## Architectural Invariants
 
 Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisões arquiteturais consolidadas em `openspec/changes/archive/2026-05-18-engine-foundation/design.md` e não podem ser quebrados sem uma nova change OpenSpec discutindo a revisão.
 
 1. **Scene graph estilo Godot, por herança.** Comportamento de gameplay é adicionado por subclasses de `Node` / `Node2D`. **Sem** `List<Component>` ou ECS. Cada Node tem sua identidade de tipo (`class Paddle : Node2D()`).
-2. **`:engine` não depende de Compose.** O módulo `:engine` não declara nenhum artefato `org.jetbrains.compose.*` ou `androidx.compose.*`, direta ou transitivamente. Quem precisa de Compose é o `:engine-compose`.
+2. **`:engine` não depende de nenhum framework de UI/render.** O módulo `:engine` não declara — direta ou transitivamente — `org.jetbrains.compose.*`, `androidx.compose.*`, `org.jetbrains.skia.*`, `org.jetbrains.skiko.*`, AWT/Swing além do estritamente necessário, nem futuras dependências LWJGL/OpenGL/Vulkan. Quem precisa de qualquer um desses é o módulo de backend correspondente (e.g. `:engine-skiko`).
 3. **Colisão via `CollisionObject2D` + `CollisionShape2D` + `PhysicsSystem` central.** Cada participante de colisão é uma subclasse de `CollisionObject2D` (`Area2D` para triggers; `StaticBody2D`/`CharacterBody2D`/`RigidBody2D` para corpos sólidos) com um ou mais `CollisionShape2D` filhos carregando um `Shape2D` polimórfico (`RectangleShape2D` ou `CircleShape2D`). O `PhysicsSystem.step(tree, dt)` integra `RigidBody2D` (gravity + accumulated forces → velocity), executa o TOI loop com impulse solver bilateral (linear + angular + Coulomb tangencial, combine rules `e = max(eA, eB)`, `μ = sqrt(μA · μB)`), integra rotação, e em seguida enumera todos os objects ativos, testando pares em broad phase O(N²) intencional, e dispara `onAreaEntered`/`onAreaExited`/`onBodyEntered`/`onBodyExited` exatamente uma vez por par-transição (enter no início da sobreposição, exit no fim — não há evento "still touching"). Os mesmos eventos são emitidos via signals built-in (`areaEntered`, `areaExited`, `bodyEntered`, `bodyExited`) em cada object. **Três paths de movimento solid-body** convivem: (a) `CharacterBody2D.moveAndCollide(motion)` para controle direto pelo script (paddles, snake head, player) — sweep TOI exato sem resposta de impulso; (b) `RigidBody2D` integrado pela engine — script aplica forças/impulsos via `applyForce`/`applyImpulse`/etc. e a engine resolve; (c) `StaticBody2D` imóvel. O sweep cobre os três pares de shape (circle-circle, circle-rect, rect-rect) com **qualquer combinação de rotação** dos transforms, contanto que ambos vivam no mesmo frame parent local (circle-vs-rotated-rect via inverse-rotate pro frame local do rect; rotated-rect-vs-rotated-rect via SAT temporal). `Area2D` permanece sensor puro (sem `moveAndCollide`); para "quem está em mim agora?" use `Area2D.getOverlappingAreas()` / `getOverlappingBodies()`.
 
 ### RigidBody2D vs CharacterBody2D
@@ -24,7 +24,7 @@ A engine oferece **dois modelos de movimento solid-body**, com critérios claros
 - **`RigidBody2D`** — integração pela engine. Script aplica forças/impulsos (`applyForce`, `applyImpulse`, `applyTorque`, etc.) ou seta velocidades diretamente; a engine integra (`v += (g + F/m) * dt`), faz sweep com TOI loop e resolve cada contato via impulso linear+angular + fricção de Coulomb. Use para objetos "soltos no mundo" com semântica física real (bolinhas quicando, blocos empurrados, projéteis com gravidade, peças de demolição).
 
 Em colisão cruzada, `Static` e `Character` são tratados como massa infinita pela perspectiva do `Rigid` — o `Rigid` recebe impulso, eles não recoluem (preserva o controle direto do paddle/Character pelo script). Para "kick" do Character no Rigid, o script chama `rigid.applyImpulse(...)` manualmente dentro de `_on_body_entered`.
-4. **`Renderer`, `Input` e `GameHost` são SPIs.** Skiko é o backend padrão (`:engine-skiko`); Compose é o segundo backend (`:engine-compose`). Jogos novos devem usar Skiko por default.
+4. **`Renderer`, `Input` e `GameHost` permanecem SPIs obrigatórias.** Skiko é o backend padrão (`:engine-skiko`); `:engine` não pode vazar tipos de Skiko (`org.jetbrains.skia.*`, `SkikoView`, `SkiaLayer`) — quem precisa de Skia direto é o `:engine-skiko`. LWJGL está planejado como segundo backend experimental para revalidar a SPI. Jogos novos devem usar Skiko por default.
 5. **A árvore viva é dona de `SceneTree`, não de uma `Scene` que é Node.** `SceneTree` não é `Node` e não é `@Serializable`; a classe `Scene` não existe mais em `:engine`. Nodes alcançam a árvore via `node.tree` (set no attach, null no detach). `SceneTree` não é subclassável para customizar setup — para popular a árvore inicial, escreva um Node root com `onEnter`. `SceneLoader.load` e `BundleLoader` devolvem `Node` (root livre); o host envolve em `SceneTree(root = ...)` antes de `run(...)`.
 
 ## Performance Notes
@@ -46,10 +46,9 @@ O cache é **estado runtime puro**: nunca persiste em `scene.json` (anotado com 
 :engine-bundle         ← carregamento de cena via bundle (scene.json + scripts/) + ScriptHost SPI agnóstica de linguagem
 :engine-bundle-python  ← implementação Python do ScriptHost via GraalPy 24.x; distribui stubs .pyi em resources/stubs/
 :engine-bundle-lua     ← implementação Lua do ScriptHost via LuaJ 3.0.x (JAR puro JVM); distribui stubs LuaCATS em resources/stubs/
-:engine-compose        ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface, ComposeHost) — segundo backend
 :engine-skiko          ← backend Skiko puro sobre SkiaLayer + JFrame (SkikoRenderer, SkikoInput, SkikoHost) — backend padrão
 :games:pong            ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
-:games:tictactoe       ← jogo Velha (humano vs humano), roda em Compose com scripting Lua — sentinela do segundo backend de render **e** do segundo backend de scripting
+:games:tictactoe       ← jogo Velha (humano vs humano), roda em **Skiko** com scripting Lua — sentinela do segundo backend de scripting
 :games:demos           ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
 :games:hello-world     ← exemplo code-only mínimo — único Label centralizado em Skiko, sem bundle nem scripting
 ```
@@ -76,7 +75,7 @@ Para rodar Velha:
 ./gradlew :games:tictactoe:run
 ```
 
-Velha carrega via `BundleLoader.fromResources("tictactoe", scripting = lua)` (em `:games:tictactoe/src/main/resources/tictactoe/`, com `scene.json` na raiz e `scripts/board.lua`) — mesma pipeline do Pong; aqui ela serve como prova viva de que `ComposeHost` consome o resultado de `BundleLoader` sem ajuste algum no backend **e** que `ScriptHost` é polimórfico (TTT usa `LuaScriptHost`, Pong usa `PythonScriptHost`). O root é um `Node` plain com `script = "scripts/board.lua"` e quatro filhos: um `Camera2D` (`bounds = 600×600`), quatro `Line2D` formando a grade 3×3, e um `Label` `status`. Toda lógica de gameplay (estado das 9 células, hit-test, vitória/empate, ghost, linha vencedora) mora em `board.lua` (chunk retorna `{ extends = "Node", _ready = ..., _process = ..., _draw = ... }`); o único Kotlin que sobrou no módulo é `Main.kt`, que instancia `LuaScriptHost.create()`, chama o `BundleLoader`, envolve o root em `SceneTree(root = ...)` e entrega ao `ComposeHost`.
+Velha carrega via `BundleLoader.fromResources("tictactoe", scripting = lua)` (em `:games:tictactoe/src/main/resources/tictactoe/`, com `scene.json` na raiz e `scripts/board.lua`) — mesma pipeline do Pong; aqui ela serve como prova viva de que `ScriptHost` é polimórfico (TTT usa `LuaScriptHost`, Pong usa `PythonScriptHost`) sob o mesmo backend de render (`SkikoHost`). O root é um `Node` plain com `script = "scripts/board.lua"` e quatro filhos: um `Camera2D` (`bounds = 600×600`), quatro `Line2D` formando a grade 3×3, e um `Label` `status`. Toda lógica de gameplay (estado das 9 células, hit-test, vitória/empate, ghost, linha vencedora) mora em `board.lua` (chunk retorna `{ extends = "Node", _ready = ..., _process = ..., _draw = ... }`); o único Kotlin que sobrou no módulo é `Main.kt`, que instancia `LuaScriptHost.create()`, chama o `BundleLoader`, envolve o root em `SceneTree(root = ...)` e entrega ao `SkikoHost`.
 
 Durante o jogo:
 
@@ -118,8 +117,7 @@ Janela 800×600 com `Hello, world!` centralizado; sem input — o texto se recen
 - **API pública de `:engine` documentada com KDoc** quando o uso pretendido não for óbvio.
 - **Imutabilidade onde for barata.** `Vec2`, `Rect`, `Transform`, `Color` são data classes; operações retornam novas instâncias. Para ergonomia de escrita, `Node2D` expõe as properties `position: Vec2`, `rotation: Float` e `scale: Vec2`, que são puro açúcar sobre `transform = transform.copy(...)` — o invariante de imutabilidade dos valores não muda (escrever `vec2.y = X` continua proibido; em Kotlin não compila, em Python lança `AttributeError`).
 - **Folhas `Node2D` shipped por `:engine` são `open` por default.** A política existe para coerência com o invariante #1 ("comportamento é adicionado por herança"). Tornar uma folha `final` exige justificativa documentada no KDoc da classe explicando que invariante quebraria sob herança; absente isso, mantenha `open class`.
-- **Sem dependências escondidas.** Se um módulo precisa de Compose, declara no `build.gradle.kts` daquele módulo. Se `:engine` ganhar uma dependência transitiva proibida, é bug.
-- **Em `:engine-compose`, use APIs do Compose, não Skia direto.** `org.jetbrains.skia.*` só com justificativa documentada.
+- **Sem dependências escondidas.** Se um módulo precisa de um framework de UI/render (Skiko, AWT/Swing, futuramente LWJGL), declara no `build.gradle.kts` daquele módulo. Se `:engine` ganhar uma dependência transitiva proibida, é bug.
 - **Testes para regras invariantes.** Cada decisão arquitetural com risco de regressão (lifecycle ordering, broad phase) tem teste unitário.
 - **`Node2D.onDraw` desenha em local space.** Cada subclasse de `Node2D` (shipped ou de jogo) implementa `onDraw` em coordenadas **locais** — origem `(0, 0)`, sem somar `world().position` manualmente. `SceneTree.render` empilha a `transform` local do nó via `Renderer.pushTransform(translation, rotation, scale)` antes de chamar `onDraw` e desempilha depois (com `try/finally`), de modo que rotação e escala dos ancestrais chegam ao desenho pela stack do renderer — não há código manual de rotação em `onDraw`. Nodes não-`Node2D` (e.g. `Timer`) NÃO recebem push; apenas encaminham o walk aos filhos.
 
@@ -282,7 +280,7 @@ O `:engine-bundle-python` publica stubs `.pyi` em `src/main/resources/stubs/engi
 
 ### Scripting contract (Lua)
 
-A engine também aceita **Lua via LuaJ 3.0.x** como segundo backend de scripting, ativado via `LuaScriptHost.create()` (em `:engine-bundle-lua`). LuaJ é JAR puro JVM — sem libs nativas, igual a Skiko/Compose no eixo de render. O contrato é Godot-style + LÖVE-style: cada `.lua` retorna uma **tabela** com `extends`, `exports`, `signals`, e hooks. Filosofia LÖVE: todos os símbolos da engine vivem numa tabela global **`nengine.*`** (factories, enums, tipos de Node, `script_of`).
+A engine também aceita **Lua via LuaJ 3.0.x** como segundo backend de scripting, ativado via `LuaScriptHost.create()` (em `:engine-bundle-lua`). LuaJ é JAR puro JVM — sem libs nativas, igual a Skiko no eixo de render. O contrato é Godot-style + LÖVE-style: cada `.lua` retorna uma **tabela** com `extends`, `exports`, `signals`, e hooks. Filosofia LÖVE: todos os símbolos da engine vivem numa tabela global **`nengine.*`** (factories, enums, tipos de Node, `script_of`).
 
 #### Estrutura de um script
 

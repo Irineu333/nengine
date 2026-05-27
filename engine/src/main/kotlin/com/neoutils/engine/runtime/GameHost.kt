@@ -6,7 +6,7 @@ import com.neoutils.engine.tree.SceneTree
  * Host of execution of a game: owns a window/surface, drives the per-frame
  * pulse, wires `Input` events from the platform, and runs the game loop until
  * the host is closed. Implementations live in backend modules (e.g.
- * `:engine-compose`, `:engine-skiko`).
+ * `:engine-skiko`).
  */
 interface GameHost {
 

@@ -46,7 +46,7 @@ class GameLoop(
      *  5. drain pending, then `render`.
      *
      * The accumulator lives in the loop, so backends (`SkikoHost`,
-     * `ComposeHost`) need not be aware of fixed-step physics.
+     * future LWJGL host) need not be aware of fixed-step physics.
      */
     fun tick(dtNanos: Long) {
         if (!tree.root.isLive) tree.start()

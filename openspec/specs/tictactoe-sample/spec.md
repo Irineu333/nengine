@@ -2,19 +2,19 @@
 
 ## Purpose
 
-Jogo da Velha (tic-tac-toe) humano vs humano em `:games:tictactoe`, exercitando entrada discreta por mouse, hit-test via `Rect.contains`, desenho de linhas via `Renderer.drawLine`, e medição de texto via `Renderer.measureText`. Toda a lógica de gameplay (estado das 9 células, jogador atual, vencedor, empate, linha vencedora, ghost) mora num único script Python `scripts/board.py` (`# extends Node`); o root da cena é declarado em `scene.json` com `Camera2D` + grade de `Line2D` + `Label` para status. As nove células NÃO são nós do scene graph. O módulo serve como prova viva de que o pipeline `BundleLoader → SceneTree → ComposeHost` é backend-agnóstico (ele engole o mesmo bundle que o Skiko engole no Pong, sem ajuste no `:engine-compose`).
+Jogo da Velha (tic-tac-toe) humano vs humano em `:games:tictactoe`, exercitando entrada discreta por mouse, hit-test via `Rect.contains`, desenho de linhas via `Renderer.drawLine`, e medição de texto via `Renderer.measureText`. Toda a lógica de gameplay (estado das 9 células, jogador atual, vencedor, empate, linha vencedora, ghost) mora num único script Lua `scripts/board.lua` (chunk retorna `{ extends = "Node", ... }`); o root da cena é declarado em `scene.json` com `Camera2D` + grade de `Line2D` + `Label` para status. As nove células NÃO são nós do scene graph. O módulo serve como prova viva de que o pipeline `BundleLoader → SceneTree → ComposeHost` é backend-agnóstico **e** de que `ScriptHost` é polimórfico — TTT usa `LuaScriptHost`, Pong usa `PythonScriptHost`, ambos consumidos pelo mesmo `BundleLoader`.
 
 ## Requirements
 
 ### Requirement: Tic-tac-toe is an executable standalone module
 
-The project SHALL provide a `:games:tictactoe` module that depends on `:engine`, `:engine-compose`, `:engine-bundle`, and `:engine-bundle-python`, and contains a `main()` entry point that:
+The project SHALL provide a `:games:tictactoe` module that depends on `:engine`, `:engine-compose`, `:engine-bundle`, and `:engine-bundle-lua`, and contains a `main()` entry point that:
 
-1. Constructs a `PythonScriptHost` via `PythonScriptHost.create()`.
-2. Loads the bundle via `BundleLoader.fromResources("tictactoe", scripting = python)`, which returns the detached root `Node`.
+1. Constructs a `LuaScriptHost` via `LuaScriptHost.create()`.
+2. Loads the bundle via `BundleLoader.fromResources("tictactoe", scripting = lua)`, which returns the detached root `Node`.
 3. Wraps the root in `SceneTree(root = ...)` and passes the resulting `SceneTree` to `ComposeHost().run(tree, config)`.
 
-The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUST NOT depend on any other game module.
+The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUST NOT depend on any other game module. The module MUST NOT depend on `:engine-bundle-python` (the migration to Lua removes the previous Python dependency).
 
 #### Scenario: Tic-tac-toe runs from Gradle
 
@@ -25,43 +25,46 @@ The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUS
 #### Scenario: Main.kt is a thin wiring entry point
 
 - **WHEN** `games/tictactoe/src/main/kotlin/.../Main.kt` is inspected
-- **THEN** `main()` calls `PythonScriptHost.create()`, then `BundleLoader.fromResources("tictactoe", scripting = python)`, then wraps the result in `SceneTree(root = ...)` and passes the tree to `ComposeHost().run(...)`
+- **THEN** `main()` calls `LuaScriptHost.create()`, then `BundleLoader.fromResources("tictactoe", scripting = lua)`, then wraps the result in `SceneTree(root = ...)` and passes the tree to `ComposeHost().run(...)`
 - **AND** `main()` does not import any game-specific class (no `Board`, `TicTacToeRoot`, `StatusText`, `Mark`)
+- **AND** `main()` does not import `PythonScriptHost`
 
-#### Scenario: Build depends on bundle modules
+#### Scenario: Build depends on Lua bundle module
 
 - **WHEN** `games/tictactoe/build.gradle.kts` is inspected
-- **THEN** the dependencies include `projects.engineBundle` and `projects.engineBundlePython`
+- **THEN** the dependencies include `projects.engineBundle` and `projects.engineBundleLua`
 - **AND** the dependencies include `projects.engineCompose` (Compose remains the backend)
+- **AND** the dependencies do NOT include `projects.engineBundlePython`
 
 ### Requirement: Tic-tac-toe scene composition
 
-The Tic-tac-toe scene SHALL be loaded from `src/main/resources/tictactoe/scene.json`, with the orchestrator logic in `src/main/resources/tictactoe/scripts/board.py`. The scene MUST include:
+The Tic-tac-toe scene SHALL be loaded from `src/main/resources/tictactoe/scene.json`, with the orchestrator logic in `src/main/resources/tictactoe/scripts/board.lua`. The scene MUST include:
 
-- A root of type `com.neoutils.engine.scene.Node` whose `script` is `scripts/board.py`.
+- A root of type `com.neoutils.engine.scene.Node` whose `script` is `scripts/board.lua`.
 - A `Camera2D` child with `current: true` and `bounds = Rect(Vec2.ZERO, Vec2(600f, 600f))`.
 - Four `Line2D` children forming the grid (two vertical, two horizontal) declared with absolute coordinates.
 - A `Label` child named `status` holding the current status text.
 
-The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeRoot` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`.
+The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeRoot` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`. The previous Python script `scripts/board.py` MUST NOT exist anywhere under `games/tictactoe/src/main/resources/tictactoe/scripts/`.
 
 #### Scenario: Bundle directory layout
 
 - **WHEN** `games/tictactoe/src/main/resources/tictactoe/` is inspected
 - **THEN** the directory contains `scene.json` at its root
-- **AND** the directory contains `scripts/board.py`
+- **AND** the directory contains `scripts/board.lua`
+- **AND** the directory does NOT contain `scripts/board.py`
 
-#### Scenario: Scene root is a Node with script attached
+#### Scenario: Scene root is a Node with Lua script attached
 
 - **WHEN** `scene.json` is inspected
 - **THEN** the `root.type` is `"com.neoutils.engine.scene.Node"`
-- **AND** the `root.script` is `"scripts/board.py"`
+- **AND** the `root.script` is `"scripts/board.lua"`
 
 #### Scenario: Grid is declarative via Line2D nodes
 
 - **WHEN** `scene.json` is inspected
 - **THEN** the root has at least four children of type `com.neoutils.engine.scene.Line2D` forming a 3×3 grid
-- **AND** the script `board.py` does NOT define the grid lines itself
+- **AND** the script `board.lua` does NOT define the grid lines itself
 
 #### Scenario: Status text is declarative Label
 
@@ -74,31 +77,32 @@ The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTa
 - **THEN** no file named `Board.kt`, `Mark.kt`, `StatusText.kt`, or `TicTacToeRoot.kt` exists
 - **AND** the only `.kt` file present is `Main.kt`
 
-### Requirement: Game state and rendering live in board.py
+### Requirement: Game state and rendering live in board.lua
 
-The Python script `board.py` SHALL be the single source of truth for game state: the 9-cell array, current player, winner, draw flag, winning line. Cell hit-testing, move placement, win detection, and reset SHALL all live in `board.py`. The visual rendering of marks (X / O) and the winning line SHALL be issued from `board.py._draw(self, renderer)` using `renderer.drawLine` and `renderer.drawCircle`. The status `Label` SHALL be updated by `board.py` (writing to its `text` field via `NodeRef` resolution).
+The Lua script `board.lua` SHALL be the single source of truth for game state: the 9-cell array, current player, winner, draw flag, winning line. Cell hit-testing, move placement, win detection, and reset SHALL all live in `board.lua`. The visual rendering of marks (X / O) and the winning line SHALL be issued from `board.lua._draw(self, renderer)` using `renderer:drawLine(...)` and `renderer:drawCircle(...)`. The status `Label` SHALL be updated by `board.lua` (writing to its `text` field via `NodeRef` resolution or `findChild` lookup).
 
-#### Scenario: board.py extends Node
+#### Scenario: board.lua returns a table with extends = "Node"
 
-- **WHEN** `scripts/board.py` is inspected
-- **THEN** the first non-empty line is `# extends Node`
+- **WHEN** `scripts/board.lua` is inspected
+- **THEN** the chunk ends with `return { extends = "Node", ... }`
+- **AND** the returned table's `extends` field equals the string `"Node"`
 
-#### Scenario: board.py owns game state
+#### Scenario: board.lua owns game state
 
-- **WHEN** `scripts/board.py` is inspected
-- **THEN** the script holds the 9-cell state (e.g. `_cells: list`), the current player, the winner, the draw flag, and the winning line as internal attributes
+- **WHEN** `scripts/board.lua` is inspected
+- **THEN** the table (or the userdata's internal state populated in `_ready`) holds the 9-cell state, the current player, the winner, the draw flag, and the winning line as internal attributes
 - **AND** no other script file is required for the game to function
 
-#### Scenario: board.py renders marks via _draw
+#### Scenario: board.lua renders marks via _draw
 
-- **WHEN** `scripts/board.py` is inspected
-- **THEN** the script defines `_draw(self, renderer)` that draws each placed mark (X as two crossed `drawLine` calls, O as a `drawCircle` with `filled = false`)
+- **WHEN** `scripts/board.lua` is inspected
+- **THEN** the returned table defines `_draw = function(self, renderer) ... end` that draws each placed mark (X as two crossed `drawLine` calls, O as a `drawCircle` with `filled = false`)
 - **AND** the winning line, when present, is also drawn from `_draw`
 
-#### Scenario: Status text is updated via NodeRef
+#### Scenario: Status text is updated via Node lookup
 
-- **WHEN** `scripts/board.py` is inspected
-- **THEN** the script resolves the `status` Label via `NodeRef` and updates `<label>.text` to reflect game state on every state transition (player change, win, draw, reset)
+- **WHEN** `scripts/board.lua` is inspected
+- **THEN** the script resolves the `status` Label (via `NodeRef`, `findChild`, or an export) and updates `<label>.text` to reflect game state on every state transition (player change, win, draw, reset)
 
 ### Requirement: Turn-based gameplay with two human players
 
@@ -118,7 +122,7 @@ The game SHALL start with player `X` to move. After a legal move, the turn SHALL
 
 ### Requirement: Click input drives moves with hit-testing
 
-The script `board.py` SHALL detect a left mouse click whose pointer position falls inside an empty cell during an ongoing partida and place the current player's mark in that cell. Clicks outside any cell, or inside an already-occupied cell, MUST NOT mutate the board. Detection MUST be done by reading `tree.input.pointerPosition` (projected to world coordinates via `tree.screenToWorld(...)`) and `tree.input.wasMouseClicked(MouseButton.Left)` from inside `_process(self, dt)`.
+The script `board.lua` SHALL detect a left mouse click whose pointer position falls inside an empty cell during an ongoing partida and place the current player's mark in that cell. Clicks outside any cell, or inside an already-occupied cell, MUST NOT mutate the board. Detection MUST be done by reading `self.tree.input.pointerPosition` (projected to world coordinates via `self.tree:screenToWorld(...)`) and `self.tree.input:wasMouseClicked(nengine.MouseButton.Left)` from inside `_process(self, dt)`.
 
 #### Scenario: Click in empty cell places the current mark
 

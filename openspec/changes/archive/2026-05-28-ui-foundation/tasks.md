@@ -112,4 +112,4 @@
 - [x] 16.1 Compilação OK em todos os módulos + validação manual de execução de todos os jogos shipped em Skiko.
 - [x] 16.2 Validação manual de `:games:demos:runLwjgl` OK.
 - [x] 16.3 `openspec validate ui-foundation` → "Change is valid".
-- [ ] 16.4 (Pendente — `/opsx:verify ui-foundation`.)
+- [x] 16.4 `/opsx:verify ui-foundation` rodado — 0 críticos, 5 warnings opcionais (cobertura de teste adicional + 1 nota de docs); aceitos como follow-ups não-bloqueantes.

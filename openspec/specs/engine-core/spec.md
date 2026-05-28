@@ -911,18 +911,24 @@ The engine SHALL NOT expose a `rootScene()` helper on `Node` after this change. 
 
 ### Requirement: Scene rendering decoupled from DX surface
 
-The `SceneTree.render(renderer: Renderer)` traversal SHALL NOT depend on or consult any symbol from `com.neoutils.engine.dx.*`. Visualization of debug artifacts (collider bounds, FPS overlay, etc.) SHALL be the responsibility of the integrating runtime (e.g. `:engine-skiko`), not of the core tree owner. The `:engine.tree` package MUST compile without `:engine.dx` being on the classpath as far as `SceneTree.render` is concerned, even if other parts of `:engine` continue to expose the `Debug` surface.
+The `SceneTree.render(renderer: Renderer)` traversal SHALL NOT depend on or consult any symbol from `com.neoutils.engine.dx.*`. Visualization of debug artifacts (collider bounds, FPS overlay, etc.) SHALL be produced by nodes registered via `tree.debug.register(...)` and rendered as part of the standard scene graph walk (world pass for `WorldDebugWidget`, UI pass for `ScreenDebugWidget`). The `:engine.tree` package MUST compile without `:engine.dx` being on the classpath — only the `:engine.debug` package may be referenced by `SceneTree` for the purpose of instantiating `DebugRegistry` and auto-inserting `DebugLayer`.
 
 #### Scenario: SceneTree.kt has no import from engine.dx
 
 - **WHEN** the source file `engine/src/main/kotlin/com/neoutils/engine/tree/SceneTree.kt` is parsed
 - **THEN** it contains no import statement beginning with `com.neoutils.engine.dx`
 
+#### Scenario: SceneTree.kt may import from engine.debug
+
+- **WHEN** the source file `engine/src/main/kotlin/com/neoutils/engine/tree/SceneTree.kt` is parsed
+- **THEN** it MAY contain imports from `com.neoutils.engine.debug.*` (for `DebugRegistry`, `DebugLayer`)
+- **AND** these imports SHALL be the only debug-related imports it carries
+
 #### Scenario: SceneTree.render does not draw collider bounds
 
 - **WHEN** `tree.render(renderer)` is invoked
 - **THEN** no `Renderer.drawRect(_, _, filled = false)` call is issued by `SceneTree` itself for the purpose of debug visualization
-- **AND** the only draw calls during the traversal originate from `Node.onDraw` overrides on user nodes
+- **AND** the only debug draw calls during the traversal originate from `DebugWidget.drawDebug` overrides reached via the standard scene-graph walk
 
 ### Requirement: Engine module has zero UI framework dependency
 
@@ -950,7 +956,7 @@ The `:engine` Gradle module SHALL declare no dependency on any UI or render fram
 
 The engine SHALL define a `GameHost` interface that represents the host of execution of a game: it owns a window/surface, drives the per-frame pulse, wires `Input` events from the platform into the engine, and runs the game loop until the host is closed. The interface MUST expose a single `run(tree: SceneTree, config: GameConfig)` operation. The operation MUST be blocking: it returns only after the host's window/surface has been closed by the user or by code. The interface MUST NOT expose backend-specific types in its method signatures; both inputs (`SceneTree`, `GameConfig`) and the return type live in `:engine`. The interface MUST be implementable without reflection or service loaders.
 
-`GameHost` implementations SHALL NOT issue any `renderer.draw*` calls outside of `tree.render(renderer)`. All visual output, including debug overlays, SHALL be produced by `SceneTree.render` walking the scene graph. Hosts MAY observe input state for toggle-key handling but SHALL write the result into `tree.debug.*` rather than maintaining their own draw pipeline.
+`GameHost` implementations SHALL NOT issue any `renderer.draw*` calls outside of `tree.render(renderer)`. All visual output, including debug overlays, SHALL be produced by `SceneTree.render` walking the scene graph. `GameHost` implementations SHALL NOT poll input keys for the purpose of toggling debug visualization — the engine performs that polling internally via `DebugToggleNode`. The host's only debug-related responsibility SHALL be to set `tree.debugHudKey = config.debugHudKey` during startup so the engine knows which key opens the HUD; the host SHALL NOT read or write any other field of `tree.debug` on a per-frame basis.
 
 #### Scenario: Engine module reads no backend type to declare GameHost
 
@@ -983,9 +989,23 @@ The engine SHALL define a `GameHost` interface that represents the host of execu
 - **WHEN** the source of any `GameHost` implementation is inspected for direct uses of `renderer.drawText`, `renderer.drawRect`, `renderer.drawLine`, `renderer.drawCircle`, or `renderer.drawPolygon`
 - **THEN** every such call SHALL occur transitively inside a `tree.render(renderer)` invocation, not in the host's frame body before or after the render call.
 
+#### Scenario: GameHost does not poll debug toggle keys
+
+- **WHEN** the source of any `GameHost` implementation is grep'd for `input.wasKeyPressed(`
+- **THEN** the only matches SHALL be unrelated to debug visualization (e.g. user-defined game keys passed through via `Input`)
+- **AND** no host file SHALL reference `FpsCounter`, `MomentumOverlay`, `tree.debug.show*`, or `tree.debug.current*`
+
+#### Scenario: GameHost sets debugHudKey once during startup
+
+- **WHEN** a `GameHost` implementation is observed across a full `run(tree, config)` invocation
+- **THEN** exactly one assignment of `tree.debugHudKey` from `config.debugHudKey` SHALL be observed
+- **AND** the assignment SHALL precede the first call to `loop.tick(...)`
+
 ### Requirement: GameConfig host configuration
 
-The engine SHALL provide a `data class GameConfig` carrying the configuration a `GameHost` needs to open its window and behave consistently across backends. `GameConfig` MUST expose at minimum a `title: String`, a `width: Int`, a `height: Int`, a `toggleFpsKey: Key`, and a `toggleCollidersKey: Key`. All fields MUST have sensible defaults so that `GameConfig()` is a valid call site. The default values for `toggleFpsKey` and `toggleCollidersKey` MUST be `Key.F1` and `Key.F2` respectively, so that any host implementation honors the historical F1/F2 affordance without per-game wiring. `GameConfig` MUST be a `data class` so equality, `copy()`, and component destructuring are available.
+The engine SHALL provide a `data class GameConfig` carrying the configuration a `GameHost` needs to open its window and behave consistently across backends. `GameConfig` MUST expose at minimum a `title: String`, a `width: Int`, a `height: Int`, a `debugHudKey: Key`, and a `physicsHz: Int`. All fields MUST have sensible defaults so that `GameConfig()` is a valid call site. The default value for `debugHudKey` MUST be `Key.F1` so that any host implementation honors a single conventional affordance for opening the debug HUD without per-game wiring. `GameConfig` MUST be a `data class` so equality, `copy()`, and component destructuring are available.
+
+`GameConfig` SHALL NOT carry per-widget toggle keys (such as `toggleFpsKey`, `toggleCollidersKey`, `toggleMomentumOverlayKey`). Individual widgets are toggled via the HUD's clickable rows, not via per-flag keys.
 
 #### Scenario: Default constructor is valid
 
@@ -993,45 +1013,33 @@ The engine SHALL provide a `data class GameConfig` carrying the configuration a 
 - **THEN** the result is a valid `GameConfig`
 - **AND** `title` is a non-empty string
 - **AND** `width` and `height` are positive integers
+- **AND** `debugHudKey` is `Key.F1`
 
-#### Scenario: Default toggle keys are F1 and F2
+#### Scenario: debugHudKey is configurable
 
-- **WHEN** code reads `GameConfig().toggleFpsKey` and `GameConfig().toggleCollidersKey`
-- **THEN** the results are `Key.F1` and `Key.F2` respectively
+- **WHEN** code calls `GameConfig(debugHudKey = Key.GRAVE)`
+- **THEN** the result reports `Key.GRAVE` for `debugHudKey`
+- **AND** any `GameHost.run(tree, this)` SHALL set `tree.debugHudKey = Key.GRAVE` during startup
 
-#### Scenario: Toggle keys are configurable
+#### Scenario: Legacy toggle key fields do not exist
 
-- **WHEN** code calls `GameConfig(toggleFpsKey = Key.DIGIT_9, toggleCollidersKey = Key.DIGIT_0)`
-- **THEN** the result reports `Key.DIGIT_9` and `Key.DIGIT_0` for the respective fields
-- **AND** any `GameHost.run(scene, this)` honors those keys instead of F1/F2
+- **WHEN** code attempts to call `GameConfig(toggleFpsKey = Key.F1)` or read `GameConfig().toggleCollidersKey`
+- **THEN** the call SHALL fail to compile because no such fields exist on `GameConfig`
 
-### Requirement: Toggle keys flip debug flags through the host
+### Requirement: SceneTree exposes debugHudKey
 
-Every `GameHost` implementation SHALL, on each tick, observe `Input.wasKeyPressed(config.toggleFpsKey)`, `Input.wasKeyPressed(config.toggleCollidersKey)`, and `Input.wasKeyPressed(config.toggleMomentumOverlayKey)` and flip `tree.debug.showFps`, `tree.debug.showColliders`, and `tree.debug.showMomentum` respectively when a press is observed. This responsibility lives in the host so that game `Main.kt` files do not need to wire keyboard handlers outside the engine to control debug overlays.
+`SceneTree` SHALL expose a mutable `var debugHudKey: Key` property (default `Key.F1`). `GameHost` implementations SHALL set this property from `GameConfig.debugHudKey` during startup, before the first `loop.tick(...)`. The engine's internal `DebugToggleNode` (inside the auto-inserted `DebugLayer`) SHALL read this property each tick when checking for the HUD toggle.
 
-The host SHALL NOT maintain a parallel `Debug` singleton or cache the flag state outside `tree.debug` — `tree.debug` is the single source of truth read by `DebugOverlayLayer` during `_process`.
+#### Scenario: Default debugHudKey is F1
 
-#### Scenario: Pressing the configured FPS toggle flips tree.debug.showFps
+- **WHEN** a `SceneTree` is constructed
+- **THEN** `tree.debugHudKey` SHALL equal `Key.F1`
 
-- **WHEN** the user presses the key configured as `toggleFpsKey` while a `GameHost` is running a scene
-- **THEN** `tree.debug.showFps` is flipped to its negation by the time the next frame is rendered
-- **AND** the next frame either shows or hides the FPS overlay accordingly (driven by `DebugOverlayLayer`)
+#### Scenario: Host writes debugHudKey from config
 
-#### Scenario: Pressing the configured colliders toggle flips tree.debug.showColliders
-
-- **WHEN** the user presses the key configured as `toggleCollidersKey` while a `GameHost` is running a scene
-- **THEN** `tree.debug.showColliders` is flipped to its negation by the time the next frame is rendered
-
-#### Scenario: Pressing the configured momentum toggle flips tree.debug.showMomentum
-
-- **WHEN** the user presses the key configured as `toggleMomentumOverlayKey` while a `GameHost` is running a scene
-- **THEN** `tree.debug.showMomentum` is flipped to its negation by the time the next frame is rendered
-
-#### Scenario: Toggles never live in game code
-
-- **WHEN** any `Main.kt` under `:games:` is inspected after this change
-- **THEN** no file installs a keyboard handler outside the engine for the purpose of toggling `tree.debug.showFps`, `tree.debug.showColliders`, or `tree.debug.showMomentum`
-- **AND** game code relies on the host to perform those toggles
+- **GIVEN** a `GameConfig(debugHudKey = Key.GRAVE)`
+- **WHEN** a `GameHost.run(tree, config)` invocation begins
+- **THEN** `tree.debugHudKey` SHALL equal `Key.GRAVE` by the time the first frame is processed
 
 ### Requirement: Sibling node names are unique with auto-suffix
 

@@ -102,10 +102,13 @@ O módulo `:engine-lwjgl` SHALL prover uma classe `LwjglHost` que implementa a i
 5. `glfwMakeContextCurrent(window)` + `org.lwjgl.opengl.GL.createCapabilities()` + `glfwSwapInterval(1)` (vsync).
 6. Instanciar `LwjglInput` e conectar três callbacks GLFW (`glfwSetKeyCallback`/`glfwSetMouseButtonCallback`/`glfwSetCursorPosCallback`) que delegam para `input.onGlfwKey/onGlfwMouseButton/onGlfwCursorPos`.
 7. Instanciar `LwjglRenderer`, chamar `renderer.init()` (que cria o NanoVG context, registra a fonte default).
-8. Instanciar `PhysicsSystem`, `GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)`, `FpsCounter`.
-9. `glfwShowWindow(window)`.
-10. Loop principal `while (!glfwWindowShouldClose(window))`: chamar `glfwPollEvents()`, `input.beginTick()`, atualizar `lastNanos`/`pendingDt`/`FpsCounter` (cujo valor alimenta `DebugOverlayLayer.FpsLabel` via canal compartilhado), ler `glfwGetWindowSize`/`glfwGetFramebufferSize` para calcular `pixelRatio`, chamar `tree.resize(winW, winH)`, observar `config.toggleFpsKey`/`config.toggleCollidersKey`/`config.toggleMomentumOverlayKey` flippando `tree.debug.showFps`/`tree.debug.showColliders`/`tree.debug.showMomentum`, chamar `glViewport(0, 0, fbW, fbH)`, chamar `renderer.bind(winW, winH, pixelRatio)`, dentro de `try { ... } finally { renderer.unbind() }` chamar `renderer.clear` + `loop.tick(dtNanos)` — e nada mais. O host NÃO deve chamar `renderDebugOverlay(renderer, tree)` nem qualquer outro helper de desenho após `loop.tick`. Depois do `try/finally`, `glfwSwapBuffers(window)`.
-11. Após o loop sair: `tree.stop()`, `renderer.shutdown()`, `Callbacks.glfwFreeCallbacks(window)`, `glfwDestroyWindow(window)`, e em `finally` externo: `glfwTerminate()` + `GLFWErrorCallback.set(null)?.free()`.
+8. Instanciar `PhysicsSystem`, `GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)`. **Não instanciar `FpsCounter`** — `FpsWidget` é dona do seu próprio counter.
+9. Setar `tree.debugHudKey = config.debugHudKey` uma vez antes do primeiro frame.
+10. `glfwShowWindow(window)`.
+11. Loop principal `while (!glfwWindowShouldClose(window))`: chamar `glfwPollEvents()`, `input.beginTick()`, ler `glfwGetWindowSize`/`glfwGetFramebufferSize` para calcular `pixelRatio`, chamar `tree.resize(winW, winH)`, chamar `glViewport(0, 0, fbW, fbH)`, chamar `renderer.bind(winW, winH, pixelRatio)`, dentro de `try { ... } finally { renderer.unbind() }` chamar `renderer.clear` + `loop.tick(dtNanos)` — e nada mais. Depois do `try/finally`, `glfwSwapBuffers(window)`.
+
+    O host **NÃO** deve: instanciar `FpsCounter`, escrever em `tree.debug.*` por frame (exceto o set único em passo 9), chamar qualquer helper de debug overlay, ou pollar input para toggle de visualização de debug. Toda saída visual de debug (FPS, colliders, momentum, HUD) sai do `tree.render(renderer)` via `DebugLayer` auto-inserido pela engine.
+12. Após o loop sair: `tree.stop()`, `renderer.shutdown()`, `Callbacks.glfwFreeCallbacks(window)`, `glfwDestroyWindow(window)`, e em `finally` externo: `glfwTerminate()` + `GLFWErrorCallback.set(null)?.free()`.
 
 `run` MUST ser blocking — retorna somente quando o usuário fecha a janela ou código chama `glfwSetWindowShouldClose(window, true)`. `LwjglHost.run` MUST ser chamado a partir do main thread do processo; em macOS, o processo precisa ter sido iniciado com `-XstartOnFirstThread` (responsabilidade do `build.gradle.kts` que dispara a task `runLwjgl`).
 
@@ -120,31 +123,25 @@ O módulo `:engine-lwjgl` SHALL prover uma classe `LwjglHost` que implementa a i
 - **THEN** the call does not return while the window remains open
 - **AND** the call returns after the user closes the window
 
-#### Scenario: F1 toggles tree.debug.showFps via the host
+#### Scenario: debugHudKey toggles the HUD via the host
 
-- **GIVEN** `tree.debug.showFps == false`
-- **WHEN** the user presses the key configured as `config.toggleFpsKey` (default `Key.F1`)
-- **THEN** by the next frame `tree.debug.showFps == true`
-- **AND** the FPS overlay is drawn via the `DebugOverlayLayer`'s `FpsLabel`, not via a host-side helper
-
-#### Scenario: F2 toggles tree.debug.showColliders via the host
-
-- **GIVEN** `tree.debug.showColliders == false`
-- **WHEN** the user presses the key configured as `config.toggleCollidersKey` (default `Key.F2`)
-- **THEN** by the next frame `tree.debug.showColliders == true`
-
-#### Scenario: F3 toggles tree.debug.showMomentum via the host
-
-- **GIVEN** `tree.debug.showMomentum == false`
-- **WHEN** the user presses the key configured as `config.toggleMomentumOverlayKey`
-- **THEN** by the next frame `tree.debug.showMomentum == true`
-- **AND** the `MomentumOverlay` node inside `DebugOverlayLayer` resets its sparkline buffers as part of becoming visible
+- **GIVEN** `tree.debug.hud.enabled == false`
+- **WHEN** the user presses the key configured as `config.debugHudKey` (default `Key.F1`)
+- **THEN** by the next frame `tree.debug.hud.enabled == true`
+- **AND** the HUD `Panel` is drawn via `tree.render(renderer)` (no host-side draw)
+- **AND** the toggle is driven by the engine's internal `DebugToggleNode`, not by code in `LwjglHost`
 
 #### Scenario: LwjglHost does not draw debug overlays directly
 
 - **WHEN** the source of `LwjglHost.kt` (and any helper it transitively calls during its render loop body) is grep'd for `renderer.drawText`, `renderer.drawRect`, `renderer.drawLine`, `renderer.drawCircle`, `renderer.drawPolygon`, or any private `renderDebugOverlay(...)` helper
 - **THEN** the only draw calls are issued from inside `loop.tick(...)` → `tree.render(renderer)` → walks of the scene graph
 - **AND** the host's main loop body itself contains zero `renderer.draw*` calls before or after `loop.tick`
+
+#### Scenario: LwjglHost source has no debug references beyond debugHudKey setup
+
+- **WHEN** the source of `LwjglHost.kt` is grep'd for `FpsCounter`, `MomentumOverlay`, `tree.debug.show`, `tree.debug.current`, `toggleFpsKey`, `toggleCollidersKey`, or `toggleMomentumOverlayKey`
+- **THEN** zero matches SHALL be returned
+- **AND** the only `tree.debug` reference in the file SHALL be the one-time `tree.debugHudKey = config.debugHudKey` assignment during startup
 
 #### Scenario: Window close terminates the loop and disposes resources
 

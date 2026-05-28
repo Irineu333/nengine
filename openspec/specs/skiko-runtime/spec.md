@@ -92,19 +92,18 @@ The `:engine-skiko` module SHALL provide a concrete `Input` implementation, `Ski
 The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `SkikoHost`, that hosts an `org.jetbrains.skiko.SkiaLayer` inside a Swing `JFrame`. The host's `run(tree, config)` MUST:
 
 1. Create a `JFrame` with `title = config.title`, `setSize(config.width, config.height)`, `setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE)`, and request focus.
-2. Add a `SkiaLayer` to the frame's content pane and set its `skikoView` to an object that, on each `onRender(canvas, width, height, nanoTime)` callback:
+2. Set `tree.debugHudKey = config.debugHudKey` once before the first frame so the engine's internal `DebugToggleNode` polls the configured key.
+3. Add a `SkiaLayer` to the frame's content pane and set its `skikoView` to an object that, on each `onRender(canvas, width, height, nanoTime)` callback:
    a. Calls `input.beginTick()`.
-   b. Updates the `FpsCounter` and writes the result where `DebugOverlayLayer` (auto-inserted into `tree.root`) can read it for its `FpsLabel`.
-   c. Calls `tree.resize(width.toFloat(), height.toFloat())`.
-   d. Reads `Input.wasKeyPressed(config.toggleFpsKey)`, `Input.wasKeyPressed(config.toggleCollidersKey)`, and `Input.wasKeyPressed(config.toggleMomentumOverlayKey)` and flips `tree.debug.showFps`, `tree.debug.showColliders`, and `tree.debug.showMomentum` respectively.
-   e. Binds `renderer` to `canvas`.
-   f. Calls `loop.tick(dtNanos)` — which itself runs `tree.hitTestUI(input)` before the physics/process/render phases.
-   g. Unbinds the renderer.
-   h. Calls `skiaLayer.needRedraw()` to drive the next frame.
+   b. Calls `tree.resize(width.toFloat(), height.toFloat())`.
+   c. Binds `renderer` to `canvas`.
+   d. Calls `loop.tick(dtNanos)` — which itself runs `tree.hitTestUI(input)` before the physics/process/render phases.
+   e. Unbinds the renderer.
+   f. Calls `skiaLayer.needRedraw()` to drive the next frame.
 
-   The host SHALL NOT call any helper such as `renderDebugOverlay(renderer, tree)` after `loop.tick`. All debug overlay output flows through `tree.render(renderer)` via the auto-inserted `DebugOverlayLayer`.
-3. Register AWT `KeyListener`, `MouseListener`, and `MouseMotionListener` on the `JFrame` (or the `SkiaLayer`) that delegate to the `SkikoInput`.
-4. Block via a `CountDownLatch` (or equivalent) released by a `WindowListener.windowClosed` callback, so `run(...)` returns when the frame disposes.
+   The host SHALL NOT instantiate `FpsCounter`. The host SHALL NOT write to `tree.debug.*` per frame (only the one-time `tree.debugHudKey` assignment in step 2). The host SHALL NOT call into any momentum overlay helper. The host SHALL NOT poll input for the purpose of toggling debug visualization. All debug visualization, including the FPS readout, the collider outlines, and the momentum sparklines, flows through `tree.render(renderer)` via the auto-inserted `DebugLayer` and its widgets.
+4. Register AWT `KeyListener`, `MouseListener`, and `MouseMotionListener` on the `JFrame` (or the `SkiaLayer`) that delegate to the `SkikoInput`.
+5. Block via a `CountDownLatch` (or equivalent) released by a `WindowListener.windowClosed` callback, so `run(...)` returns when the frame disposes.
 
 `SkikoHost` MUST NOT call `System.exit(...)`, so callers that embed `SkikoHost.run(...)` inside a larger JVM process keep the JVM alive after the window closes.
 
@@ -123,21 +122,28 @@ The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `
 
 #### Scenario: SkikoHost drives the loop via needRedraw
 
-- **WHEN** `SkikoHost` is running and `tree.debug.showFps` is enabled
-- **THEN** the FPS counter feeding `DebugOverlayLayer.FpsLabel` updates at least once per second to a value greater than zero, indicating per-frame ticks are happening continuously
+- **WHEN** `SkikoHost` is running and `tree.debug.fps.enabled` is true
+- **THEN** the FPS readout produced by `FpsWidget` updates at least once per second to a value greater than zero, indicating per-frame ticks are happening continuously
+- **AND** the readout is produced inside `tree.render(renderer)`, not by the host
 
-#### Scenario: SkikoHost honors toggle keys via Input SPI
+#### Scenario: SkikoHost honors debugHudKey via Input SPI
 
-- **WHEN** `SkikoHost().run(tree, GameConfig(toggleFpsKey = Key.F1, toggleCollidersKey = Key.F2))` is running and the user presses F1
-- **THEN** `tree.debug.showFps` flips by the next rendered frame
-- **AND** the next frame's UI pass produces (or stops producing) the FPS overlay via `DebugOverlayLayer`
-- **AND** no AWT `KeyListener` outside the engine is required for this behavior
+- **WHEN** `SkikoHost().run(tree, GameConfig(debugHudKey = Key.F1))` is running and the user presses F1
+- **THEN** `tree.debug.hud.enabled` flips by the next rendered frame
+- **AND** the HUD `Panel` appears (or disappears) accordingly
+- **AND** no AWT `KeyListener` outside the engine wires the F1 behavior; the engine's `DebugToggleNode` polls input via the `Input` SPI
 
 #### Scenario: SkikoHost does not draw debug overlays directly
 
 - **WHEN** the source of `SkikoHost.kt` (and any helper it transitively calls during its `onRender` callback) is grep'd for `renderer.drawText`, `renderer.drawRect`, `renderer.drawLine`, `renderer.drawCircle`, `renderer.drawPolygon`, or any private `renderDebugOverlay(...)` helper
 - **THEN** the only draw calls are issued from inside `loop.tick(...)` → `tree.render(renderer)` → walks of the scene graph
 - **AND** the host's `onRender` body itself contains zero `renderer.draw*` calls before or after `loop.tick`
+
+#### Scenario: SkikoHost source has no debug references beyond debugHudKey setup
+
+- **WHEN** the source of `SkikoHost.kt` is grep'd for `FpsCounter`, `MomentumOverlay`, `tree.debug.show`, `tree.debug.current`, `toggleFpsKey`, `toggleCollidersKey`, or `toggleMomentumOverlayKey`
+- **THEN** zero matches SHALL be returned
+- **AND** the only `tree.debug` reference in the file SHALL be the one-time `tree.debugHudKey = config.debugHudKey` assignment during startup
 
 #### Scenario: SkikoHost releases the JVM
 

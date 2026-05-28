@@ -83,10 +83,10 @@
 
 ## 12. Specs
 
-- [ ] 12.1 Atualizar `openspec/specs/debug-overlay/spec.md` aplicando o delta. Verificar que os scenarios refletem `DebugWidget`/`DebugRegistry`/`DebugLayer`/`DebugHud`. *(Pendente — será aplicado no `openspec archive`.)*
-- [ ] 12.2 Atualizar `openspec/specs/engine-core/spec.md` aplicando o delta — `GameConfig` schema, `SceneTree.debug` tipo, requisito "host polls toggle keys" removido. *(Pendente — archive.)*
-- [ ] 12.3 Atualizar `openspec/specs/skiko-runtime/spec.md` e `openspec/specs/lwjgl-runtime/spec.md` — scenarios de F1/F2/F3 toggle redirecionam pro novo modelo. *(Pendente — archive.)*
-- [ ] 12.4 Atualizar `openspec/specs/dx-tooling/spec.md` — escopo encolhe pra "só logging". *(Pendente — archive.)*
+- [x] 12.1 Atualizar `openspec/specs/debug-overlay/spec.md` aplicando o delta. Verificar que os scenarios refletem `DebugWidget`/`DebugRegistry`/`DebugLayer`/`DebugHud`.
+- [x] 12.2 Atualizar `openspec/specs/engine-core/spec.md` aplicando o delta — `GameConfig` schema, `SceneTree.debug` tipo, requisito "host polls toggle keys" removido.
+- [x] 12.3 Atualizar `openspec/specs/skiko-runtime/spec.md` e `openspec/specs/lwjgl-runtime/spec.md` — scenarios de F1/F2/F3 toggle redirecionam pro novo modelo.
+- [x] 12.4 Atualizar `openspec/specs/dx-tooling/spec.md` — escopo encolhe pra "só logging".
 - [x] 12.5 Rodar `openspec verify debug-widgets` (se a CLI tiver esse comando) ou `openspec list --json` pra confirmar tasks % bate.
 
 ## 13. Validação final

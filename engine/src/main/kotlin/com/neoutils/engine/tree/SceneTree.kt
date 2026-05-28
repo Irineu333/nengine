@@ -43,15 +43,6 @@ class SceneTree(val root: Node) {
      */
     val debug: DebugFlags = DebugFlags()
 
-    init {
-        // Auto-insert the debug overlay layer as a child of the root if it is
-        // not already present. Idempotent — re-running on a tree whose root
-        // already carries the named layer leaves the tree unchanged.
-        if (root.findChild(DebugOverlayLayer.NODE_NAME) == null) {
-            root.addChild(DebugOverlayLayer())
-        }
-    }
-
     /**
      * Set by [com.neoutils.engine.loop.GameLoop] at construction so engine-side
      * collision queries (e.g. [com.neoutils.engine.physics.Area2D.getOverlappingAreas])
@@ -112,7 +103,20 @@ class SceneTree(val root: Node) {
     }
 
     fun start() {
-        if (!root.isLive) root.attachToLiveTree(this)
+        if (!root.isLive) {
+            root.attachToLiveTree(this)
+            // Auto-insert AFTER the root's onEnter so existing roots that key
+            // off `children.isEmpty()` for first-run setup are not surprised
+            // by the debug layer being present at attach time. Idempotent —
+            // a re-start whose root already carries the layer is a no-op.
+            ensureDebugOverlay()
+        }
+    }
+
+    private fun ensureDebugOverlay() {
+        if (root.findChild(DebugOverlayLayer.NODE_NAME) == null) {
+            root.addChild(DebugOverlayLayer())
+        }
     }
 
     fun stop() {

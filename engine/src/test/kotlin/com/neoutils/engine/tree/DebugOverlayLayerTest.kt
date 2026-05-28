@@ -20,24 +20,26 @@ import kotlin.test.assertTrue
 class DebugOverlayLayerTest {
 
     @Test
-    fun `every SceneTree carries an auto-inserted DebugOverlayLayer`() {
+    fun `every started SceneTree carries an auto-inserted DebugOverlayLayer`() {
         val tree = SceneTree(Node())
+        tree.start()
         val overlay = tree.root.findChild(DebugOverlayLayer.NODE_NAME)
-        assertNotNull(overlay, "expected __debug child auto-inserted")
+        assertNotNull(overlay, "expected __debug child auto-inserted after start()")
         assertTrue(overlay is DebugOverlayLayer)
     }
 
     @Test
-    fun `auto-insert is idempotent`() {
+    fun `auto-insert is idempotent across re-start`() {
         val root = Node()
-        val tree1 = SceneTree(root)
-        val first = tree1.root.findChild(DebugOverlayLayer.NODE_NAME)
-        // Reconstructing with the same root would normally try to add again;
-        // findChild guard prevents duplication.
+        val tree = SceneTree(root)
+        tree.start()
+        val first = tree.root.findChild(DebugOverlayLayer.NODE_NAME)
         assertNotNull(first)
-        // Build a fresh tree on the same root — should not duplicate.
-        val tree2 = SceneTree(root)
-        val matches = tree2.root.children.count { it.name == DebugOverlayLayer.NODE_NAME }
+        tree.stop()
+        // The detached subtree (with __debug still attached) is reused; starting
+        // again should not produce a second overlay layer.
+        tree.start()
+        val matches = tree.root.children.count { it.name == DebugOverlayLayer.NODE_NAME }
         assertEquals(1, matches)
     }
 

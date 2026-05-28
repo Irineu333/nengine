@@ -26,7 +26,7 @@ class DemoSwitcherRoot : Node() {
     )
 
     private var active: Slot = Slot.SolarSystem
-    private lateinit var activeNode: Node
+    private var activeNode: Node? = null
     private val hud = HudOverlay { active }
 
     init {
@@ -35,22 +35,28 @@ class DemoSwitcherRoot : Node() {
 
     override fun onEnter() {
         super.onEnter()
-        if (children.isNotEmpty()) return
+        // Guard against re-attach (start/stop/start) — the active demo and the
+        // HUD survive across reattachments. Checking the demo slot rather than
+        // `children.isEmpty()` keeps us robust against engine-owned siblings
+        // (e.g. the auto-inserted DebugOverlayLayer).
+        if (activeNode != null) return
         // Demos run in raw surface pixels (no Camera2D) by design: they're
         // physics/collision exercises whose visuals follow the window, not a
         // fixed virtual world. Adding a camera would double-scale ball
         // bouncing bounds and HUD positions that read tree.size directly.
-        activeNode = factories.getValue(active)()
-        addChild(activeNode)
+        val node = factories.getValue(active)()
+        activeNode = node
+        addChild(node)
         addChild(hud)
     }
 
     fun select(slot: Slot) {
         if (slot == active) return
-        removeChild(activeNode)
+        activeNode?.let { removeChild(it) }
         active = slot
-        activeNode = factories.getValue(slot)()
-        addChild(activeNode)
+        val node = factories.getValue(slot)()
+        activeNode = node
+        addChild(node)
     }
 
     override fun onProcess(dt: Float) {

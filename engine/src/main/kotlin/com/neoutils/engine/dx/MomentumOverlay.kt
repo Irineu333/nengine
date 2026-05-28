@@ -12,9 +12,10 @@ import kotlin.math.abs
 
 /**
  * Ring buffer of momentum + KE samples used to draw the F3 didactic overlay.
- * Each physics tick the host calls [recordSample] with the current
- * `SceneTree`; renders happen each frame via [renderMomentumOverlay] when
- * [Debug.showMomentumOverlay] is on.
+ * Each physics tick the GameLoop calls [recordSample] with the current
+ * `SceneTree` when `tree.debug.showMomentum` is on; renders happen each
+ * frame via [renderOverlay], driven by `MomentumOverlayNode` inside the
+ * auto-inserted `DebugOverlayLayer`.
  *
  * Lives in screen space (no Camera2D transform). 60 samples = 1 second at the
  * default 60 Hz physics rate.

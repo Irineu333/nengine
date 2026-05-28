@@ -18,6 +18,9 @@
 ---@field Circle2D Circle2D
 ---@field Line2D Line2D
 ---@field Polygon2D Polygon2D
+---@field CanvasLayer CanvasLayer
+---@field Panel Panel
+---@field Button Button
 ---@field Area2D Area2D
 ---@field StaticBody2D StaticBody2D
 ---@field CharacterBody2D CharacterBody2D

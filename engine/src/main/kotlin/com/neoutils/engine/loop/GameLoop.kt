@@ -1,6 +1,5 @@
 package com.neoutils.engine.loop
 
-import com.neoutils.engine.dx.Debug
 import com.neoutils.engine.dx.Log
 import com.neoutils.engine.dx.MomentumOverlay
 import com.neoutils.engine.input.Input
@@ -51,6 +50,10 @@ class GameLoop(
     fun tick(dtNanos: Long) {
         if (!tree.root.isLive) tree.start()
         tree.input = input
+        // UI hit-test runs first so any consumption is visible to scripts in
+        // the same tick (gameplay's `wasMouseClicked` returns false when the
+        // click landed on a Button).
+        tree.hitTestUI(input)
         val rawDt = (dtNanos / 1_000_000_000f).coerceAtLeast(0f)
         accumulator += rawDt
         var steps = 0
@@ -59,7 +62,7 @@ class GameLoop(
             tree.physicsProcess(physicsDt)
             tree.applyPending()
             physics.step(tree, physicsDt)
-            if (Debug.showMomentumOverlay) MomentumOverlay.recordSample(tree)
+            if (tree.debug.showMomentum) MomentumOverlay.recordSample(tree)
             accumulator -= physicsDt
             steps++
         }

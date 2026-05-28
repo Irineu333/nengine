@@ -147,7 +147,8 @@ return {
         self._is_draw = false
         self._winning_line = nil
         self._hovered = nil
-        self._status = nengine.NodeRef("status"):resolve(self.node)
+        -- Status label lives under the Hud CanvasLayer in screen-space.
+        self._status = nengine.NodeRef("Hud/status"):resolve(self.node)
         update_status_text(self)
     end,
 

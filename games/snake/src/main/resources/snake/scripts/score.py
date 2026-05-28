@@ -4,7 +4,9 @@
 def _ready(self):
     self._value = 0
     self.text = "Score: 0"
-    snake_node = self._node.parent.findChild("Snake")
+    # ScoreLabel now lives under the Hud CanvasLayer; reach the Snake by
+    # walking up two levels (Hud → root) and finding it as a sibling.
+    snake_node = self._node.parent.parent.findChild("Snake")
     snake = script_of(snake_node)
     snake.foodEaten.connect(lambda _v: _on_food(self))
     snake.restart.connect(lambda _v: _on_restart(self))

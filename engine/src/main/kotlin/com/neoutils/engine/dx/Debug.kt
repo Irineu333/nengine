@@ -1,16 +1,12 @@
 package com.neoutils.engine.dx
 
+/**
+ * Process-wide log configuration. Other debug flags (FPS overlay, collider
+ * outlines, momentum overlay, current FPS reading) moved to
+ * `SceneTree.debug` so they are per-tree and read by the auto-inserted
+ * `DebugOverlayLayer` in the scene graph — `GameHost.render` no longer
+ * draws overlays directly.
+ */
 object Debug {
-
-    @Volatile var showFps: Boolean = false
-
-    @Volatile var colliderVisualization: Boolean = false
-
-    /** Toggled by the F3 key (see `GameConfig.toggleMomentumOverlayKey`). */
-    @Volatile var showMomentumOverlay: Boolean = false
-
-    /** Updated by the runtime each frame; read by overlay drawing code. */
-    @Volatile var currentFps: Float = 0f
-
     val log: LogConfig = LogConfig()
 }

@@ -12,8 +12,11 @@ def _ready(self):
 
 def _wire_scoring(self):
     ball_node = self._node.findChild("Ball")
-    left_score_node = self._node.findChild("leftScore")
-    right_score_node = self._node.findChild("rightScore")
+    # Scores live under the HUD CanvasLayer (screen-space). Walk through it to
+    # reach the per-side score Node2Ds.
+    hud = self._node.findChild("Hud")
+    left_score_node = hud.findChild("leftScore") if hud is not None else None
+    right_score_node = hud.findChild("rightScore") if hud is not None else None
     if ball_node is None:
         return
     ball = script_of(ball_node)

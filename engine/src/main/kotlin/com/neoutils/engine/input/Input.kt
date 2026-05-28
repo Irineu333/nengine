@@ -23,5 +23,31 @@ interface Input {
 
     fun isMouseDown(button: MouseButton): Boolean
 
-    fun wasMouseClicked(button: MouseButton): Boolean
+    /**
+     * Raw mouse-click query, always reflecting the bare hardware event for the
+     * current tick — never affected by UI consumption. Use this when code needs
+     * to observe the click even if UI absorbed it (rare).
+     */
+    fun wasMouseClickedRaw(button: MouseButton): Boolean
+
+    /**
+     * Mouse-click query honoring UI consumption: returns [wasMouseClickedRaw]
+     * unless [mouseClickConsumed] is `true` for the current tick (set by
+     * [com.neoutils.engine.tree.SceneTree.hitTestUI] when a `Button` absorbs
+     * the click). In MVP, only `MouseButton.Left` is suppressed when consumed;
+     * other buttons fall through.
+     *
+     * Most gameplay scripts call this and get UI-aware behavior for free.
+     */
+    fun wasMouseClicked(button: MouseButton): Boolean =
+        if (mouseClickConsumed && button == MouseButton.Left) false
+        else wasMouseClickedRaw(button)
+
+    /**
+     * Set to `true` by [com.neoutils.engine.tree.SceneTree.hitTestUI] when a
+     * UI widget (e.g. `Button`) absorbs the left click for the current tick.
+     * `SceneTree.hitTestUI` resets this to `false` at its start, so each tick
+     * begins with a clean slate.
+     */
+    var mouseClickConsumed: Boolean
 }

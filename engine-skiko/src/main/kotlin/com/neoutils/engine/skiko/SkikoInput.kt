@@ -26,13 +26,15 @@ class SkikoInput : Input {
 
     @Volatile override var pointerPosition: Vec2 = Vec2.ZERO
 
+    @Volatile override var mouseClickConsumed: Boolean = false
+
     override fun isKeyDown(key: Key): Boolean = key in downKeys
 
     override fun wasKeyPressed(key: Key): Boolean = key in pressedThisTick
 
     override fun isMouseDown(button: MouseButton): Boolean = button in downButtons
 
-    override fun wasMouseClicked(button: MouseButton): Boolean = button in pressedButtonsThisTick
+    override fun wasMouseClickedRaw(button: MouseButton): Boolean = button in pressedButtonsThisTick
 
     fun onAwtKey(event: KeyEvent, pressed: Boolean) {
         val mapped = event.keyCode.awtVkToEngineKey() ?: return

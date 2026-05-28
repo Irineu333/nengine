@@ -22,8 +22,9 @@ internal object NoopRenderer : Renderer {
 
 internal object NoopInput : Input {
     override val pointerPosition: Vec2 = Vec2.ZERO
+    override var mouseClickConsumed: Boolean = false
     override fun isKeyDown(key: Key): Boolean = false
     override fun wasKeyPressed(key: Key): Boolean = false
     override fun isMouseDown(button: MouseButton): Boolean = false
-    override fun wasMouseClicked(button: MouseButton): Boolean = false
+    override fun wasMouseClickedRaw(button: MouseButton): Boolean = false
 }

@@ -5,7 +5,11 @@ import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.input.MouseButton
+import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
+import com.neoutils.engine.scene.CanvasLayer
+import com.neoutils.engine.scene.DebugOverlayLayer
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 
@@ -30,6 +34,23 @@ class SceneTree(val root: Node) {
     /** Set by the runtime (`GameLoop`) at the start of each tick. */
     @Volatile var input: Input? = null
         internal set
+
+    /**
+     * Debug flags read by the auto-inserted `DebugOverlayLayer`. Hosts flip
+     * these in response to `GameConfig.toggleFpsKey` /
+     * `toggleCollidersKey` / `toggleMomentumOverlayKey`; widgets in the
+     * overlay layer read them every draw to decide whether to render.
+     */
+    val debug: DebugFlags = DebugFlags()
+
+    init {
+        // Auto-insert the debug overlay layer as a child of the root if it is
+        // not already present. Idempotent — re-running on a tree whose root
+        // already carries the named layer leaves the tree unchanged.
+        if (root.findChild(DebugOverlayLayer.NODE_NAME) == null) {
+            root.addChild(DebugOverlayLayer())
+        }
+    }
 
     /**
      * Set by [com.neoutils.engine.loop.GameLoop] at construction so engine-side
@@ -98,6 +119,57 @@ class SceneTree(val root: Node) {
         if (root.isLive) root.detachFromLiveTree()
     }
 
+    /**
+     * UI hit-test phase. Runs at the start of each tick (between
+     * `input.beginTick()` and `tree.process(dt)`). Resets
+     * [Input.mouseClickConsumed] to `false`, then — if the left mouse button
+     * fired this tick — walks every reachable `CanvasLayer` top-most-first
+     * (sorted by `(layer desc, dfs-order desc)`); inside each layer subtree
+     * the first enabled `Button` whose `screenRect()` contains the pointer
+     * absorbs the click: it arms its internal press cycle and sets
+     * `input.mouseClickConsumed = true`, after which the walk stops.
+     */
+    fun hitTestUI(input: Input) {
+        input.mouseClickConsumed = false
+        if (!root.isLive) return
+        if (!input.wasMouseClickedRaw(MouseButton.Left)) return
+        val pointer = input.pointerPosition
+        // collectCanvasLayers returns (layer asc, dfs-order asc) via stable sort;
+        // reversing flips to (layer desc, dfs-order desc) — top-most-first.
+        for (layer in collectCanvasLayers().asReversed()) {
+            val hit = findHitButton(layer, pointer)
+            if (hit != null) {
+                hit.armPress()
+                input.mouseClickConsumed = true
+                return
+            }
+        }
+    }
+
+    /**
+     * Reverse-DFS walk of [layer]'s subtree returning the first enabled
+     * `Button` whose `screenRect` contains [pointer]. Reverse order means
+     * the last-drawn (top-most) sibling at every level wins overlap within
+     * the layer. Nested CanvasLayers are skipped — they own their own pass.
+     */
+    private fun findHitButton(layer: CanvasLayer, pointer: Vec2): Button? {
+        for (child in layer.children.asReversed()) {
+            val hit = findHitButtonInSubtree(child, pointer)
+            if (hit != null) return hit
+        }
+        return null
+    }
+
+    private fun findHitButtonInSubtree(node: Node, pointer: Vec2): Button? {
+        if (node is CanvasLayer) return null
+        for (child in node.children.asReversed()) {
+            val hit = findHitButtonInSubtree(child, pointer)
+            if (hit != null) return hit
+        }
+        if (node is Button && node.hitTest(pointer)) return node
+        return null
+    }
+
     fun process(dt: Float) {
         if (!root.isLive) return
         runTraversal(rendering = false) { traverseProcess(root, dt) }
@@ -110,16 +182,24 @@ class SceneTree(val root: Node) {
 
     fun render(renderer: Renderer) {
         if (!root.isLive) return
-        val view = currentCamera()?.computeViewTransform(size)
-        if (view != null) {
-            renderer.pushTransform(view.first, 0f, view.second)
-            try {
-                runTraversal(rendering = true) { traverseDraw(root, renderer) }
-            } finally {
-                renderer.popTransform()
+        runTraversal(rendering = true) {
+            // World pass: skip CanvasLayer subtrees, apply Camera2D view transform.
+            val view = currentCamera()?.computeViewTransform(size)
+            if (view != null) {
+                renderer.pushTransform(view.first, 0f, view.second)
+                try {
+                    traverseWorldDraw(root, renderer)
+                } finally {
+                    renderer.popTransform()
+                }
+            } else {
+                traverseWorldDraw(root, renderer)
             }
-        } else {
-            runTraversal(rendering = true) { traverseDraw(root, renderer) }
+            // UI pass: each CanvasLayer in (layer asc, dfs-order asc) starts from identity.
+            val layers = collectCanvasLayers()
+            for (layer in layers) {
+                traverseCanvasLayerSubtree(layer, renderer)
+            }
         }
     }
 
@@ -201,19 +281,70 @@ class SceneTree(val root: Node) {
         for (child in node.children) traversePhysicsProcess(child, dt)
     }
 
-    private fun traverseDraw(node: Node, renderer: Renderer) {
+    /**
+     * World-pass DFS draw. Visits every reachable Node2D/Node, applying
+     * per-Node2D `pushTransform`/`popTransform`. CanvasLayer subtrees are
+     * skipped entirely — they are drawn during the UI pass.
+     */
+    private fun traverseWorldDraw(node: Node, renderer: Renderer) {
+        if (node is CanvasLayer) return
         if (node is Node2D) {
             val t = node.transform
             renderer.pushTransform(t.position, t.rotation, t.scale)
             try {
                 node.onDraw(renderer)
-                for (child in node.children) traverseDraw(child, renderer)
+                for (child in node.children) traverseWorldDraw(child, renderer)
             } finally {
                 renderer.popTransform()
             }
         } else {
             node.onDraw(renderer)
-            for (child in node.children) traverseDraw(child, renderer)
+            for (child in node.children) traverseWorldDraw(child, renderer)
         }
+    }
+
+    /**
+     * UI-pass draw of a CanvasLayer's subtree. The renderer enters this call
+     * with identity transform (no Camera2D view in effect) — the layer itself
+     * does not push, only its Node2D descendants do.
+     */
+    private fun traverseCanvasLayerSubtree(layer: CanvasLayer, renderer: Renderer) {
+        layer.onDraw(renderer)
+        for (child in layer.children) traverseUiDraw(child, renderer)
+    }
+
+    private fun traverseUiDraw(node: Node, renderer: Renderer) {
+        // Nested CanvasLayers are flattened at collection time: each is rendered
+        // once in the global (layer, dfs-order) sequence, so we skip them here.
+        if (node is CanvasLayer) return
+        if (node is Node2D) {
+            val t = node.transform
+            renderer.pushTransform(t.position, t.rotation, t.scale)
+            try {
+                node.onDraw(renderer)
+                for (child in node.children) traverseUiDraw(child, renderer)
+            } finally {
+                renderer.popTransform()
+            }
+        } else {
+            node.onDraw(renderer)
+            for (child in node.children) traverseUiDraw(child, renderer)
+        }
+    }
+
+    /**
+     * Collects every reachable CanvasLayer in stable `(layer asc, dfs-order asc)`
+     * order. DFS pre-order gives discovery order; the sort by `layer` is stable
+     * so DFS order survives as tie-break.
+     */
+    internal fun collectCanvasLayers(): List<CanvasLayer> {
+        val out = mutableListOf<CanvasLayer>()
+        collectCanvasLayers(root, out)
+        return out.sortedBy { it.layer }
+    }
+
+    private fun collectCanvasLayers(node: Node, out: MutableList<CanvasLayer>) {
+        if (node is CanvasLayer) out += node
+        for (child in node.children) collectCanvasLayers(child, out)
     }
 }

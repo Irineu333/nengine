@@ -18,13 +18,16 @@ import com.neoutils.engine.physics.Shape2D
 import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
+import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Label
 import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.scene.Panel
 import com.neoutils.engine.scene.Polygon2D
 import com.neoutils.engine.serialization.NodeRef
 import com.neoutils.engine.serialization.NodeRegistry
@@ -164,6 +167,9 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
         bindings.putMember("Line2D", Line2D::class.java)
         bindings.putMember("Polygon2D", Polygon2D::class.java)
         bindings.putMember("Label", Label::class.java)
+        bindings.putMember("CanvasLayer", CanvasLayer::class.java)
+        bindings.putMember("Panel", Panel::class.java)
+        bindings.putMember("Button", Button::class.java)
         bindings.putMember("Signal", Signal::class.java)
 
         val runtimeCode = PythonScriptHost::class.java.getResourceAsStream("/_nengine_runtime.py")

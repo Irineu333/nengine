@@ -151,6 +151,68 @@ class Polygon2D(Node2D):
     color: Color
 
 
+class CanvasLayer(Node):
+    """Screen-space scope inside the scene tree. Descendants render decoupled
+    from any ``Camera2D`` view transform, useful for HUDs, menus and overlays.
+
+    ``SceneTree.render`` walks the world subtree first (skipping every
+    ``CanvasLayer``), then walks all CanvasLayers in ``(layer asc, dfs-order
+    asc)`` order with identity transform at each layer boundary. Higher
+    ``layer`` paints on top of lower ``layer``."""
+
+    layer: int
+
+
+class Panel(Node2D):
+    """Filled rectangle in screen-space (when placed under ``CanvasLayer``) or
+    world-space (when not). Optional ``border`` is drawn as an unfilled rect
+    on top of the fill."""
+
+    size: Vec2
+    color: Color
+    border: Optional["Border"]
+
+
+class Border:
+    """Outline descriptor for :class:`Panel`. ``width`` is in renderer units
+    (screen pixels under a CanvasLayer); not all backends honor it today."""
+
+    color: Color
+    width: float
+
+
+class Button(Node2D):
+    """Pushable widget. Hit-test is geometric (rect contains pointer), not
+    physics-based. Place under a :class:`CanvasLayer` for screen-space input.
+
+    ``pressed`` emits exactly once per click cycle when mouse-up occurs inside
+    the button rect AND the most recent mouse-down was also inside. Drag-out
+    cancels. ``disabled = True`` suppresses both emission and hit-test
+    consumption.
+
+    Connect handlers in ``_ready``::
+
+        # extends Button
+
+        def _ready(self):
+            self.pressed.connect(self._on_pressed)
+
+        def _on_pressed(self, _):
+            print("clicked")
+    """
+
+    size: Vec2
+    text: str
+    textSize: float
+    textColor: Color
+    normalColor: Color
+    hoverColor: Color
+    pressedColor: Color
+    disabledColor: Color
+    disabled: bool
+    pressed: Signal
+
+
 class TimerMode:
     """Selects which engine tick advances a ``Timer``. ``PHYSICS`` (default)
     drains during ``onPhysicsProcess`` at the fixed step — deterministic. ``IDLE``

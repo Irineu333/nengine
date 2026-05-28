@@ -5,13 +5,16 @@ import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.RigidBody2D
 import com.neoutils.engine.physics.StaticBody2D
+import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
+import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Label
 import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.scene.Panel
 import com.neoutils.engine.scene.Polygon2D
 import com.neoutils.engine.scene.Timer
 import kotlin.reflect.KClass
@@ -72,6 +75,9 @@ object NodeRegistry {
         register(Line2D::class) { Line2D() }
         register(Polygon2D::class) { Polygon2D() }
         register(Label::class) { Label() }
+        register(CanvasLayer::class) { CanvasLayer() }
+        register(Panel::class) { Panel() }
+        register(Button::class) { Button() }
         register(Area2D::class) { Area2D() }
         register(StaticBody2D::class) { StaticBody2D() }
         register(CharacterBody2D::class) { CharacterBody2D() }

@@ -1,8 +1,7 @@
 package com.neoutils.engine.skiko
 
-import com.neoutils.engine.dx.Debug
 import com.neoutils.engine.dx.FpsCounter
-import com.neoutils.engine.dx.renderDebugOverlay
+import com.neoutils.engine.dx.MomentumOverlay
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Color
@@ -56,23 +55,28 @@ class SkikoHost : GameHost {
                 lastNanos = nanoTime
 
                 input.beginTick()
-                Debug.currentFps = fps.record(nanoTime)
+                tree.debug.currentFps = fps.record(nanoTime)
                 tree.resize(width.toFloat(), height.toFloat())
+                // Poll toggle keys BEFORE loop.tick so `hitTestUI` sees the
+                // updated flags on the same tick they were pressed. The
+                // edge-detected `wasKeyPressed` was populated by `beginTick`
+                // above; flipping the flags here writes into `tree.debug`,
+                // which the auto-inserted `DebugOverlayLayer` consults on
+                // each draw.
+                if (input.wasKeyPressed(config.toggleFpsKey)) {
+                    tree.debug.showFps = !tree.debug.showFps
+                }
+                if (input.wasKeyPressed(config.toggleCollidersKey)) {
+                    tree.debug.showColliders = !tree.debug.showColliders
+                }
+                if (input.wasKeyPressed(config.toggleMomentumOverlayKey)) {
+                    tree.debug.showMomentum = !tree.debug.showMomentum
+                    if (tree.debug.showMomentum) MomentumOverlay.reset()
+                }
                 renderer.bind(canvas)
                 try {
                     renderer.clear(Color.BLACK)
                     loop.tick(pendingDt)
-                    if (input.wasKeyPressed(config.toggleFpsKey)) {
-                        Debug.showFps = !Debug.showFps
-                    }
-                    if (input.wasKeyPressed(config.toggleCollidersKey)) {
-                        Debug.colliderVisualization = !Debug.colliderVisualization
-                    }
-                    if (input.wasKeyPressed(config.toggleMomentumOverlayKey)) {
-                        Debug.showMomentumOverlay = !Debug.showMomentumOverlay
-                        if (Debug.showMomentumOverlay) com.neoutils.engine.dx.MomentumOverlay.reset()
-                    }
-                    renderDebugOverlay(renderer, tree)
                 } finally {
                     renderer.unbind()
                 }

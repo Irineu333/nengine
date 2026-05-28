@@ -12,10 +12,9 @@ def _ready(self):
     self.color = Color(c.r, c.g, c.b, 0.0)
     self._centered = False
 
-    camera = self._node.parent.findChild("Camera2D")
-    self._bounds = camera.bounds
-
-    snake_node = self._node.parent.findChild("Snake")
+    # GameOverLabel now lives in screen-space under the Hud CanvasLayer,
+    # so we center to `tree.size` directly. No Camera2D dependency.
+    snake_node = self._node.parent.parent.findChild("Snake")
     snake = script_of(snake_node)
     snake.gameOver.connect(lambda _v: _show(self))
     snake.restart.connect(lambda _v: _hide(self))
@@ -24,12 +23,14 @@ def _ready(self):
 def _draw(self, renderer):
     # Label parent already drew the text this frame; we piggyback on the first
     # _draw to obtain the renderer and reposition ourselves to the center of
-    # the camera bounds. From frame 2 onward the position is correct.
+    # the screen surface. From frame 2 onward the position is correct.
     if not self._centered:
+        tree = self._node.tree
+        if tree is None:
+            return
         m = renderer.measureText(self.text, self.size)
-        b = self._bounds
-        cx = b.origin.x + b.size.x / 2.0 - m.x / 2.0
-        cy = b.origin.y + b.size.y / 2.0 - m.y / 2.0
+        cx = tree.size.x / 2.0 - m.x / 2.0
+        cy = tree.size.y / 2.0 - m.y / 2.0
         self.position = Vec2(cx, cy)
         self._centered = True
 

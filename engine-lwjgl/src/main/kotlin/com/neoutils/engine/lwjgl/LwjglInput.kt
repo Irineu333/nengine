@@ -26,6 +26,8 @@ class LwjglInput : Input {
 
     @Volatile private var pointer: Vec2 = Vec2.ZERO
 
+    @Volatile override var mouseClickConsumed: Boolean = false
+
     override val pointerPosition: Vec2 get() = pointer
 
     override fun isKeyDown(key: Key): Boolean = key in keysDown
@@ -34,7 +36,7 @@ class LwjglInput : Input {
 
     override fun isMouseDown(button: MouseButton): Boolean = button in mouseDown
 
-    override fun wasMouseClicked(button: MouseButton): Boolean = button in mouseClickedThisTick
+    override fun wasMouseClickedRaw(button: MouseButton): Boolean = button in mouseClickedThisTick
 
     fun beginTick() {
         keysPressedThisTick.clear()

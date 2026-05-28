@@ -23,7 +23,10 @@ import com.neoutils.engine.physics.Shape2D
 import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
+import com.neoutils.engine.scene.CanvasLayer
+import com.neoutils.engine.scene.Panel
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Label
@@ -437,6 +440,9 @@ class LuaScriptHost internal constructor(internal val globals: Globals) : Script
         put("Node2D", Node2D::class.java)
         put("Camera2D", Camera2D::class.java)
         put("Label", Label::class.java)
+        put("CanvasLayer", CanvasLayer::class.java)
+        put("Panel", Panel::class.java)
+        put("Button", Button::class.java)
         put("ColorRect", ColorRect::class.java)
         put("Circle2D", Circle2D::class.java)
         put("Line2D", Line2D::class.java)

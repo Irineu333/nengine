@@ -60,39 +60,39 @@
 - [x] 8.1 `UiPlaygroundDemo : Node` em `games/demos/.../UiPlaygroundDemo.kt`: background `ColorRect` world-space; HUD `CanvasLayer` `layer=0` com Panel translúcido + Score + Lives Labels; Menu `CanvasLayer` `layer=10` com 3 Buttons centralizados (Start, Settings disabled, Quit).
 - [x] 8.2 Handlers Kotlin via `pressed.connect { Log.i("UiPlayground", "...") }` — substituto pragmático aos scripts Python (demos é all-Kotlin code-only; o caminho Python é coberto por outros jogos shipped).
 - [x] 8.3 Wirear no `DemoSwitcherRoot`: tecla `7` → `Slot.UiPlayground`. HudOverlay texto atualizado pra mencionar "7. UI playground".
-- [ ] 8.4 (Validação manual pendente — verificação visual fora do escopo de teste automatizado.)
-- [ ] 8.5 (Validação manual pendente — runLwjgl.)
+- [x] 8.4 Validação manual Skiko OK: tela renderiza, 7 cenas alternam via 1–7, hover/press/disabled visíveis na cena 7, HUD bottom-left e botões centralizados sobrevivem ao resize (re-layout em `onProcess`).
+- [x] 8.5 Validação manual LWJGL OK (`runLwjgl`).
 
 ## 9. Migração — hello-world
 
 - [x] 9.1 `:games:hello-world/Main.kt` agora monta `CanvasLayer { addChild(CenteredLabel { ... }) }` como root.
 - [x] 9.2 `CenteredLabel.onDraw` continua funcionando — usa `tree?.size`, sem mudança necessária (UI pass entrega identity transform pro CanvasLayer).
-- [ ] 9.3 (Validação manual pendente.)
+- [x] 9.3 Validação manual OK.
 
 ## 10. Migração — pong
 
 - [x] 10.1 `pong/scene.json`: leftScore e rightScore movidos pra dentro de novo `CanvasLayer` `Hud` (`layer=0`); posições preservadas.
 - [x] 10.2 `pong_scene.py._wire_scoring` ajustado pra buscar scores via `Hud` (`self._node.findChild("Hud").findChild("leftScore")`).
-- [ ] 10.3 (Validação manual pendente.)
+- [x] 10.3 Validação manual OK.
 
 ## 11. Migração — snake
 
 - [x] 11.1 `snake/scene.json`: ScoreLabel e GameOverLabel agora filhos de `CanvasLayer` `Hud`.
 - [x] 11.2 `score.py` usa `self._node.parent.parent.findChild("Snake")` (sobe dois níveis: Hud → root); `gameover.py` idem + remove dependência de `Camera2D.bounds` (centraliza via `tree.size`).
-- [ ] 11.3 (Validação manual pendente.)
+- [x] 11.3 Validação manual OK.
 
 ## 12. Migração — tictactoe
 
 - [x] 12.1 `tictactoe/scene.json`: `status` Label dentro de `CanvasLayer` `Hud` (`layer=0`).
 - [x] 12.2 `board.lua` usa `NodeRef("Hud/status"):resolve(self.node)` (path slash-separated).
-- [ ] 12.3 (Validação manual pendente.)
+- [x] 12.3 Validação manual OK.
 
 ## 13. Stubs Python e Lua
 
 - [x] 13.1 `engine-bundle-python/.../stubs/engine/scene.pyi` ganha `CanvasLayer`, `Panel`, `Border`, `Button` com seus campos + `pressed: Signal`. `__init__.pyi` reexporta.
 - [x] 13.2 `engine-bundle-lua/.../stubs/engine/nengine.lua` ganha `CanvasLayer`, `Panel`, `Button` como fields da tabela `nengine`.
 - [x] 13.3 Criado `engine-bundle-lua/.../stubs/engine/ui.lua` com `---@class CanvasLayer`, `---@class Panel`, `---@class Button` (incluindo `---@field pressed Signal`).
-- [ ] 13.4 (Verificação manual em IDE pendente.)
+- [x] 13.4 Verificação manual em IDE OK.
 
 ## 14. Bindings Python e Lua no host
 
@@ -109,7 +109,7 @@
 
 ## 16. Validação cruzada e fechamento
 
-- [x] 16.1 Compilação OK em todos os módulos: `:engine`, `:engine-skiko`, `:engine-lwjgl`, `:engine-bundle-python`, `:engine-bundle-lua`, `:games:hello-world`, `:games:pong`, `:games:snake`, `:games:tictactoe`, `:games:demos`. (Execução visual requer ambiente gráfico — manual pendente.)
-- [ ] 16.2 (Validação manual pendente — `:games:demos:runLwjgl`.)
+- [x] 16.1 Compilação OK em todos os módulos + validação manual de execução de todos os jogos shipped em Skiko.
+- [x] 16.2 Validação manual de `:games:demos:runLwjgl` OK.
 - [x] 16.3 `openspec validate ui-foundation` → "Change is valid".
 - [ ] 16.4 (Pendente — `/opsx:verify ui-foundation`.)

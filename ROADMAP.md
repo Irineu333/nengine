@@ -8,6 +8,12 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `game-asteroids`    | Validador final da fundação Godot-style: `:games:asteroids` (Skiko + Python) com nave `CharacterBody2D` e wireframe `Polygon2D` rotacionando em tempo real, balas `Area2D`, N asteróides kinematic simultâneos e cascade de spawn dirigido por signal handler — sem código novo em `:engine`. |
 | `game-pool8`        | Validador do impulso elástico multi-corpo + damping calibrado: `:games:pool8` (Skiko + Lua) com 16 bolas `RigidBody2D` numa mesa de 4 `StaticBody2D` + 6 caçapas `Area2D`, input "puxar e soltar", FSM de turno por quiescência e remoção dinâmica de nodes durante gameplay. |
+| `debug-log-overlay` | `LogOverlayWidget` (screen-space) que também é um `LogSink`, fazendo tail das últimas N entradas do `Log` na tela com cor por nível. `Log` passa a multiplexar sinks (`addSink`/`removeSink`), preservando `ConsoleLogSink`. 5º built-in. |
+| `debug-immediate-draw` | Facade `tree.debug.draw` immediate-mode (espaços `world`/`screen`, verbos `line/rect/circle/polygon/text`); acúmulo por frame, flush nos passes de render, limpeza no tail do `SceneTree.render`, no-op quando off, exposta a Python/Lua. Nova capability, sem deltas. |
+| `debug-physics-gizmos` | Três gizmos dedicados: forma real do collider (círculo, rect rotacionado via `worldCorners` público), setas de velocidade, e pontos/normais de contato resolvidos. Contatos capturados num buffer por-tree gravado pelo `PhysicsSystem.step` (gated). Auto-contida — não depende de `debug-immediate-draw`. |
+| `debug-time-controls` | `timeScale`/`paused`/`requestStep` first-class na `SceneTree`; `GameLoop.tick` escala o `gameplayDt` e trata pause como `dt=0` (mantendo `process`/`hitTestUI`/`render` vivos p/ o HUD operar pausado). `TimeControlWidget` + atalhos vivos sob pause. Default preserva o tick. |
+| `debug-profiler` | `FrameProfile` por-tree com ms por fase do tick (hitTest/physics/process/render/total) + contagem de steps; `GameLoop.tick` instrumenta via `nanoTime` quando habilitado (overhead zero off). `ProfilerWidget` com média móvel. Compõe com `debug-time-controls` no mesmo `tick`. |
+| `debug-scene-inspector` | `SceneInspectorWidget` (remote scene tree): lista a hierarquia viva, seleção por clique self-contained, painel das `@Inspect` + transform world do selecionado. Reflexão só do selecionado por frame; helper público reusando o padrão do `SceneLoader`. Read-only no MVP. |
 
 ## Planned
 
@@ -21,12 +27,6 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | `ui-focus`       | Focus + keyboard navigation (`grab_focus`, Tab/Shift+Tab) e signals `focusEntered`/`focusExited`. Pré-requisito pra TextEdit. |
 | `ui-theme`       | Theme/StyleBox/font system: define cor/borda/font/padding por widget type via override aninhado. |
 | `ui-input-events` | Modelo de eventos enfileirados estilo Godot `_input`/`_gui_input` com `event.accept()`. Só se o polling+consumed atual da `ui-foundation` virar dolorido. |
-| `debug-log-overlay` | Ponte entre os dois pilares de debug: `LogOverlayWidget` (screen-space) que também é um `LogSink`, mostrando as últimas N entradas do `Log` na tela com cor por nível e filtro por tag. Mais barata do bloco de debug — quase zero arquitetura nova sobre `debug-overlay` + `dx-tooling`. |
-| `debug-immediate-draw` | Primitiva immediate-mode `tree.debug.draw.line/circle/text(...)` que acumula gizmos por frame e limpa no fim, exposta a Kotlin e a Python/Lua — substitui o boilerplate de subclassar `WorldDebugWidget` para "só quero ver essa linha esse frame". Destrava `debug-physics-gizmos`. |
-| `debug-physics-gizmos` | Expõe o que o `PhysicsSystem` calcula mas esconde: forma real do collider (círculo, retângulo rotacionado) em vez de só AABB, vetores de velocidade, e pontos/normais de contato resolvidos. Maior retorno didático. Auto-contida — contatos exigem captura durante o TOI loop (buffer por-tree no `tree.debug`), não só desenho, então não depende de `debug-immediate-draw` (decisão revista na proposta). |
-| `debug-time-controls` | `tree.timeScale`, pause e step-frame controlados por row no HUD / teclas — cirúrgico no `GameLoop.tick`. Decisão de design: qual `dt` o `timeScale` afeta (`_physics_process`, `_process`, timers?). Toca o mesmo `tick` que `debug-profiler`. |
-| `debug-profiler` | Profiler por fase do frame (physics step, script process, render, hitTestUI) com ms por fase — ensina onde o tempo vai, além do FPS agregado. Reusa os hooks de timing instrumentados no `GameLoop` por `debug-time-controls`. |
-| `debug-scene-inspector` | Remote scene tree inspector (screen-space): lista a hierarquia viva de Nodes e expande um node mostrando transform/velocity/properties via a disciplina `@Inspect` existente. Mais pesado do bloco; feito por último com a primitiva de draw e os controles de tempo no lugar. |
 
 ## Como manter
 

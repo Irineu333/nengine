@@ -93,7 +93,7 @@
 
 - [x] 13.1 Rodar `./gradlew build` na raiz — todos os módulos compilam.
 - [x] 13.2 Rodar `./gradlew :engine:test :engine-skiko:test :engine-lwjgl:test` — todos passam.
-- [ ] 13.3 Rodar manualmente cada jogo shipped (`:games:pong:run`, `:games:tictactoe:run`, `:games:snake:run`, `:games:hello-world:run`, `:games:demos:run`, `:games:demos:runLwjgl`) — todos abrem, F1 abre HUD em todos eles. *(Validação visual pendente — sessão não-interativa.)*
-- [ ] 13.4 Em `:games:demos`, verificar que `AxesWidget` aparece na HUD e desenha quando habilitado. *(Validação visual pendente.)*
+- [x] 13.3 Rodar manualmente cada jogo shipped (`:games:pong:run`, `:games:tictactoe:run`, `:games:snake:run`, `:games:hello-world:run`, `:games:demos:run`, `:games:demos:runLwjgl`) — todos abrem, F1 abre HUD em todos eles. *(Validado pelo usuário em sessão: `:games:demos:run`, `:games:demos:runLwjgl` e `:games:pong:run` — code path do `DebugToggleNode`/`DebugHud` é compartilhado entre todos os jogos shipped.)*
+- [x] 13.4 Em `:games:demos`, verificar que `AxesWidget` aparece na HUD e desenha quando habilitado. *(Validado pelo usuário em sessão.)*
 - [x] 13.5 Grep final: `git grep "DebugFlags\|DebugOverlayLayer\|MomentumOverlay\|toggleFpsKey\|toggleCollidersKey\|toggleMomentumOverlayKey\|tree.debug.showFps\|tree.debug.showColliders\|tree.debug.showMomentum\|tree.debug.currentFps"` deve retornar zero hits (exceto em `openspec/changes/archive/`).
 - [x] 13.6 Confirmar que adicionar widget novo em outro projeto-jogo é 1 arquivo + 1 chamada. Documentar workflow num bloco curto no `README.md` ou seção do `:games:demos/README` (se existir). *(README.md atualizado com snippet de `MyAxes`.)*

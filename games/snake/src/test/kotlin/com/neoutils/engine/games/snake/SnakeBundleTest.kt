@@ -2,6 +2,7 @@ package com.neoutils.engine.games.snake
 
 import com.neoutils.engine.bundle.BundleLoader
 import com.neoutils.engine.bundle.python.PythonScriptHost
+import com.neoutils.engine.debug.DrawCommand
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Label
@@ -50,8 +51,12 @@ class SnakeBundleTest {
         assertEquals(TimerMode.PHYSICS, timer.processCallback)
 
         assertNotNull(root.findChild("Food") as? ColorRect, "Food missing")
-        assertNotNull(root.findChild("ScoreLabel") as? Label, "ScoreLabel missing")
-        assertNotNull(root.findChild("GameOverLabel") as? Label, "GameOverLabel missing")
+        // ScoreLabel / GameOverLabel live under the Hud CanvasLayer, and
+        // findChild only looks at direct children — navigate through Hud.
+        val hud = root.findChild("Hud")
+        assertNotNull(hud, "Hud missing")
+        assertNotNull(hud.findChild("ScoreLabel") as? Label, "ScoreLabel missing")
+        assertNotNull(hud.findChild("GameOverLabel") as? Label, "GameOverLabel missing")
     }
 
     @Test
@@ -84,5 +89,31 @@ class SnakeBundleTest {
         assertTrue(headHit, "no segment at expected head (300,200); got ${segments.map { it.position }}")
 
         timer.stop() // quiet any future ticks during teardown
+    }
+
+    @Test
+    fun `snake world grid is off by default and enqueues lines once enabled`() {
+        val python = PythonScriptHost.create()
+        val root = BundleLoader.fromResources("snake", scripting = python)
+        val tree = SceneTree(root = root)
+        tree.start()
+
+        // Disabled by default — `_process` calls the draw verbs but they no-op.
+        assertEquals(false, tree.debug.draw.enabled, "immediate-draw must be off by default")
+        tree.process(0.016f)
+        assertEquals(0, tree.debug.draw.world.commands.size, "no gizmos while disabled")
+
+        // Enabling (as the F1 HUD "Debug Draw" row does) makes the same script
+        // path enqueue the grid into the world buffer (cleared on render — so
+        // assert before rendering).
+        tree.debug.draw.enabled = true
+        tree.process(0.016f)
+
+        val lines = tree.debug.draw.world.commands
+        // Grid is 20×20 cells → 21 vertical + 21 horizontal lines.
+        assertEquals(42, lines.size, "expected 42 grid lines, got ${lines.size}")
+        assertTrue(lines.all { it is DrawCommand.Line }, "all grid commands must be lines")
+
+        (root.findChild("Snake") as Node2D).findChild("MoveTimer")?.let { (it as Timer).stop() }
     }
 }

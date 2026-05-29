@@ -34,6 +34,7 @@ def _process(self, dt):
     tree = self.tree
     if tree is None:
         return
+    _draw_grid(self, tree)
     input_ref = tree.input
     if input_ref is None:
         return
@@ -85,6 +86,30 @@ def _spawn_initial(self):
         seg = _make_segment(cs, cx, cy)
         self._segments.append(seg)
         self._node.addChild(seg)
+
+
+def _draw_grid(self, tree):
+    # Emit the world grid as immediate-draw lines every frame. Off by default
+    # (the verbs are no-ops until "Debug Draw" is ticked in the F1 HUD), so a
+    # normal game frame stays clean. The buffers are cleared by the engine
+    # after render, so there is no accumulation — and because the lines go on
+    # `draw.world`, they ride the snake's Camera2D view transform exactly like
+    # the segments do.
+    cs = self.cellSize
+    width = self._grid_w * cs
+    height = self._grid_h * cs
+    color = Color(1.0, 1.0, 1.0, 0.12)
+    world = tree.debug.draw.world
+    col = 0
+    while col <= self._grid_w:
+        gx = col * cs
+        world.line(Vec2(gx, 0.0), Vec2(gx, height), color)
+        col += 1
+    row = 0
+    while row <= self._grid_h:
+        gy = row * cs
+        world.line(Vec2(0.0, gy), Vec2(width, gy), color)
+        row += 1
 
 
 def _make_segment(cell_size, cx, cy):

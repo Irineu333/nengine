@@ -40,3 +40,12 @@
 
 - [x] 7.1 Rodar a suíte do `:engine`, `:engine-bundle-python` e `:engine-bundle-lua`; garantir verde.
 - [x] 7.2 `openspec validate debug-immediate-draw --strict` e revisar coerência specs↔implementação.
+
+## 8. Validação manual
+
+- [x] 8.1 Demonstrar via script real: o `snake.py` emite o grid 20×20 do mundo em `tree.debug.draw.world` a cada `_process` (desligado por padrão — auxílio de debug fiel ao uso real). Coberto por teste de bundle.
+- [ ] 8.2 **Teste manual (obrigatório antes do archive):** rodar `./gradlew :games:snake:run` e confirmar visualmente:
+  - a tela começa limpa (grid desligado por padrão);
+  - abrir o HUD (`F1`) e marcar a row "Debug Draw" → o grid do mundo aparece atrás da cobra, alinhado às células e à `Camera2D`;
+  - desmarcar → o grid some;
+  - nenhum acúmulo/rastro entre frames (buffers limpos a cada frame).

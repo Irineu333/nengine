@@ -1,6 +1,7 @@
 package com.neoutils.engine.dx
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 fun interface LogSink {
     fun emit(timestampMillis: Long, level: LogLevel, tag: String, message: String)
@@ -36,7 +37,23 @@ object Log {
     /** Process-wide log configuration. Read by [log] before emitting. */
     val config: LogConfig = LogConfig()
 
-    @Volatile var sink: LogSink = ConsoleLogSink
+    /**
+     * Registered delivery targets. Copy-on-write so the hot [log] path can
+     * iterate lock-free from any thread while the rare [addSink]/[removeSink]
+     * (UI toggles, test setup) mutate concurrently. Seeded with
+     * [ConsoleLogSink] so console output survives unless explicitly removed.
+     */
+    private val sinks = CopyOnWriteArrayList<LogSink>(arrayOf(ConsoleLogSink))
+
+    /** Registers [sink]; idempotent — the same instance is never added twice. */
+    fun addSink(sink: LogSink) {
+        sinks.addIfAbsent(sink)
+    }
+
+    /** Unregisters [sink]; a no-op when it is not currently registered. */
+    fun removeSink(sink: LogSink) {
+        sinks.remove(sink)
+    }
 
     fun d(tag: String, message: String) = log(LogLevel.Debug, tag, message)
     fun i(tag: String, message: String) = log(LogLevel.Info, tag, message)
@@ -45,6 +62,7 @@ object Log {
 
     private fun log(level: LogLevel, tag: String, message: String) {
         if (level.ordinal < config.effectiveLevel(tag).ordinal) return
-        sink.emit(System.currentTimeMillis(), level, tag, message)
+        val timestamp = System.currentTimeMillis()
+        for (sink in sinks) sink.emit(timestamp, level, tag, message)
     }
 }

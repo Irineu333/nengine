@@ -1,6 +1,5 @@
 package com.neoutils.engine.physics
 
-import com.neoutils.engine.dx.ConsoleLogSink
 import com.neoutils.engine.dx.Log
 import com.neoutils.engine.dx.LogLevel
 import com.neoutils.engine.dx.LogSink
@@ -69,6 +68,11 @@ private class RecordingArea(
 }
 
 class PhysicsSystemTest {
+
+    private val physicsWarnings = mutableListOf<String>()
+    private val physicsWarningSink = LogSink { _, level, tag, message ->
+        if (level == LogLevel.Warn && tag == "PhysicsSystem") physicsWarnings += message
+    }
 
     @Test
     fun `non-overlapping objects do not fire enter`() {
@@ -308,22 +312,20 @@ class PhysicsSystemTest {
         val tree = SceneTree(root)
         tree.start()
 
-        val warnings = mutableListOf<String>()
-        Log.sink = LogSink { _, level, tag, message ->
-            if (level == LogLevel.Warn && tag == "PhysicsSystem") warnings += message
-        }
+        physicsWarnings.clear()
+        Log.addSink(physicsWarningSink)
 
         PhysicsSystem().step(tree, 1f / 60f)
 
         assertTrue(
-            warnings.any { it.contains("MAX_RESOLUTION_ITERATIONS") },
-            "expected PhysicsSystem warning naming MAX_RESOLUTION_ITERATIONS, got $warnings"
+            physicsWarnings.any { it.contains("MAX_RESOLUTION_ITERATIONS") },
+            "expected PhysicsSystem warning naming MAX_RESOLUTION_ITERATIONS, got $physicsWarnings"
         )
     }
 
     @AfterTest
     fun restoreLogSink() {
-        Log.sink = ConsoleLogSink
+        Log.removeSink(physicsWarningSink)
     }
 
     private class OscillatingBody(

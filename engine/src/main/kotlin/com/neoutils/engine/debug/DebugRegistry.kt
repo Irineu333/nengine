@@ -4,10 +4,10 @@ import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
 
 /**
- * Per-`SceneTree` runtime registry of debug widgets. Holds the four engine
- * built-ins ([fps], [colliders], [momentum], [hud]) as fields for ergonomic
- * direct access, plus a flat list of every registered widget (built-ins +
- * user-registered, in registration order).
+ * Per-`SceneTree` runtime registry of debug widgets. Holds the five engine
+ * built-ins ([fps], [colliders], [momentum], [log], [hud]) as fields for
+ * ergonomic direct access, plus a flat list of every registered widget
+ * (built-ins + user-registered, in registration order).
  *
  * Not a `Node`, never `@Serializable`, never shared across trees —
  * `SceneTree` owns one instance via its constructor.
@@ -24,6 +24,7 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     val fps: FpsWidget = FpsWidget()
     val colliders: ColliderWidget = ColliderWidget()
     val momentum: MomentumWidget = MomentumWidget()
+    val log: LogOverlayWidget = LogOverlayWidget()
     val hud: DebugHud = DebugHud()
 
     val widgets: List<DebugWidget> get() = _widgets
@@ -34,7 +35,7 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
 
     /**
      * Called by `DebugLayer.onEnter`. Captures the container references and,
-     * on first attach, routes the four built-ins through [register]. On
+     * on first attach, routes the five built-ins through [register]. On
      * re-start (stop → start) the layer keeps its children — only the
      * container refs are refreshed.
      */
@@ -46,6 +47,7 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             register(fps)
             register(colliders)
             register(momentum)
+            register(log)
             register(hud)
         }
     }

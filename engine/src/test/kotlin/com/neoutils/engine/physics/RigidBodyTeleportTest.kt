@@ -15,20 +15,19 @@ import kotlin.test.assertTrue
 class RigidBodyTeleportTest {
 
     private val warnings = mutableListOf<String>()
-    private lateinit var oldSink: LogSink
+    private val sink = LogSink { _, level, tag, msg ->
+        if (level == LogLevel.Warn && tag == "RigidBody2D") warnings += msg
+    }
 
     @BeforeTest
     fun setUp() {
         warnings.clear()
-        oldSink = Log.sink
-        Log.sink = LogSink { _, level, tag, msg ->
-            if (level == LogLevel.Warn && tag == "RigidBody2D") warnings += msg
-        }
+        Log.addSink(sink)
     }
 
     @AfterTest
     fun tearDown() {
-        Log.sink = oldSink
+        Log.removeSink(sink)
     }
 
     @Test

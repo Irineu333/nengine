@@ -16,20 +16,18 @@ private class RecordingSink : LogSink {
 class LogTest {
 
     private lateinit var sink: RecordingSink
-    private var previousSink: LogSink = ConsoleLogSink
     private var previousGlobal: LogLevel = LogLevel.Info
 
     @BeforeTest
     fun setup() {
         sink = RecordingSink()
-        previousSink = Log.sink
         previousGlobal = Log.config.globalLevel
-        Log.sink = sink
+        Log.addSink(sink)
     }
 
     @AfterTest
     fun teardown() {
-        Log.sink = previousSink
+        Log.removeSink(sink)
         Log.config.globalLevel = previousGlobal
         Log.config.clearTagLevel("Physics")
         Log.config.clearTagLevel("Render")

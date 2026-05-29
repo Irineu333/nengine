@@ -58,14 +58,19 @@ unchanged and SHALL NOT be replaced by this widget.
 
 `VelocityGizmoWidget` SHALL extend `WorldDebugWidget` and, when `enabled`,
 SHALL walk every live, non-disabled `RigidBody2D` and `CharacterBody2D` and
-draw a line from the body's world position along its linear velocity scaled
-by a configurable scale factor (`var velocityScale: Float` — named to avoid
-shadowing `Node2D.scale: Vec2`). A body with zero linear velocity SHALL
-produce no line. It SHALL NOT call `pushTransform`/`popTransform`.
+draw a line from an anchor along its linear velocity scaled by a configurable
+scale factor (`var velocityScale: Float` — named to avoid shadowing
+`Node2D.scale: Vec2`). The anchor SHALL be the world-space centroid of the
+body's active collision shapes (falling back to the node's world position when
+it has none): linear velocity is identical at every point of a body, so the
+anchor is cosmetic, and centering it on the shapes keeps the arrow on the
+visible body even when the node origin sits off-center. A body with zero
+linear velocity SHALL produce no line. It SHALL NOT call
+`pushTransform`/`popTransform`.
 
 #### Scenario: Moving rigid body gets a velocity line
 
-- **GIVEN** a `RigidBody2D` at world position `p` with `linearVelocity = v` (non-zero), widget enabled with `velocityScale = s`
+- **GIVEN** a `RigidBody2D` whose active collision shapes are centered at world point `p`, with `linearVelocity = v` (non-zero), widget enabled with `velocityScale = s`
 - **WHEN** a frame is rendered against a recording `Renderer`
 - **THEN** a `drawLine` from `p` to `p + v * s` SHALL be observed
 

@@ -100,6 +100,33 @@ class PhysicsGizmosTest {
     }
 
     @Test
+    fun `VelocityGizmoWidget anchors the arrow at the shape centroid, not the node origin`() {
+        val rigid = RigidBody2D().apply {
+            transform = Transform(position = Vec2(0f, 0f))
+            linearVelocity = Vec2(100f, 0f)
+        }
+        // Circle centered at body-local (10, 0): node origin != shape center.
+        rigid.addChild(CollisionShape2D().apply {
+            transform = Transform(position = Vec2(10f, 0f))
+            shape = CircleShape2D().apply { radius = 5f }
+        })
+        val tree = SceneTree(Node().apply { addChild(rigid) }).also { it.start() }
+        val widget = tree.debug.velocityGizmo
+        widget.enabled = true
+        widget.velocityScale = 0.1f
+
+        val recorder = RecordingRenderer()
+        widget.drawDebug(recorder)
+
+        // Arrow base at the shape center (10,0), NOT the node origin (0,0);
+        // tip at (10,0) + v*scale = (10,0) + (10,0) = (20,0).
+        val main = recorder.events.filterIsInstance<RecordedEvent.Line>().firstOrNull {
+            near(it.from.x, 10f) && near(it.from.y, 0f) && near(it.to.x, 20f) && near(it.to.y, 0f)
+        }
+        assertNotNull(main, "arrow must start at the shape centroid; got ${recorder.events}")
+    }
+
+    @Test
     fun `VelocityGizmoWidget draws nothing for a stationary body`() {
         val character = CharacterBody2D().apply {
             transform = Transform(position = Vec2(40f, 40f))

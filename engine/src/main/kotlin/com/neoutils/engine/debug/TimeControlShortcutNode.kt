@@ -14,7 +14,11 @@ import com.neoutils.engine.scene.Node
  * `GameLoop` keeps `process` running under pause (`dt = 0`), the shortcuts
  * stay responsive while the world is frozen. Not a `DebugWidget`: no HUD row,
  * no `drawDebug`, mirroring `DebugToggleNode`. Keys are public `var`s so a
- * game can rebind them to avoid gameplay conflicts.
+ * game can rebind them.
+ *
+ * Gated on `tree.debug.timeControls.enabled`: the shortcuts fire only while
+ * the Time widget is toggled on, so the default bindings never collide with
+ * gameplay input when debug is closed.
  */
 internal class TimeControlShortcutNode : Node() {
 
@@ -28,6 +32,7 @@ internal class TimeControlShortcutNode : Node() {
     override fun onProcess(dt: Float) {
         super.onProcess(dt)
         val owningTree = tree ?: return
+        if (!owningTree.debug.timeControls.enabled) return
         val input = owningTree.input ?: return
         if (input.wasKeyPressed(pauseKey)) {
             owningTree.paused = !owningTree.paused

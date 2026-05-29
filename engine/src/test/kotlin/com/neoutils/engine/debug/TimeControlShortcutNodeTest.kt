@@ -26,6 +26,7 @@ class TimeControlShortcutNodeTest {
         SceneTree(Node()).also {
             it.start()
             it.input = input
+            it.debug.timeControls.enabled = true
         }
 
     @Test
@@ -59,5 +60,17 @@ class TimeControlShortcutNodeTest {
         input.pressedKey = Key.U
         tree.process(0f)
         assertEquals(1f, tree.timeScale, "U steps speed down")
+    }
+
+    @Test
+    fun `shortcuts are inert while the Time widget is disabled`() {
+        val input = ShortcutKeyInput(pressedKey = Key.P)
+        val tree = SceneTree(Node()).also {
+            it.start()
+            it.input = input
+        }
+        // timeControls left disabled (the production default).
+        tree.process(0f)
+        assertFalse(tree.paused, "pause key must not fire when the Time widget is off")
     }
 }

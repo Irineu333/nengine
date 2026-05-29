@@ -94,7 +94,15 @@ pause/resume, step, and cycling through speed presets — that mutate
 `tree.paused` / `tree.timeScale` / `requestStep()`. These controls SHALL be
 operable while paused (driven through `hitTestUI`). Keyboard shortcuts for
 the same actions SHALL be polled by an internal debug node that runs under
-`process`, so they remain responsive while paused.
+`process`, so they remain responsive while paused. The shortcuts SHALL fire
+only while the widget is enabled, so their default bindings do not collide
+with gameplay input when debug is closed.
+
+#### Scenario: Shortcuts are inert while the widget is disabled
+
+- **GIVEN** the time-control widget disabled (the production default)
+- **WHEN** a time-control shortcut key is pressed
+- **THEN** `tree.paused` / `tree.timeScale` SHALL be unchanged
 
 #### Scenario: Widget is a registered built-in
 

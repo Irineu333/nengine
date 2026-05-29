@@ -51,15 +51,15 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 - `fun unregister(widget: DebugWidget)` — removes the widget from its container and from the list.
 - `val widgets: List<DebugWidget>` — read-only listing of currently registered widgets in registration order.
 - `inline fun <reified T : DebugWidget> find(): T?` — first widget of the requested concrete type, or `null`.
-- Convenience fields for the three built-ins: `val fps: FpsWidget`, `val colliders: ColliderWidget`, `val momentum: MomentumWidget`, `val hud: DebugHud`. These fields point at the engine-owned instances and exist solely as ergonomic shortcuts to flip `enabled`.
+- Convenience fields for the five built-ins: `val fps: FpsWidget`, `val colliders: ColliderWidget`, `val momentum: MomentumWidget`, `val log: LogOverlayWidget`, `val hud: DebugHud`. These fields point at the engine-owned instances and exist solely as ergonomic shortcuts to flip `enabled`.
 
 `DebugRegistry` SHALL NOT be a `Node`, SHALL NOT be `@Serializable`, and SHALL NOT persist across `SceneTree` lifetimes — pure runtime state. Each `SceneTree` instance SHALL own its own `DebugRegistry` (no static or singleton sharing across trees).
 
 #### Scenario: Built-ins are accessible via convenience fields
 
 - **WHEN** a `SceneTree` is constructed and `start()` is called
-- **THEN** `tree.debug.fps`, `tree.debug.colliders`, `tree.debug.momentum`, and `tree.debug.hud` SHALL all be non-null
-- **AND** `tree.debug.widgets` SHALL contain at least these four instances
+- **THEN** `tree.debug.fps`, `tree.debug.colliders`, `tree.debug.momentum`, `tree.debug.log`, and `tree.debug.hud` SHALL all be non-null
+- **AND** `tree.debug.widgets` SHALL contain at least these five instances
 
 #### Scenario: register routes by subtype
 
@@ -89,7 +89,7 @@ The engine SHALL auto-insert a `DebugLayer` (a `Node`) as a child of `SceneTree.
 - `WorldDebugContainer` (a `Node2D` directly under `DebugLayer`) — hosts `WorldDebugWidget` instances. Participates in the world pass of `SceneTree.render`, receiving the active `Camera2D` view transform.
 - `ScreenDebugCanvas` (a `CanvasLayer` with `layer = Int.MAX_VALUE - 1`) — hosts `ScreenDebugWidget` instances. Painted in the UI pass on top of any game UI.
 
-The engine SHALL register the four built-in widgets — `FpsWidget`, `ColliderWidget`, `MomentumWidget`, `DebugHud` — during the auto-insertion. The engine SHALL additionally insert an internal `DebugToggleNode` inside `ScreenDebugCanvas` that polls input each tick (see "DebugHud opens and closes via debugHudKey").
+The engine SHALL register the five built-in widgets — `FpsWidget`, `ColliderWidget`, `MomentumWidget`, `LogOverlayWidget`, `DebugHud` — during the auto-insertion, in that order. The engine SHALL additionally insert an internal `DebugToggleNode` inside `ScreenDebugCanvas` that polls input each tick (see "DebugHud opens and closes via debugHudKey").
 
 Re-inserting on a re-attached tree (stop → start) SHALL be idempotent — the engine SHALL skip the addition when a child named `"__debug"` is already present on root.
 
@@ -104,11 +104,11 @@ Re-inserting on a re-attached tree (stop → start) SHALL be idempotent — the 
 - **WHEN** a `SceneTree` is started, stopped, and started again on the same root
 - **THEN** root SHALL contain exactly one child named `"__debug"`
 
-#### Scenario: ColliderWidget is hosted in world container, not screen
+#### Scenario: Screen-space built-ins are hosted in the screen container
 
 - **WHEN** the engine has finished auto-inserting `DebugLayer`
 - **THEN** `tree.debug.colliders.parent` SHALL be the `WorldDebugContainer` instance
-- **AND** `tree.debug.fps.parent`, `tree.debug.momentum.parent`, and `tree.debug.hud.parent` SHALL all be the `ScreenDebugCanvas` instance
+- **AND** `tree.debug.fps.parent`, `tree.debug.momentum.parent`, `tree.debug.log.parent`, and `tree.debug.hud.parent` SHALL all be the `ScreenDebugCanvas` instance
 
 ### Requirement: ColliderWidget draws world collider AABBs without manual transform
 
@@ -149,6 +149,78 @@ The engine SHALL NOT expose a process-wide `MomentumOverlay` singleton. `GameLoo
 - **THEN** the next `drawDebug` call SHALL see size == 1 (or 0 if no `physicsProcess` happened yet between the flip and the draw)
 - **AND** no samples from the prior enabled window SHALL appear
 
+### Requirement: LogOverlayWidget tails recent log entries on screen
+
+`LogOverlayWidget` SHALL extend `ScreenDebugWidget` and SHALL implement
+`LogSink`. It SHALL own a fixed-capacity ring buffer of the last `N`
+entries (default capacity `12`), each stored as an immutable
+`LogEntry(timestampMillis, level, tag, message)`. As a `LogSink`, its
+`emit(...)` SHALL append the entry to the ring buffer (overwriting the
+oldest when full); `emit` MAY be invoked from any thread.
+
+`LogOverlayWidget` SHALL subscribe and unsubscribe from `Log` based on
+`enabled`, by overriding the `enabled` setter:
+
+- On transition `false → true`: it SHALL call `Log.addSink(this)` and
+  SHALL clear the ring buffer (no stale entries from a prior enabled
+  window).
+- On transition `true → false`: it SHALL call `Log.removeSink(this)`.
+
+While not subscribed (`enabled = false`), the widget SHALL record nothing;
+opening it begins a live tail of subsequently emitted entries, not of past
+history. `drawDebug` SHALL read a consistent snapshot of the buffer safely
+with respect to concurrent `emit` calls (e.g. via synchronization), draw
+the entries anchored to the bottom-left corner of `tree.size` with the
+most recent at the bottom, re-anchored each frame so it follows
+`tree.resize`, and color each line by `LogLevel` (Debug/Info neutral,
+`Warn` amber, `Error` red).
+
+`LogOverlayWidget` SHALL expose `var minLevel: LogLevel` (default
+`LogLevel.Debug`) as a display-only filter: `drawDebug` SHALL skip entries
+whose `level` is below `minLevel`. This filter SHALL be orthogonal to
+`Log.config` — it can only restrict beyond what already reached `emit`,
+never recover entries gated out by `Log.config`.
+
+#### Scenario: Enabling subscribes and clears the buffer
+
+- **GIVEN** `tree.debug.log.enabled = false` with stale entries from a prior window
+- **WHEN** `tree.debug.log.enabled = true` is set
+- **THEN** the widget SHALL be a registered `Log` sink
+- **AND** the ring buffer SHALL be empty until the next `Log.*` call
+
+#### Scenario: Disabling unsubscribes and stops recording
+
+- **GIVEN** `tree.debug.log.enabled = true`
+- **WHEN** `tree.debug.log.enabled = false` is set and then `Log.i(...)` is emitted
+- **THEN** the widget SHALL NOT be a registered `Log` sink
+- **AND** the emitted entry SHALL NOT appear in the widget's buffer
+
+#### Scenario: Ring buffer keeps only the last N entries
+
+- **GIVEN** `tree.debug.log.enabled = true` and capacity `N = 12`
+- **WHEN** `N + 5` entries are emitted via `Log.*` above the gate
+- **THEN** the buffer SHALL hold exactly `N` entries
+- **AND** they SHALL be the `N` most recent, in emission order
+
+#### Scenario: Lines are colored by level
+
+- **GIVEN** `tree.debug.log.enabled = true` with one `Warn` and one `Error` entry buffered
+- **WHEN** a frame is rendered against a recording `Renderer`
+- **THEN** the `drawText` for the `Warn` entry SHALL use the amber color
+- **AND** the `drawText` for the `Error` entry SHALL use the red color
+
+#### Scenario: minLevel filters the display
+
+- **GIVEN** `tree.debug.log.enabled = true`, `minLevel = LogLevel.Warn`, and buffered Debug, Info, Warn, Error entries
+- **WHEN** a frame is rendered
+- **THEN** only the `Warn` and `Error` entries SHALL be drawn
+
+#### Scenario: Disabled overlay emits zero draws
+
+- **GIVEN** `tree.debug.log.enabled = false`
+- **WHEN** a frame is rendered against a recording `Renderer`
+- **THEN** zero draw calls SHALL be attributed to `LogOverlayWidget`
+
 ### Requirement: DebugHud lists registered widgets as togglable rows
 
 `DebugHud` SHALL extend `ScreenDebugWidget` (initial `enabled = false`). When `enabled = true`, it SHALL render a `Panel` pinned to a screen corner (default: top-right, offset 12 px from edges), containing exactly one `Button` per `DebugWidget` currently in `tree.debug.widgets` (excluding `DebugHud` itself). Each `Button`'s label SHALL begin with `"[x] "` if its target widget's `enabled` is `true`, or `"[ ] "` otherwise, followed by the target widget's `title`. Clicking a `Button` SHALL flip the target widget's `enabled` and refresh the row label. The HUD SHALL re-evaluate the list each time `enabled` transitions to `true` (covering widgets registered after the previous HUD open).
@@ -157,9 +229,9 @@ When `enabled = false`, the HUD SHALL emit zero draw calls and SHALL NOT consume
 
 #### Scenario: HUD lists one row per registered widget
 
-- **GIVEN** the four built-ins plus one user-registered `AxesWidget` are in `tree.debug.widgets`
+- **GIVEN** the five built-ins plus one user-registered `AxesWidget` are in `tree.debug.widgets`
 - **WHEN** `tree.debug.hud.enabled = true` and a frame is rendered
-- **THEN** the rendered HUD `Panel` SHALL contain exactly four `Button` children (FPS, Colliders, Momentum, Axes — the HUD itself excluded)
+- **THEN** the rendered HUD `Panel` SHALL contain exactly five `Button` children (FPS, Colliders, Momentum, Log, Axes — the HUD itself excluded)
 - **AND** the label order SHALL match registration order
 
 #### Scenario: Clicking a row flips the target widget's enabled

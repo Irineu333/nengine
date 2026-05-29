@@ -75,10 +75,12 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
         if (visible.isEmpty()) return
 
         // Anchor at the bottom-left, oldest visible line on top, newest at the
-        // base. Re-anchored every frame so it follows tree.resize.
-        val bottom = owningTree.size.y - PADDING
+        // base. `position.y` is the text's top edge, so the newest line's top
+        // sits one LINE_HEIGHT above the padding to keep it fully on screen.
+        // Re-anchored every frame so it follows tree.resize.
+        val newestTop = owningTree.size.y - PADDING - LINE_HEIGHT
         for ((rowFromBottom, entry) in visible.asReversed().withIndex()) {
-            val y = bottom - rowFromBottom * LINE_HEIGHT
+            val y = newestTop - rowFromBottom * LINE_HEIGHT
             renderer.drawText(
                 text = "[${entry.tag}] ${entry.message}",
                 position = Vec2(PADDING, y),

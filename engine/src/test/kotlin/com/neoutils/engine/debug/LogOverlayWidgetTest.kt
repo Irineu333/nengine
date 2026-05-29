@@ -119,6 +119,23 @@ class LogOverlayWidgetTest {
     }
 
     @Test
+    fun `lines stay within the bottom edge of the screen`() {
+        val tree = newTree()
+        tree.debug.log.enabled = true
+        // Fill the buffer so the newest line sits closest to the bottom.
+        for (i in 0 until 12 + 3) Log.i("T", "m$i")
+
+        // `position.y` is the text's top edge; a line spans roughly one
+        // line-height below it. The lowest line must not cross tree.size.y.
+        val lineHeight = 16f
+        val maxTop = overlayTexts(tree).maxOf { it.position.y }
+        assertTrue(
+            maxTop + lineHeight <= tree.size.y,
+            "lowest line top=$maxTop + lineHeight overflows ${tree.size.y}",
+        )
+    }
+
+    @Test
     fun `log overlay is a screen-canvas built-in present after start`() {
         val tree = newTree()
         val layer = tree.root.findChild(DebugLayer.NODE_NAME) as DebugLayer

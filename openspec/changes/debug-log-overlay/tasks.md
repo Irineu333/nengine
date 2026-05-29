@@ -40,3 +40,7 @@
 
 - [x] 6.1 Rodar a suíte de testes do `:engine` e garantir verde.
 - [x] 6.2 `openspec validate debug-log-overlay --strict` e revisar coerência specs↔implementação.
+
+## 7. Bugs corrigidos pós-implementação
+
+- [x] 7.1 **Overflow na borda inferior** (visto na validação manual via `:games:demos:runLwjgl`). `position.y` do `drawText` é a borda **superior** do texto em ambos os backends (Skiko/LWJGL), então ancorar a linha mais recente em `size.y - PADDING` fazia o glifo descer abaixo da tela. Fix: recuar a base em uma `LINE_HEIGHT` (`newestTop = size.y - PADDING - LINE_HEIGHT`) para a linha mais recente caber inteira acima do padding. Cobre com teste de regressão `lines stay within the bottom edge of the screen`.

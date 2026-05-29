@@ -44,12 +44,12 @@
 ## 8. Validação manual
 
 - [x] 8.1 Demonstrar via script real: o `snake.py` emite o grid 20×20 do mundo em `tree.debug.draw.world` a cada `_process` (desligado por padrão — auxílio de debug fiel ao uso real). Coberto por teste de bundle.
-- [ ] 8.2 **Teste manual (obrigatório antes do archive):** rodar `./gradlew :games:snake:run` e confirmar visualmente:
+- [x] 8.2 **Teste manual (obrigatório antes do archive):** rodar `./gradlew :games:snake:run` e confirmar visualmente:
   - a tela começa limpa (grid desligado por padrão);
   - abrir o HUD (`F1`) e marcar a row "Debug Draw" → o grid do mundo aparece atrás da cobra, alinhado às células e à `Camera2D`;
   - desmarcar → o grid some;
   - nenhum acúmulo/rastro entre frames (buffers limpos a cada frame).
 - [x] 8.3 Demonstrar via script **Lua** (sentinela do segundo backend de scripting): o `board.lua` do tictactoe numera as 9 células em `draw.world`, realça a célula sob o cursor (`draw.world:rect`) e ecoa a célula em `draw.screen` perto do ponteiro — desligado por padrão. Coberto por teste de bundle (`TicTacToeBundleTest`).
-- [ ] 8.4 **Teste manual (Lua):** rodar `./gradlew :games:tictactoe:run`, abrir o HUD (`F1`), marcar "Debug Draw" e confirmar: índices 1–9 nas células, realce da célula sob o mouse e o texto "cell N" seguindo o cursor; desmarcar limpa tudo.
+- [x] 8.4 **Teste manual (Lua):** rodar `./gradlew :games:tictactoe:run`, abrir o HUD (`F1`), marcar "Debug Draw" e confirmar: índices 1–9 nas células, realce da célula sob o mouse e o texto "cell N" seguindo o cursor; desmarcar limpa tudo.
 - [x] 8.5 Demonstrar em física (pong, Python): `ball.py` desenha o vetor de velocidade da bola (`draw.world.line` + marcador) e `paddle.py` (só IA) desenha a linha do alvo + faixa de tolerância — desligado por padrão. Coberto por teste de bundle (`PongBundleTest`).
-- [ ] 8.6 **Teste manual (pong):** rodar `./gradlew :games:pong:run`, abrir o HUD (`F1`), marcar "Debug Draw" e confirmar: o vetor de velocidade gira/encolhe a cada rebatida e a mira do paddle IA segue a bola dentro da faixa; desmarcar limpa tudo.
+- [x] 8.6 **Teste manual (pong):** rodar `./gradlew :games:pong:run`, abrir o HUD (`F1`), marcar "Debug Draw" e confirmar: o vetor de velocidade gira/encolhe a cada rebatida e a mira do paddle IA segue a bola dentro da faixa; desmarcar limpa tudo.

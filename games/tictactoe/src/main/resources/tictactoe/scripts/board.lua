@@ -17,6 +17,11 @@ local MARK_COLOR = nengine.Color(1.0, 1.0, 1.0, 1.0)
 local GHOST_COLOR = nengine.Color(1.0, 1.0, 1.0, 0.3)
 local WIN_COLOR = nengine.Color(1.0, 0.85, 0.15, 0.9)
 
+-- Immediate-draw debug colors (only painted while the "Debug Draw" HUD row is on).
+local DEBUG_HOVER_COLOR = nengine.Color(0.3, 0.9, 1.0, 0.9)
+local DEBUG_INDEX_COLOR = nengine.Color(0.5, 1.0, 0.6, 0.55)
+local DEBUG_SCREEN_COLOR = nengine.Color(0.3, 0.9, 1.0, 1.0)
+
 local WINNING_LINES = {
     { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 },
     { 1, 4, 7 }, { 2, 5, 8 }, { 3, 6, 9 },
@@ -127,6 +132,35 @@ local function draw_winning_line(renderer, line)
     renderer:drawLine(from_pt, to_pt, thickness, WIN_COLOR)
 end
 
+local function draw_debug(self, tree, input_ref)
+    -- Immediate-mode debug aid via `tree.debug.draw` (Lua side of the facade).
+    -- Off by default: the verbs no-op until the "Debug Draw" row is ticked in
+    -- the F1 HUD, so a normal match stays clean. World gizmos ride the
+    -- MainCamera view transform exactly like the marks; the screen gizmo is in
+    -- raw pixels. Emitted in _process (not _draw) per the facade contract.
+    local draw = tree.debug.draw
+    -- World: number every cell (visualizes the 1..9 indexing of WINNING_LINES)
+    -- and outline the cell currently under the pointer.
+    for i = 1, 9 do
+        local rect = cell_rect(i)
+        draw.world:text(
+            nengine.Vec2(rect.origin.x + 8.0, rect.origin.y + 22.0),
+            tostring(i),
+            DEBUG_INDEX_COLOR,
+            18.0
+        )
+    end
+    if self._hovered ~= nil then
+        draw.world:rect(cell_rect(self._hovered), DEBUG_HOVER_COLOR, false)
+    end
+    -- Screen: echo which cell the pointer maps to, next to the cursor.
+    if input_ref ~= nil then
+        local pointer = input_ref.pointerPosition
+        local label = self._hovered ~= nil and ("cell " .. self._hovered) or "cell -"
+        draw.screen:text(nengine.Vec2(pointer.x + 12.0, pointer.y - 12.0), label, DEBUG_SCREEN_COLOR, 13.0)
+    end
+end
+
 local function recenter_status(self, renderer)
     -- SceneTree.render draws root first then walks children, so updating the
     -- Label's local transform here (before the Label's own onDraw runs) lands
@@ -156,9 +190,14 @@ return {
         local tree = self.tree
         if tree == nil then return end
         local input_ref = tree.input
+        if input_ref ~= nil then
+            local world_pos = tree:screenToWorld(input_ref.pointerPosition)
+            self._hovered = cell_at(world_pos)
+        end
+        -- Debug gizmos are emitted every frame (no-ops unless "Debug Draw" is on),
+        -- independent of input — so they show even before the first mouse move.
+        draw_debug(self, tree, input_ref)
         if input_ref == nil then return end
-        local world_pos = tree:screenToWorld(input_ref.pointerPosition)
-        self._hovered = cell_at(world_pos)
         if not input_ref:wasMouseClicked(nengine.MouseButton.Left) then return end
         if game_over(self) then
             reset(self)

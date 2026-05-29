@@ -49,3 +49,5 @@
   - abrir o HUD (`F1`) e marcar a row "Debug Draw" → o grid do mundo aparece atrás da cobra, alinhado às células e à `Camera2D`;
   - desmarcar → o grid some;
   - nenhum acúmulo/rastro entre frames (buffers limpos a cada frame).
+- [x] 8.3 Demonstrar via script **Lua** (sentinela do segundo backend de scripting): o `board.lua` do tictactoe numera as 9 células em `draw.world`, realça a célula sob o cursor (`draw.world:rect`) e ecoa a célula em `draw.screen` perto do ponteiro — desligado por padrão. Coberto por teste de bundle (`TicTacToeBundleTest`).
+- [ ] 8.4 **Teste manual (Lua):** rodar `./gradlew :games:tictactoe:run`, abrir o HUD (`F1`), marcar "Debug Draw" e confirmar: índices 1–9 nas células, realce da célula sob o mouse e o texto "cell N" seguindo o cursor; desmarcar limpa tudo.

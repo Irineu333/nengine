@@ -103,6 +103,14 @@ open class CharacterBody2D : PhysicsBody2D() {
             // this push, a body spawned overlapping freezes oscillating its
             // velocity in place.
             position = position + motion * toi + bestHit.depenetration
+            // Stage the resolved contact for ContactGizmoWidget. Gated by the
+            // same flag as the rigid path; staged here (not appended) because
+            // `step` clears the buffer after `_physics_process` runs — the fold
+            // in `step` consolidates it. Early-out when recording is off.
+            val contacts = tree.debug.contacts
+            if (contacts.recording) {
+                contacts.stage(bestHit.point, bestHit.normal)
+            }
             KinematicCollision2D(
                 point = bestHit.point,
                 normal = bestHit.normal,

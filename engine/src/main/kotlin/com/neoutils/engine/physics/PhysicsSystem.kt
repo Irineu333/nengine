@@ -69,7 +69,13 @@ class PhysicsSystem {
         // and the solver pays no per-contact recording cost.
         val contactBuffer = tree.debug.contacts
         val contactSink = if (contactBuffer.recording) {
-            contactBuffer.also { it.clear() }
+            // Clear the previous step's records, then fold in the contacts
+            // staged by `CharacterBody2D.moveAndCollide` during this substep's
+            // `_physics_process`, before appending this step's rigid contacts.
+            contactBuffer.also {
+                it.clear()
+                it.takeStaged()
+            }
         } else {
             null
         }

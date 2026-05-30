@@ -26,11 +26,30 @@ def _ready(self):
 
 
 def _physics_process(self, dt):
-    # Godot-style integration: the engine does NOT advance CharacterBody2D
-    # by velocity automatically. The script integrates explicitly.
+    # Godot-style kinematic motion: the engine does NOT integrate velocity
+    # automatically. We sweep this frame's motion with moveAndCollide so the
+    # ball stops exactly at the contact (no tunneling at high speed) and we
+    # bounce off the resolved normal here, instead of reacting one frame late
+    # in _on_body_entered. Solid targets (walls, paddles) are StaticBody2D and
+    # are picked up by the sweep; the goals are Area2D sensors and stay on the
+    # _on_area_entered path (moveAndCollide ignores areas).
     v = self.velocity
-    pos = self.position
-    self.position = Vec2(pos.x + v.x * dt, pos.y + v.y * dt)
+    collision = self.moveAndCollide(Vec2(v.x * dt, v.y * dt))
+    if collision is None:
+        return
+    body = collision.collider
+    n = collision.normal
+    # Only the paddle's *face* (a near-horizontal contact normal) gets the
+    # angle-based bounce. A hit on the paddle's top/bottom edge has a vertical
+    # normal — treating that as a face bounce would drive the ball back into
+    # the paddle and trap it, so it reflects across the normal like a wall.
+    if body.isInGroup("paddles") and abs(n.x) > abs(n.y):
+        _bounce_off_paddle(self, body)
+    else:
+        # Walls and paddle top/bottom edges: reflect velocity across the
+        # contact normal — v' = v - 2(v·n)n.
+        dot = v.x * n.x + v.y * n.y
+        self.velocity = Vec2(v.x - 2.0 * dot * n.x, v.y - 2.0 * dot * n.y)
 
 
 def _process(self, dt):
@@ -65,15 +84,6 @@ def _on_area_entered(self, area):
         _reset(self, -1.0)
 
 
-def _on_body_entered(self, body):
-    if body.isInGroup("walls"):
-        v = self.velocity
-        self.velocity = Vec2(v.x, -v.y)
-        return
-    if body.isInGroup("paddles"):
-        _bounce_off_paddle(self, body)
-
-
 def _bounce_off_paddle(self, paddle):
     # `paddle` is the Kotlin StaticBody2D Node — `size` lives on the paddle
     # script's export, so reach it via `script_of` rather than the raw node.
@@ -99,16 +109,9 @@ def _bounce_off_paddle(self, paddle):
         h_sign * new_speed * math.cos(angle),
         new_speed * math.sin(angle),
     )
-    # Shift the ball out of the paddle so it stops re-entering on the next
-    # physics step (otherwise enter would fire repeatedly as we tunnel).
-    ball_pos = self.position
-    paddle_left = paddle_pos.x
-    paddle_right = paddle_pos.x + paddle_size.x
-    if h_sign < 0.0:
-        shift = paddle_left - (ball_pos.x + self.ballSize) - 0.5
-    else:
-        shift = paddle_right - ball_pos.x + 0.5
-    self.position = Vec2(ball_pos.x + shift, ball_pos.y)
+    # No manual shift needed: moveAndCollide already stopped the ball at the
+    # contact and applied the sweep's depenetration, so the reflected velocity
+    # carries it away from the paddle next frame without re-entering.
 
 
 def reset(self, serve_toward):

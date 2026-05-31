@@ -43,6 +43,24 @@ class ShapeLocalBoundsTest {
     }
 
     @Test
+    fun `rectangle collider worldBounds agrees with broadPhaseBounds`() {
+        // Regression for center-rectangle-shape: with the rect centered on its
+        // origin, the selection/editor AABB (worldBounds, from the centered
+        // localBounds) and the physics broad-phase AABB (broadPhaseBounds, from
+        // Shape2D.bounds) must coincide — the divergence flagged in
+        // node-local-bounds/design.md is closed.
+        val root = Node()
+        val body = StaticBody2D().apply { position = Vec2(50f, 50f) }
+        val collider = CollisionShape2D().apply {
+            position = Vec2(7f, -3f)
+            shape = RectangleShape2D().apply { size = Vec2(10f, 20f) }
+        }
+        body.addChild(collider)
+        root.addChild(body)
+        assertEquals(collider.broadPhaseBounds(), collider.worldBounds())
+    }
+
+    @Test
     fun `disabled collision shape has null local bounds`() {
         val s = CollisionShape2D().apply {
             shape = RectangleShape2D().apply { size = Vec2(10f, 10f) }

@@ -218,7 +218,8 @@ class PhysicsSystemTest {
             world = Transform(position = Vec2(50f, 50f), scale = Vec2(2f, 2f), rotation = 0f),
             localOffset = Vec2.ZERO,
         )
-        assertEquals(Vec2(50f, 50f), b.origin)
+        // Centered AABB on world.position with half-extents size/2·scale = (10,20).
+        assertEquals(Vec2(40f, 30f), b.origin)
         assertEquals(Vec2(20f, 40f), b.size)
     }
 

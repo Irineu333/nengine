@@ -111,9 +111,9 @@ class Ball(
         linearVelocity = Vec2(initVx, initVy)
         addChild(
             CollisionShape2D().apply {
-                // Center the rect on the body's position so the rigid-body
-                // solver's center of mass matches the visual.
-                transform = Transform(position = Vec2(-BALL_SIZE / 2f, -BALL_SIZE / 2f))
+                // RectangleShape2D is centered on its origin, so it already sits
+                // on the body's position — matching the centered visual and the
+                // rigid-body solver's center of mass. No offset needed.
                 shape = RectangleShape2D().apply { size = Vec2(BALL_SIZE, BALL_SIZE) }
             }
         )

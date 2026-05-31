@@ -108,6 +108,10 @@ class Trap : Area2D() {
         if (children.none { it is CollisionShape2D }) {
             addChild(
                 CollisionShape2D().apply {
+                    // Visual is the corner-anchored Line2D loop at local
+                    // (0,0)..(SIZE,SIZE); the centered rect needs a +size/2
+                    // offset to cover that same span.
+                    transform = Transform(position = Vec2(SIZE / 2f, SIZE / 2f))
                     shape = RectangleShape2D().apply { size = Vec2(SIZE, SIZE) }
                 }
             )

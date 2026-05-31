@@ -26,10 +26,11 @@ open class CollisionShape2D : Node2D() {
 
     /**
      * World-space AABB the physics broad-phase consumes, via
-     * [Shape2D.bounds]. `null` when [disabled] or [shape] is `null`. Distinct
-     * from the inherited [worldBounds]: this uses the physics anchoring of the
-     * shape (e.g. corner-anchored rectangles), whereas [localBounds]/[worldBounds]
-     * expose the shape's centered local extent for selection/editor queries.
+     * [Shape2D.bounds]. `null` when [disabled] or [shape] is `null`. Both
+     * [RectangleShape2D] and [CircleShape2D] are centered on their local
+     * origin, so this AABB agrees with the inherited [worldBounds] (which
+     * projects the centered [localBounds] through `world()`) for the same
+     * shape — the two are kept in sync by construction.
      */
     fun broadPhaseBounds(): Rect? {
         if (disabled) return null

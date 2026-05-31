@@ -55,7 +55,8 @@ class CharacterBody2DTest {
         SceneTree(root).start()
         val collision = body.moveAndCollide(Vec2(40f, 0f))
         assertNotNull(collision)
-        // A's top-left starts at 0, wall's left at 20 → TOI = (20-10)/40 = 0.25.
+        // Both centered: wall spans [15,25] (left face x=15). The body (spans
+        // [-5,5]) touches it when its center reaches x=10 → TOI = 10/40 = 0.25.
         assertEquals(10f, body.position.x, EPS)
         assertEquals(-1f, collision.normal.x, EPS)
         assertSame(wall, collision.collider)
@@ -85,7 +86,7 @@ class CharacterBody2DTest {
         val collision = body.moveAndCollide(Vec2(0f, 0f))
         assertNotNull(collision)
         // Smallest-penetration: A starts 7 inside on the left edge (rect-rect
-        // expanded slab penLeft = 0 − (3 − 10) = 7) → push -x by 7.
+        // expanded slab penLeft = -5 − (-12) = 7) → push -x by 7.
         assertEquals(-7f, body.position.x, EPS)
         assertEquals(0f, body.position.y, EPS)
         assertEquals(-1f, collision.normal.x, EPS)

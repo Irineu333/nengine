@@ -48,10 +48,12 @@ class RotatingBoxDemo : Node2D() {
         // shared parent frame (the wrapper's local space), so walls + balls
         // stay axis-aligned in that frame regardless of the wrapper's rotation
         // in world space — that's the whole reason Demo 5 is shaped this way.
-        wrapper.addChild(makeStaticWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX - WALL_THICKNESS), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
-        wrapper.addChild(makeStaticWall(Vec2(-HALF_BOX - WALL_THICKNESS, HALF_BOX), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
-        wrapper.addChild(makeStaticWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "leftWall" })
-        wrapper.addChild(makeStaticWall(Vec2(HALF_BOX, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "rightWall" })
+        // Colliders are centered on their origin: pass each wall band's center
+        // (the box edge offset outward by half the wall thickness).
+        wrapper.addChild(makeStaticWall(Vec2(0f, -HALF_BOX - WALL_THICKNESS / 2f), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
+        wrapper.addChild(makeStaticWall(Vec2(0f, HALF_BOX + WALL_THICKNESS / 2f), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
+        wrapper.addChild(makeStaticWall(Vec2(-HALF_BOX - WALL_THICKNESS / 2f, 0f), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "leftWall" })
+        wrapper.addChild(makeStaticWall(Vec2(HALF_BOX + WALL_THICKNESS / 2f, 0f), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "rightWall" })
         repeat(BALL_COUNT) { i ->
             val px = -HALF_BOX + BALL_SIZE + rng.nextFloat() * (BOX_SIZE - 2f * BALL_SIZE)
             val py = -HALF_BOX + BALL_SIZE + rng.nextFloat() * (BOX_SIZE - 2f * BALL_SIZE)
@@ -183,6 +185,9 @@ class BoxedBall(
         transform = Transform(position = initLocalPos)
         addChild(
             CollisionShape2D().apply {
+                // Visual is corner-anchored at local (0,0)..(BALL_SIZE); the
+                // centered rect needs a +size/2 offset to cover that same span.
+                transform = Transform(position = Vec2(BALL_SIZE / 2f, BALL_SIZE / 2f))
                 shape = RectangleShape2D().apply { size = Vec2(BALL_SIZE, BALL_SIZE) }
             }
         )

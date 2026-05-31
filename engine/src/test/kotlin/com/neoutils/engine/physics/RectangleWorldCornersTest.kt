@@ -3,8 +3,6 @@ package com.neoutils.engine.physics
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -18,11 +16,11 @@ class RectangleWorldCornersTest {
         val rect = RectangleShape2D().apply { size = Vec2(10f, 20f) }
         val corners = rect.worldCorners(Transform())
         assertEquals(4, corners.size)
-        // Documented order: TL, TR, BR, BL.
-        assertCorner(Vec2(0f, 0f), corners[0])
-        assertCorner(Vec2(10f, 0f), corners[1])
-        assertCorner(Vec2(10f, 20f), corners[2])
-        assertCorner(Vec2(0f, 20f), corners[3])
+        // Rectangle is centered on its origin. Documented order: TL, TR, BR, BL.
+        assertCorner(Vec2(-5f, -10f), corners[0])
+        assertCorner(Vec2(5f, -10f), corners[1])
+        assertCorner(Vec2(5f, 10f), corners[2])
+        assertCorner(Vec2(-5f, 10f), corners[3])
     }
 
     @Test
@@ -39,18 +37,12 @@ class RectangleWorldCornersTest {
         assertTrue(corners[0].x != corners[1].x)
         assertTrue(corners[0].y != corners[1].y)
 
-        // Centroid of the four corners equals the rect's rotated world center
-        // (origin + R(rotation) · (w/2, h/2)).
+        // The rectangle is centered on its origin, so the centroid of the four
+        // corners is exactly the world position, regardless of rotation.
         val centroidX = corners.sumOf { it.x.toDouble() }.toFloat() / 4f
         val centroidY = corners.sumOf { it.y.toDouble() }.toFloat() / 4f
-        val halfX = size.x / 2f
-        val halfY = size.y / 2f
-        val c = cos(rotation)
-        val s = sin(rotation)
-        val expectedX = position.x + (halfX * c - halfY * s)
-        val expectedY = position.y + (halfX * s + halfY * c)
-        assertEquals(expectedX, centroidX, eps)
-        assertEquals(expectedY, centroidY, eps)
+        assertEquals(position.x, centroidX, eps)
+        assertEquals(position.y, centroidY, eps)
     }
 
     private fun assertCorner(expected: Vec2, actual: Vec2) {

@@ -11,7 +11,8 @@ import kotlinx.serialization.Transient
 
 /**
  * Constrói uma `StaticBody2D` com um único `CollisionShape2D + RectangleShape2D`
- * no `position` e `size` informados. Utilitário canônico para demos sem
+ * **centrado** no `position` informado (o retângulo ocupa
+ * `[position - size/2, position + size/2]`). Utilitário canônico para demos sem
  * `Camera2D` que precisam de paredes estáticas. Demos cuja parede deve viver
  * em frame local de um wrapper rotativo (caso de `RotatingBoxDemo`) usam este
  * helper direto; demos cuja fronteira deve acompanhar `tree.size` usam
@@ -80,10 +81,14 @@ class BoundaryWalls(private val thickness: Float = 10f) : Node2D() {
     }
 
     private fun relayout(w: Float, h: Float) {
-        place("topWall", Vec2(-thickness, -thickness), Vec2(w + 2f * thickness, thickness))
-        place("bottomWall", Vec2(-thickness, h), Vec2(w + 2f * thickness, thickness))
-        place("leftWall", Vec2(-thickness, 0f), Vec2(thickness, h))
-        place("rightWall", Vec2(w, 0f), Vec2(thickness, h))
+        val t = thickness
+        // Colliders are centered on their origin, so each wall's body position
+        // is the center of the band that used to be corner-anchored just
+        // outside the [0,w]×[0,h] play area.
+        place("topWall", Vec2(w / 2f, -t / 2f), Vec2(w + 2f * t, t))
+        place("bottomWall", Vec2(w / 2f, h + t / 2f), Vec2(w + 2f * t, t))
+        place("leftWall", Vec2(-t / 2f, h / 2f), Vec2(t, h))
+        place("rightWall", Vec2(w + t / 2f, h / 2f), Vec2(t, h))
     }
 
     private fun place(name: String, position: Vec2, size: Vec2) {

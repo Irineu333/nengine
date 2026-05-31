@@ -29,13 +29,15 @@ class SweepTest {
     }
 
     @Test
-    fun `swept circle-rect axis-aligned hits at TOI 0_5 on left face`() {
+    fun `swept circle-rect axis-aligned hits at TOI 0_3 on left face`() {
         val c = circle(3f); val r = rect(Vec2(4f, 4f))
+        // Centered rect at (8,0) spans [6,10]×[-2,2]; its left face is x=6.
+        // Circle r=3 from x=0 touches it when cx+3=6 → cx=3, t=3/10=0.3.
         val cWorld = Transform(position = Vec2(0f, 0f))
         val rWorld = Transform(position = Vec2(8f, 0f))
         val res = sweepOverlap(c, cWorld, Vec2(10f, 0f), r, rWorld)
         assertNotNull(res)
-        assertEquals(0.5f, res.toi, EPS)
+        assertEquals(0.3f, res.toi, EPS)
         assertEquals(-1f, res.normal.x, EPS)
         assertEquals(0f, res.normal.y, EPS)
     }
@@ -106,9 +108,10 @@ class SweepTest {
         // reflect velocity back into the wall every frame.
         val ball = rect(Vec2(12f, 12f))
         val wall = rect(Vec2(10f, 600f))
-        // Ball top-left at (0, 100), moving RIGHT. Wall at (-10, 0) size (10, 600).
-        // Wall's right edge is x=0, so ball is touching wall on its left side.
-        val ballWorld = Transform(position = Vec2(0f, 100f))
+        // Centered shapes: wall at (-10, 0) spans [-15, -5] (right edge x=-5).
+        // Ball at (1, 100) spans [-5, 7] → its left edge x=-5 touches the wall's
+        // right edge. Moving RIGHT (away from the wall).
+        val ballWorld = Transform(position = Vec2(1f, 100f))
         val wallWorld = Transform(position = Vec2(-10f, 0f))
         val motion = Vec2(50f, 0f) // moving away to the right
         assertNull(sweepOverlap(ball, ballWorld, motion, wall, wallWorld))
@@ -118,10 +121,10 @@ class SweepTest {
     fun `circle tangent to rect moving outward does not report a bogus collision`() {
         val c = circle(6f)
         val r = rect(Vec2(10f, 600f))
-        // Circle center at (0, 100) — touching right face of expanded rect at x = -10 + 6.
-        // Wait: rect at (-10, 0), size (10, 600) → right edge x=0. Circle radius 6 with
-        // center at cx tangent to right edge requires cx = 0 + 6 = 6. Moving right (away).
-        val cWorld = Transform(position = Vec2(6f, 100f))
+        // Centered rect at (-10, 0) spans [-15, -5] → right edge x=-5. A circle
+        // of radius 6 is tangent to that edge when cx - 6 = -5 → cx = 1. Moving
+        // right (away from the rect).
+        val cWorld = Transform(position = Vec2(1f, 100f))
         val rWorld = Transform(position = Vec2(-10f, 0f))
         val motion = Vec2(80f, 0f)
         assertNull(sweepOverlap(c, cWorld, motion, r, rWorld))
@@ -144,26 +147,27 @@ class SweepTest {
 
     @Test
     fun `swept circle-vs-rotated-rect 90deg hits at analytic TOI`() {
-        // Rect 4x4 at (10,0) rotated 90° around its origin: corners become
-        // (10,0), (10,4), (6,0), (6,4) — occupies world x ∈ [6,10], y ∈ [0,4].
-        // Circle r=2 at (0,0) moves +x by 20. Tangency when circle right edge
-        // (cx + 2) reaches rect's leftmost world x = 6 → cx = 4, t = 4/20 = 0.2.
+        // Centered 4x4 rect at (10,0) rotated 90° around its center maps onto
+        // itself: occupies world x ∈ [8,12], y ∈ [-2,2]. Circle r=2 at (0,0)
+        // moves +x by 20. Tangency when circle right edge (cx + 2) reaches the
+        // rect's leftmost world x = 8 → cx = 6, t = 6/20 = 0.3.
         val c = circle(2f); val r = rect(Vec2(4f, 4f))
         val cWorld = Transform(position = Vec2(0f, 0f))
         val rWorld = Transform(position = Vec2(10f, 0f), rotation = (PI / 2.0).toFloat())
         val res = sweepOverlap(c, cWorld, Vec2(20f, 0f), r, rWorld)
         assertNotNull(res)
-        assertEquals(0.2f, res.toi, 0.01f)
+        assertEquals(0.3f, res.toi, 0.01f)
         // Normal points from rect outward toward circle → -x in world.
         assertEquals(-1f, res.normal.x, 0.05f)
     }
 
     @Test
     fun `swept rotated-rect-vs-rotated-rect same rotation 45deg face-to-face contact`() {
-        // Two 4x4 rects rotated 45° (diamonds in world). A at (0,0) reaches B
-        // at (10,0) via motion (20,0). A's max projection on its own x-axis
-        // edge1 = (cos45,sin45) is 4 (rect width). B's min on same axis is
-        // 10·cos45 ≈ 7.07. Contact at t = (7.07-4)/14.14 ≈ 0.217.
+        // Two 4x4 centered rects rotated 45° (diamonds in world). A at (0,0)
+        // reaches B at (10,0) via motion (20,0). A's projection on its own
+        // edge1 = (cos45,sin45) is [-2,2] (half-width 2). B's projection on the
+        // same axis is centered at 10·cos45 ≈ 7.07 → min ≈ 5.07. Contact at
+        // t = (5.07-2)/14.14 ≈ 0.217 (unchanged: both intervals shift by -2).
         val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
         val rot = (PI / 4.0).toFloat()
         val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
@@ -178,9 +182,9 @@ class SweepTest {
 
     @Test
     fun `swept rotated-rect-vs-rotated-rect different rotation collides with valid TOI`() {
-        // A axis-aligned at (0,0), B rotated 45° at (10,0). A's right edge at
-        // x=4; B's leftmost vertex at x=7.17 (= 10 - 4·sin45). Contact between
-        // A's face and B's vertex at some t in (0,1).
+        // A axis-aligned centered at (0,0) → right edge x=2; B rotated 45° at
+        // (10,0) → leftmost vertex at x=7.17 (= 10 - 2·√2). Contact between A's
+        // face and B's vertex at some t in (0,1).
         val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
         val aWorld = Transform(position = Vec2(0f, 0f))
         val bWorld = Transform(position = Vec2(10f, 0f), rotation = (PI / 4.0).toFloat())
@@ -192,10 +196,10 @@ class SweepTest {
 
     @Test
     fun `swept rotated motion parallel to separator axis returns null`() {
-        // Two 4x4 rects rotated 45°. A at (0,0), B offset along A's axis2 by
-        // 8 units: B at (axis2 * 8) = (-5.66, 5.66). They're separated on
-        // axis2 (dt = 0 along that axis with motion along axis1). Motion
-        // (10,10) is purely along axis1 — never closes the axis2 gap → null.
+        // Two 4x4 centered rects rotated 45°. A at (0,0) projects to [-2,2] on
+        // axis2; B offset along A's axis2 by 8 units (B at axis2·8 = (-5.66,
+        // 5.66)) projects to [6,10] there — separated. Motion (10,10) is purely
+        // along axis1, so dt=0 on axis2: it never closes that gap → null.
         val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
         val rot = (PI / 4.0).toFloat()
         val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
@@ -217,10 +221,10 @@ class SweepTest {
 
     @Test
     fun `swept rotated tangent contact moving away returns null`() {
-        // Two 4x4 rects rotated 45°. A at (0,0). B placed so that B's min
-        // projection on A's axis1 equals A's max (4) → tangent on axis1.
-        // B's origin should be at (cos45·4, sin45·4) = (2.83, 2.83). Motion
-        // away from B (= -axis1 direction) should NOT trigger a collision.
+        // Two 4x4 centered rects rotated 45°. A at (0,0) projects to [-2,2] on
+        // axis1. B at (2.83, 2.83) projects there centered at 4 → [2,6], whose
+        // min (2) equals A's max (2): tangent on axis1. Motion away from B
+        // (= -axis1 direction) should NOT trigger a collision.
         val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
         val rot = (PI / 4.0).toFloat()
         val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
@@ -246,33 +250,33 @@ class SweepTest {
 
     @Test
     fun `point is on rect face for axis-aligned rect-vs-rect`() {
-        // A at (0,0) size 4x4 swept right by (20,0) into B at (10,0) size 4x4.
-        // Contact face is B's left face (x=10); overlap on y is [0,4] → mid y=2.
+        // A at (0,0) size 4x4 swept right by (20,0) into B at (10,0) size 4x4,
+        // both centered. B spans [8,12]×[-2,2], so its left face is x=8; the
+        // overlap on y is [-2,2] → mid y=0.
         val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
         val aWorld = Transform(position = Vec2(0f, 0f))
         val bWorld = Transform(position = Vec2(10f, 0f))
         val res = sweepOverlap(a, aWorld, Vec2(20f, 0f), b, bWorld)
         assertNotNull(res)
-        assertEquals(10f, res.point.x, EPS)
-        assertEquals(2f, res.point.y, EPS)
+        assertEquals(8f, res.point.x, EPS)
+        assertEquals(0f, res.point.y, EPS)
     }
 
     @Test
     fun `point is leading corner for rotated rect-vs-rect`() {
-        // A 4x4 at (0,0) rotated 45° swept by (20,0) into axis-aligned B 4x4 at (10,0).
-        // A's corners after rotation around (0,0): (0,0), (2.83,2.83), (-2.83,2.83), (0,5.66).
-        // Wait — obbCorners places origin at top-left. After 45° rotation around (0,0),
-        // the 4 corners of a 4x4 rect with TL=(0,0) become: (0,0), (2.83,2.83), (-2.83,2.83), (0,5.66).
-        // Leading corner (smallest projection on normal ≈ (-1,0)) → max x value at contact.
+        // A 4x4 centered at (0,0) rotated 45° swept by (20,0) into axis-aligned
+        // B 4x4 centered at (10,0). A is a diamond centered on the origin with
+        // vertices (±2.83, 0), (0, ±2.83); B spans [8,12]×[-2,2].
+        // Leading corner (smallest projection on normal ≈ (-1,0)) → max x at contact.
         val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
         val aWorld = Transform(position = Vec2(0f, 0f), rotation = (PI / 4.0).toFloat())
         val bWorld = Transform(position = Vec2(10f, 0f))
         val res = sweepOverlap(a, aWorld, Vec2(20f, 0f), b, bWorld)
         assertNotNull(res)
-        // Result point should NOT be A's center (its OBB center, which is ~ (0, 2.83) before motion).
-        // It should be on the leading corner of A in the -normal direction.
-        // Since normal points toward A (i.e. -x), -normal = +x. Leading corner is the
-        // rightmost corner of A at contact — close to B's left face x=10.
+        // Result point should NOT be A's center; it lies on A's leading corner
+        // in the -normal direction. Since normal points toward A (-x), -normal
+        // = +x: the leading corner is A's rightmost vertex at contact, near B's
+        // left face x=8.
         assertTrue(res.point.x > 5f, "leading corner should be near B's face, got ${res.point.x}")
     }
 

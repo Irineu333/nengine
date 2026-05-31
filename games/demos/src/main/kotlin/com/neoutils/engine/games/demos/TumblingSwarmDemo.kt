@@ -122,9 +122,9 @@ class TumblingSquare(
         angularVelocity = initAngularVel
         addChild(
             CollisionShape2D().apply {
-                // Center the rect on the body's position so the solver's
-                // mass center (= body position) matches the geometric center.
-                transform = Transform(position = Vec2(-SQUARE_SIZE / 2f, -SQUARE_SIZE / 2f))
+                // RectangleShape2D is centered on its origin, so it already sits
+                // on the body's position — matching the centered visual and the
+                // solver's mass center. No offset needed.
                 shape = RectangleShape2D().apply { size = Vec2(SQUARE_SIZE, SQUARE_SIZE) }
             }
         )

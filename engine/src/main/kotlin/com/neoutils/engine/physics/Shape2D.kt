@@ -70,26 +70,30 @@ class RectangleShape2D : Shape2D() {
      * rotated quad, not an axis-aligned box. Order is stable: **top-left,
      * top-right, bottom-right, bottom-left**, forming a closed loop (connect
      * consecutive corners, then the last back to the first, to outline the
-     * shape). Local origin sits at `world.position`; the [CollisionShape2D]'s
+     * shape). Geometric center sits at `world.position`; the [CollisionShape2D]'s
      * own offset is already folded into [world] by `CollisionShape2D.world()`.
      *
      * Distinct from the private [obbCorners] (TL, TR, BL, BR), whose order the
      * SAT overlap math depends on; this loop order is the one debug gizmos and
      * future OBB callers want for outlining.
      */
-    fun worldCorners(world: Transform): List<Vec2> = listOf(
-        world.apply(Vec2(0f, 0f)),
-        world.apply(Vec2(size.x, 0f)),
-        world.apply(Vec2(size.x, size.y)),
-        world.apply(Vec2(0f, size.y)),
-    )
+    fun worldCorners(world: Transform): List<Vec2> {
+        val hw = size.x / 2f
+        val hh = size.y / 2f
+        return listOf(
+            world.apply(Vec2(-hw, -hh)),
+            world.apply(Vec2(hw, -hh)),
+            world.apply(Vec2(hw, hh)),
+            world.apply(Vec2(-hw, hh)),
+        )
+    }
 }
 
 /**
- * Four world-space corners of an axis-aligned-or-rotated rectangle whose local
- * origin sits at `world.position + localOffset` and whose local size (after
- * scale) is `size * world.scale`. Order: top-left, top-right, bottom-left,
- * bottom-right — but downstream uses (AABB envelope, SAT projections) are
+ * Four world-space corners of an axis-aligned-or-rotated rectangle **centered**
+ * on `world.position + localOffset` (its geometric center), whose local size
+ * (after scale) is `size * world.scale`. Order: top-left, top-right, bottom-
+ * left, bottom-right — but downstream uses (AABB envelope, SAT projections) are
  * order-invariant. Accepts `world.rotation == 0f` and returns axis-aligned
  * corners in that case.
  */
@@ -97,11 +101,13 @@ private fun obbCorners(world: Transform, size: Vec2, localOffset: Vec2): Array<V
     // Fold the (unrotated) localOffset into the transform origin, then map the
     // four local corners through it. Order: TL, TR, BL, BR.
     val t = world.copy(position = world.position + localOffset)
+    val hw = size.x / 2f
+    val hh = size.y / 2f
     return arrayOf(
-        t.apply(Vec2(0f, 0f)),
-        t.apply(Vec2(size.x, 0f)),
-        t.apply(Vec2(0f, size.y)),
-        t.apply(Vec2(size.x, size.y)),
+        t.apply(Vec2(-hw, -hh)),
+        t.apply(Vec2(hw, -hh)),
+        t.apply(Vec2(-hw, hh)),
+        t.apply(Vec2(hw, hh)),
     )
 }
 
@@ -340,10 +346,12 @@ private fun sweepRectRect(
     val ah = a.size.y * abs(aWorld.scale.y)
     val bw = b.size.x * abs(bWorld.scale.x)
     val bh = b.size.y * abs(bWorld.scale.y)
-    val ax0 = aWorld.position.x
-    val ay0 = aWorld.position.y
-    val bx0 = bWorld.position.x
-    val by0 = bWorld.position.y
+    // Rectangles are centered on their origin, so the top-left corner (which
+    // this AABB sweep encodes as the origin) sits at position − size/2·scale.
+    val ax0 = aWorld.position.x - aw / 2f
+    val ay0 = aWorld.position.y - ah / 2f
+    val bx0 = bWorld.position.x - bw / 2f
+    val by0 = bWorld.position.y - bh / 2f
 
     // Minkowski sum: A overlaps B iff A's top-left is inside the expanded rect
     // (bx0 − aw, by0 − ah) .. (bx0 + bw, by0 + bh).
@@ -431,8 +439,9 @@ private fun sweepCircleRect(
     val rh = rect.size.y * abs(rectWorld.scale.y)
     val cx = circleWorld.position.x
     val cy = circleWorld.position.y
-    val rx0 = rectWorld.position.x
-    val ry0 = rectWorld.position.y
+    // Rectangle is centered on its origin: shift to the top-left corner.
+    val rx0 = rectWorld.position.x - rw / 2f
+    val ry0 = rectWorld.position.y - rh / 2f
     val rx1 = rx0 + rw
     val ry1 = ry0 + rh
 

@@ -51,8 +51,9 @@ private fun rigidRect(
     this.linearVelocity = linearVelocity
     this.angularVelocity = angularVelocity
     if (inertia != 0f) this.inertia = inertia
+    // RectangleShape2D is centered on its origin, so no offset is needed for it
+    // to sit on the body's position.
     addChild(CollisionShape2D().apply {
-        transform = Transform(position = Vec2(-size.x / 2f, -size.y / 2f))
         shape = RectangleShape2D().apply { this.size = size }
     })
 }
@@ -60,7 +61,6 @@ private fun rigidRect(
 private fun staticBoxRect(size: Vec2, position: Vec2): StaticBody2D = StaticBody2D().apply {
     transform = Transform(position = position)
     addChild(CollisionShape2D().apply {
-        transform = Transform(position = Vec2(-size.x / 2f, -size.y / 2f))
         shape = RectangleShape2D().apply { this.size = size }
     })
 }

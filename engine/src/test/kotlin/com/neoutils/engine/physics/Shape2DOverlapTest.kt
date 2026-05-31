@@ -16,20 +16,22 @@ private val QUARTER_TURN: Float = (PI / 4.0).toFloat()
 
 class Shape2DOverlapTest {
 
-    // Local origin is top-left, so a rectangle of size 20 at world.position p
-    // spans [p.x, p.x+20] × [p.y, p.y+20] when rotation == 0. The scenarios
-    // in the spec are described with that convention.
+    // Local origin is the geometric center, so a rectangle of size 20 at
+    // world.position p spans [p.x-10, p.x+10] × [p.y-10, p.y+10] when
+    // rotation == 0. The scenarios in the spec are described with that
+    // convention.
 
     @Test
     fun `rotated rectangles with AABBs overlapping but OBBs separated do not overlap`() {
         val a = rect(20f)
         val b = rect(20f)
-        // Local origin is the corner; A's rotated diamond has corners (0,0),
-        // (~14.14, ~14.14), (0, ~28.28), (~-14.14, ~14.14). Translating B by
-        // (15, 15) shifts the projection on the shared edge axis by ~21.21 —
-        // beyond the OBB extent of 20, so SAT separates on that axis. The
-        // AABB envelopes (each 28.28×28.28) still overlap on the rectangle
-        // [0.86, 14.14] × [15, 28.28].
+        // Both squares are centered, so A's rotated diamond has corners
+        // (0, ∓14.14), (±14.14, 0) and spans [-14.14, 14.14]². Translating B
+        // by (15, 15) puts the center separation along the shared edge normal
+        // (1,1)/√2 at ~21.21 — beyond the combined apothems 10+10=20, so SAT
+        // separates on that axis. The AABB envelopes (each 28.28×28.28, A on
+        // [-14.14, 14.14]² and B on [0.86, 29.14]²) still overlap on
+        // [0.86, 14.14]².
         val aWorld = Transform(position = Vec2(0f, 0f), rotation = QUARTER_TURN)
         val bWorld = Transform(position = Vec2(15f, 15f), rotation = QUARTER_TURN)
 
@@ -69,15 +71,15 @@ class Shape2DOverlapTest {
     fun `mixed rotated-and-axis-aligned uses OBB path`() {
         val a = rect(20f)
         val b = rect(20f)
-        // A is a 20×20 rotated 45° around the world origin, so its OBB is a
-        // diamond with corners (0,0), (~14.14, ~14.14), (~-14.14, ~14.14),
-        // (0, ~28.28) — AABB envelope x ∈ [-14.14, 14.14], y ∈ [0, 28.28].
-        // B is axis-aligned at (10, 20), occupying [10, 30] × [20, 40].
-        // Envelopes overlap on [10, 14.14] × [20, 28.28]; the rotated diamond
-        // however passes only the bottom-right edge at most x ≈ 8.28 for
-        // y = 20, so the OBBs do not touch.
+        // A is a 20×20 centered square rotated 45° around the world origin, so
+        // its OBB is a diamond with corners (0, ∓14.14), (±14.14, 0) — AABB
+        // envelope [-14.14, 14.14]², apothem 10 along its (±1,1)/√2 normals.
+        // B is axis-aligned centered at (18, 18), occupying [8, 28] × [8, 28].
+        // Envelopes overlap on [8, 14.14]²; but along A's edge normal (1,1)/√2
+        // A projects to [-10, 10] while B projects to [11.3, 39.6], so the OBBs
+        // are separated on that axis.
         val aWorld = Transform(position = Vec2(0f, 0f), rotation = QUARTER_TURN)
-        val bWorld = Transform(position = Vec2(10f, 20f), rotation = 0f)
+        val bWorld = Transform(position = Vec2(18f, 18f), rotation = 0f)
 
         assertTrue(
             a.bounds(aWorld, Vec2.ZERO).intersects(b.bounds(bWorld, Vec2.ZERO)),
@@ -93,8 +95,9 @@ class Shape2DOverlapTest {
         val r = rect(10f)
         val world = Transform(position = Vec2(3f, 7f))
         val b = r.bounds(world, Vec2.ZERO)
-        assertEquals(3f, b.origin.x)
-        assertEquals(7f, b.origin.y)
+        // Centered: the 10×10 rect at (3,7) spans [-2,8] × [2,12].
+        assertEquals(-2f, b.origin.x)
+        assertEquals(2f, b.origin.y)
         assertEquals(10f, b.size.x)
         assertEquals(10f, b.size.y)
     }
@@ -104,15 +107,15 @@ class Shape2DOverlapTest {
         val r = rect(10f)
         val world = Transform(position = Vec2(0f, 0f), rotation = QUARTER_TURN)
         val b = r.bounds(world, Vec2.ZERO)
-        // Local corners (0,0),(10,0),(0,10),(10,10) rotated 45° around origin:
-        //   (0,0) → (0,0)
-        //   (10,0) → (7.07, 7.07)
-        //   (0,10) → (-7.07, 7.07)
-        //   (10,10) → (0, 14.14)
-        // Envelope: x ∈ [-7.07, 7.07], y ∈ [0, 14.14].
+        // Centered local corners (±5,±5) rotated 45° around origin:
+        //   (5,-5) → (7.07, 0)
+        //   (5,5) → (0, 7.07)
+        //   (-5,5) → (-7.07, 0)
+        //   (-5,-5) → (0, -7.07)
+        // Envelope: x ∈ [-7.07, 7.07], y ∈ [-7.07, 7.07].
         val half = 10f * sqrt(2f) / 2f
         approx(-half, b.origin.x, "origin.x")
-        approx(0f, b.origin.y, "origin.y")
+        approx(-half, b.origin.y, "origin.y")
         approx(2f * half, b.size.x, "size.x")
         approx(2f * half, b.size.y, "size.y")
     }

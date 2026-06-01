@@ -47,7 +47,7 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 
 `SceneTree` SHALL expose `val debug: DebugRegistry` instantiated alongside the tree. `DebugRegistry` SHALL provide:
 
-- `fun register(widget: DebugWidget)` — routes by subtype: `WorldDebugWidget` is added to the world container; `ScreenDebugWidget` is added to the screen container; both happen as live `addChild` operations and SHALL appear in the registry's `widgets` list.
+- `fun register(widget: DebugWidget)` — routes by subtype: `WorldDebugWidget` is added to the world container; `ScreenDebugWidget` is added to the screen container; both happen as live `addChild` operations and SHALL appear in the registry's `widgets` list. Registering a `ScreenDebugWidget` SHALL additionally enroll it in the per-tree `DebugDock`, which assigns its screen origin from its declared `DockSlot` — the widget SHALL NOT hardcode a corner.
 - `fun unregister(widget: DebugWidget)` — removes the widget from its container and from the list.
 - `val widgets: List<DebugWidget>` — read-only listing of currently registered widgets in registration order.
 - `inline fun <reified T : DebugWidget> find(): T?` — first widget of the requested concrete type, or `null`.
@@ -68,6 +68,13 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 - **THEN** `axes.parent` SHALL be the world container child of `DebugLayer`
 - **AND** `hud2.parent` SHALL be the screen container child of `DebugLayer`
 - **AND** `tree.debug.widgets` SHALL include both, in registration order
+
+#### Scenario: Screen widget origin comes from the dock
+
+- **GIVEN** a `ScreenDebugWidget` instance `hud2` with a declared `DockSlot`
+- **WHEN** `tree.debug.register(hud2)` is called
+- **THEN** `hud2` SHALL be enrolled in the tree's `DebugDock`
+- **AND** its screen origin SHALL be assigned by the dock from its `DockSlot`, not by a hardcoded corner constant in the widget
 
 #### Scenario: find returns instance by type
 

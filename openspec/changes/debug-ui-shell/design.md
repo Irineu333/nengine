@@ -40,13 +40,28 @@ dock sabe **onde** começa. Isso inverte o controle atual (widget cravava
 `(8,24)`) sem obrigar o widget a conhecer os vizinhos. Widgets de altura
 variável (picker, log) reportam o tamanho corrente a cada frame; o dock re-empilha.
 
-### Decision: Migrar os 5 imediatos para Panel+Label
-Hoje `DebugHud`/`TimeControlWidget` usam nós reais (`Panel`+`Button`) e os
-outros desenham imediato. Unificar em `Panel`+`Label` (1) dá a todos a mesma
-chrome via `DebugTheme`, (2) deixa o tamanho do painel medível pelo dock, e
-(3) reusa a UI de jogo (decisão do explore: "reaproveitar UI de jogo"). Os que
-precisam de desenho custom (sparklines do momentum) continuam desenhando dentro
-do retângulo do painel, mas o painel em si é um `Panel` temado.
+### Decision: Chrome temada única, idioma de render preservado
+A intenção original era migrar os 5 widgets imediatos para nós `Panel`+`Label`.
+Na implementação isso colidiu com a arquitetura de teste do subsistema: vários
+widgets renderizam logo após `physicsProcess`/`render` **sem** um `process()`,
+e construir nós exige `addChild` deferido por um `process()` (mutação durante
+render é descartada). Forçar a migração quebraria o contrato de teste de quase
+todo widget de leitura sem ganho para a spec.
+
+Decisão implementada, que satisfaz a spec por inteiro:
+- **Widgets interativos** (`DebugHud`, `TimeControlWidget`) seguem em nós reais
+  `Panel`+`Button` — precisam dos `Button` para o `hitTestUI`. Só trocaram a
+  chrome hardcoded por `DebugTheme` e o posicionamento por `dockOrigin`.
+- **Widgets de leitura** (`FpsWidget`, `MomentumWidget`, `ProfilerWidget`,
+  `LogOverlayWidget`, `ScenePickerWidget`) seguem desenhando imediato, mas
+  agora pintam a **chrome temada** (fundo + borda do `DebugTheme`, via o helper
+  comum `drawPanelChrome`) e desenham a partir do `dockOrigin`. Sparklines do
+  momentum continuam dentro do retângulo do painel temado.
+
+Ambos os caminhos compartilham a mesma chrome (`DebugTheme`) e o mesmo
+posicionamento (`DebugDock`) — que é o que a spec exige ("painéis compartilham
+a mesma chrome"; "widget reporta tamanho; dock dá o origin"). A spec não exige
+nós `Panel` literais.
 
 ### Decision: DebugTheme absorve DebugColors
 `DebugColors.kt` já é o ponto único das cores de gizmo/log. O `DebugTheme`

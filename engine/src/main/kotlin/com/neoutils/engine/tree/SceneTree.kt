@@ -307,6 +307,9 @@ class SceneTree(val root: Node) {
 
     fun render(renderer: Renderer) {
         if (!root.isLive) return
+        // Place every screen-space debug widget by its DockSlot before drawing;
+        // this re-flows on resize and as variable-height widgets change size.
+        debug.dock.relayout(size)
         runTraversal(rendering = true) {
             // World pass: skip CanvasLayer subtrees, apply Camera2D view transform.
             val view = currentCamera()?.computeViewTransform(size)

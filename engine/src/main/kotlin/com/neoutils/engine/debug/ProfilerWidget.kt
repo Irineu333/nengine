@@ -1,7 +1,6 @@
 package com.neoutils.engine.debug
 
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import java.util.Locale
 
@@ -20,6 +19,8 @@ import java.util.Locale
 class ProfilerWidget : ScreenDebugWidget() {
 
     override val title: String = "Profiler"
+
+    override val slot: DockSlot = DockSlot.BOTTOM_LEFT
 
     private val capacity: Int = 60
     private val hitTestSamples: LongArray = LongArray(capacity)
@@ -58,6 +59,11 @@ class ProfilerWidget : ScreenDebugWidget() {
         if (size < capacity) size++
     }
 
+    override fun contentSize(): Vec2 {
+        if (size == 0) return Vec2.ZERO
+        return Vec2(WIDTH, DebugTheme.padding * 2f + LINE_HEIGHT * ROW_COUNT)
+    }
+
     override fun drawDebug(renderer: Renderer) {
         if (size == 0) return
         val hitTest = avgMs(hitTestSamples)
@@ -67,20 +73,20 @@ class ProfilerWidget : ScreenDebugWidget() {
         val total = avgMs(totalSamples)
         val other = (total - hitTest - physics - process - render).coerceAtLeast(0f)
 
-        val pad = 6f
-        val lineHeight = 14f
-        val textSize = 12f
-        var y = pad + textSize
-        row(renderer, "hitTest", hitTest, total, pad, y, textSize); y += lineHeight
-        row(renderer, "physics ($lastSteps)", physics, total, pad, y, textSize); y += lineHeight
-        row(renderer, "process", process, total, pad, y, textSize); y += lineHeight
-        row(renderer, "render", render, total, pad, y, textSize); y += lineHeight
-        row(renderer, "other", other, total, pad, y, textSize); y += lineHeight
+        val textSize = DebugTheme.bodyTextSize
+        drawPanelChrome(renderer, dockOrigin, contentSize())
+        val x = dockOrigin.x + DebugTheme.padding
+        var y = dockOrigin.y + DebugTheme.padding
+        row(renderer, "hitTest", hitTest, total, x, y, textSize); y += LINE_HEIGHT
+        row(renderer, "physics ($lastSteps)", physics, total, x, y, textSize); y += LINE_HEIGHT
+        row(renderer, "process", process, total, x, y, textSize); y += LINE_HEIGHT
+        row(renderer, "render", render, total, x, y, textSize); y += LINE_HEIGHT
+        row(renderer, "other", other, total, x, y, textSize); y += LINE_HEIGHT
         renderer.drawText(
             text = "total = ${fmt(total)} ms",
-            position = Vec2(pad, y),
+            position = Vec2(x, y),
             size = textSize,
-            color = Color.WHITE,
+            color = DebugTheme.textColor,
         )
     }
 
@@ -98,7 +104,7 @@ class ProfilerWidget : ScreenDebugWidget() {
             text = "$label = ${fmt(ms)} ms (${fmt0(pct)}%)",
             position = Vec2(x, y),
             size = textSize,
-            color = Color.WHITE,
+            color = DebugTheme.textColor,
         )
     }
 
@@ -117,4 +123,12 @@ class ProfilerWidget : ScreenDebugWidget() {
 
     private fun fmt(v: Float): String = String.format(Locale.US, "%.2f", v)
     private fun fmt0(v: Float): String = String.format(Locale.US, "%.0f", v)
+
+    companion object {
+        private const val WIDTH: Float = 200f
+        private const val LINE_HEIGHT: Float = 14f
+
+        /** Five phase rows (hitTest/physics/process/render/other) + the total. */
+        private const val ROW_COUNT: Float = 6f
+    }
 }

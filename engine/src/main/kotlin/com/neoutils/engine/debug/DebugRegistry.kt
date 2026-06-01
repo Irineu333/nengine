@@ -75,6 +75,13 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
 
     private val drawToggle: DebugDrawToggle = DebugDrawToggle(draw)
 
+    /**
+     * Screen-space layout coordinator. Positions every registered
+     * `ScreenDebugWidget` by its declared `DockSlot`; re-flowed by
+     * `SceneTree.render` each frame. See [DebugDock].
+     */
+    val dock: DebugDock = DebugDock()
+
     val widgets: List<DebugWidget> get() = _widgets
 
     private var worldContainer: WorldDebugContainer? = null
@@ -121,7 +128,10 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
         }
         when (widget) {
             is WorldDebugWidget -> world.addChild(widget)
-            is ScreenDebugWidget -> screen.addChild(widget)
+            is ScreenDebugWidget -> {
+                screen.addChild(widget)
+                dock.add(widget)
+            }
             else -> error(
                 "DebugWidget '${widget.title}' is neither ScreenDebugWidget nor " +
                     "WorldDebugWidget — extend one of those bases.",
@@ -131,6 +141,7 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     }
 
     fun unregister(widget: DebugWidget) {
+        if (widget is ScreenDebugWidget) dock.remove(widget)
         val node = widget as? Node ?: return
         node.parent?.removeChild(node)
         _widgets -= widget

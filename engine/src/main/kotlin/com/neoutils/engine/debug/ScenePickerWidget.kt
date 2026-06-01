@@ -1,9 +1,9 @@
 package com.neoutils.engine.debug
 
-import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.render.TextMeasurer
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.serialization.inspectProperties
@@ -17,12 +17,15 @@ import java.util.Locale
  * selection once the node is no longer live, and draws a read-only breadcrumb
  * (root→selected) and property panel in screen pixels.
  *
- * Lives under `ScreenDebugCanvas`. The companion `SelectionGizmoWidget` reads
- * [selected] to draw the world-space oriented box.
+ * Lives under `ScreenDebugCanvas`, docked at `BOTTOM_RIGHT` via the `DebugDock`.
+ * The companion `SelectionGizmoWidget` reads [selected] to draw the world-space
+ * oriented box.
  */
 class ScenePickerWidget : ScreenDebugWidget() {
 
     override val title: String = "Picker"
+
+    override val slot: DockSlot = DockSlot.BOTTOM_RIGHT
 
     init { name = "ScenePickerWidget" }
 
@@ -32,6 +35,10 @@ class ScenePickerWidget : ScreenDebugWidget() {
 
     private var lastPickPoint: Vec2? = null
     private var cycleIndex: Int = 0
+
+    // Layout computed once per frame in contentSize (the dock measures there),
+    // then drawn from in drawDebug so both agree on size and origin.
+    private var layout: PanelLayout? = null
 
     /**
      * Records a pick at [pickPoint] (screen pixels) over [frontToBack] — the
@@ -65,16 +72,40 @@ class ScenePickerWidget : ScreenDebugWidget() {
         }
     }
 
-    override fun drawDebug(renderer: Renderer) {
-        val node = selected ?: return
-        val surface = tree?.size ?: return
+    override fun contentSize(): Vec2 {
+        val node = selected
+        val measurer = tree?.textMeasurer
+        val surface = tree?.size
+        if (node == null || measurer == null || surface == null) {
+            layout = null
+            return Vec2.ZERO
+        }
+        val computed = computeLayout(node, measurer, surface)
+        layout = computed
+        return computed.size
+    }
 
+    override fun drawDebug(renderer: Renderer) {
+        val current = layout ?: return
+        drawPanelChrome(renderer, dockOrigin, current.size)
+        val x = dockOrigin.x + DebugTheme.padding
+        var y = dockOrigin.y + DebugTheme.padding
+        for (row in current.rows) {
+            row.draw(renderer, x, y)
+            y += row.height
+        }
+    }
+
+    /**
+     * Builds the visible row list and panel size for [node]. Fits vertically:
+     * the tail that would spill past the screen collapses into a single
+     * overflow row rather than overflowing.
+     */
+    private fun computeLayout(node: Node, measurer: TextMeasurer, surface: Vec2): PanelLayout {
         val rows = buildRows(node)
-        // Fit vertically; collapse the tail into an overflow row rather than
-        // spilling past the screen edge.
-        val maxHeight = surface.y - MARGIN * 2f
+        val maxHeight = surface.y - DebugTheme.margin * 2f
         val shown = mutableListOf<Row>()
-        var contentHeight = INNER_PAD * 2f
+        var contentHeight = DebugTheme.padding * 2f
         var hidden = 0
         for ((index, row) in rows.withIndex()) {
             if (contentHeight + row.height > maxHeight) {
@@ -88,27 +119,11 @@ class ScenePickerWidget : ScreenDebugWidget() {
             shown += Row.Section("… (+$hidden more)")
             contentHeight += SECTION_H
         }
-
-        val panelWidth = shown.maxOf { it.width(renderer) } + INNER_PAD * 2f
+        val panelWidth = shown.maxOf { it.width(measurer) } + DebugTheme.padding * 2f
         // The last row carries a trailing LINE_GAP it does not need; drop it so
         // the bottom inset equals the top (and the sides).
         val panelHeight = contentHeight - LINE_GAP
-        // Anchor to the bottom-right corner — the only corner free of built-in
-        // overlays (FPS/TimeControls top-left, Debug HUD top-right,
-        // Momentum/Log/Profiler bottom-left). The fixed corner keeps the panel
-        // steady as its width/height change with the selection.
-        val originX = maxOf(MARGIN, surface.x - MARGIN - panelWidth)
-        val originY = maxOf(MARGIN, surface.y - MARGIN - panelHeight)
-
-        renderer.drawRect(Rect(Vec2(originX, originY), Vec2(panelWidth, panelHeight)), PANEL_BG, filled = true)
-        renderer.drawRect(Rect(Vec2(originX, originY), Vec2(panelWidth, panelHeight)), PANEL_BORDER, filled = false)
-
-        val x = originX + INNER_PAD
-        var y = originY + INNER_PAD
-        for (row in shown) {
-            row.draw(renderer, x, y)
-            y += row.height
-        }
+        return PanelLayout(shown, Vec2(panelWidth, panelHeight))
     }
 
     private fun buildRows(node: Node): List<Row> {
@@ -144,17 +159,19 @@ class ScenePickerWidget : ScreenDebugWidget() {
         return chain.asReversed().joinToString(" / ")
     }
 
+    private class PanelLayout(val rows: List<Row>, val size: Vec2)
+
     /** A single structured line of the panel; each variant owns its layout. */
     private sealed interface Row {
         val height: Float
-        fun width(renderer: Renderer): Float
+        fun width(measurer: TextMeasurer): Float
         fun draw(renderer: Renderer, x: Float, y: Float)
 
         /** `Type "name"` header. */
         class Title(val type: String, val name: String) : Row {
             override val height: Float get() = TITLE_H
-            override fun width(renderer: Renderer): Float =
-                renderer.measureText(type, TITLE_SIZE).x + GAP + renderer.measureText(name, TITLE_SIZE).x
+            override fun width(measurer: TextMeasurer): Float =
+                measurer.measureText(type, TITLE_SIZE).x + GAP + measurer.measureText(name, TITLE_SIZE).x
             override fun draw(renderer: Renderer, x: Float, y: Float) {
                 // `y` is the text's top edge (the backend shifts by the ascent).
                 renderer.drawText(type, Vec2(x, y), TITLE_SIZE, TYPE_COLOR)
@@ -166,7 +183,7 @@ class ScenePickerWidget : ScreenDebugWidget() {
         /** root→selected path, dimmed. */
         class Crumb(val text: String) : Row {
             override val height: Float get() = CRUMB_H
-            override fun width(renderer: Renderer): Float = renderer.measureText(text, SMALL_SIZE).x
+            override fun width(measurer: TextMeasurer): Float = measurer.measureText(text, SMALL_SIZE).x
             override fun draw(renderer: Renderer, x: Float, y: Float) =
                 renderer.drawText(text, Vec2(x, y), SMALL_SIZE, CRUMB_COLOR)
         }
@@ -174,7 +191,7 @@ class ScenePickerWidget : ScreenDebugWidget() {
         /** Section header. */
         class Section(val title: String) : Row {
             override val height: Float get() = SECTION_H
-            override fun width(renderer: Renderer): Float = renderer.measureText(title, TEXT_SIZE).x
+            override fun width(measurer: TextMeasurer): Float = measurer.measureText(title, TEXT_SIZE).x
             override fun draw(renderer: Renderer, x: Float, y: Float) =
                 renderer.drawText(title, Vec2(x, y), TEXT_SIZE, SECTION_COLOR)
         }
@@ -182,7 +199,7 @@ class ScenePickerWidget : ScreenDebugWidget() {
         /** Indented `key   value` pair with the value in a fixed column. */
         class Kv(val key: String, val value: String) : Row {
             override val height: Float get() = KV_H
-            override fun width(renderer: Renderer): Float = KEY_COL + renderer.measureText(value, TEXT_SIZE).x
+            override fun width(measurer: TextMeasurer): Float = KEY_COL + measurer.measureText(value, TEXT_SIZE).x
             override fun draw(renderer: Renderer, x: Float, y: Float) {
                 renderer.drawText(key, Vec2(x + INDENT, y), TEXT_SIZE, KEY_COLOR)
                 renderer.drawText(value, Vec2(x + KEY_COL, y), TEXT_SIZE, VALUE_COLOR)
@@ -194,8 +211,6 @@ class ScenePickerWidget : ScreenDebugWidget() {
         /** Screen-pixel radius within which a repeated click cycles instead of re-picking. */
         private const val CYCLE_EPSILON: Float = 4f
 
-        private const val MARGIN: Float = 8f
-        private const val INNER_PAD: Float = 8f
         private const val INDENT: Float = 8f
         private const val KEY_COL: Float = 64f
         private const val GAP: Float = 6f
@@ -211,8 +226,6 @@ class ScenePickerWidget : ScreenDebugWidget() {
         private const val SECTION_H: Float = TEXT_SIZE + LINE_GAP
         private const val KV_H: Float = TEXT_SIZE + LINE_GAP
 
-        private val PANEL_BG: Color = Color(0.08f, 0.08f, 0.10f, 0.88f)
-        private val PANEL_BORDER: Color = Color(0.55f, 0.55f, 0.60f, 1f)
         private val TYPE_COLOR: Color = Color(0.55f, 0.8f, 1f, 1f)
         private val NAME_COLOR: Color = Color(1f, 1f, 1f, 1f)
         private val CRUMB_COLOR: Color = Color(0.6f, 0.6f, 0.66f, 1f)

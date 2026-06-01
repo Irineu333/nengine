@@ -9,6 +9,11 @@ import com.neoutils.engine.render.Renderer
 import java.util.Locale
 import kotlin.math.abs
 
+private const val LINE_HEIGHT: Float = 16f
+private const val SPARK_COLUMN: Float = 210f
+private const val SPARK_WIDTH: Float = 80f
+private const val SPARK_HEIGHT: Float = 12f
+
 /**
  * Screen-space readout of `Σp`, `ΣL`, and `ΣKE` with one-second sparklines.
  * Owns its ring buffer (no shared singleton); records on every
@@ -19,6 +24,8 @@ import kotlin.math.abs
 class MomentumWidget : ScreenDebugWidget() {
 
     override val title: String = "Momentum"
+
+    override val slot: DockSlot = DockSlot.BOTTOM_LEFT
 
     private val capacity: Int = 60
     private val pXSamples: FloatArray = FloatArray(capacity)
@@ -55,16 +62,19 @@ class MomentumWidget : ScreenDebugWidget() {
         if (size < capacity) size++
     }
 
+    override fun contentSize(): Vec2 {
+        if (size == 0) return Vec2.ZERO
+        val pad = DebugTheme.padding
+        return Vec2(pad * 2f + SPARK_COLUMN + SPARK_WIDTH, pad * 2f + LINE_HEIGHT * 3f)
+    }
+
     override fun drawDebug(renderer: Renderer) {
         if (size == 0) return
-        val owningTree = tree ?: return
-        val surfaceHeight = owningTree.size.y
-        val lineHeight = 16f
-        val textSize = 12f
-        val sparkW = 80f
-        val sparkH = 12f
-        val pad = 6f
-        val baseY = surfaceHeight - 60f
+        val pad = DebugTheme.padding
+        val textSize = DebugTheme.bodyTextSize
+        drawPanelChrome(renderer, dockOrigin, contentSize())
+        val originX = dockOrigin.x + pad
+        val baseY = dockOrigin.y + pad
         val pNowX = lastSample(pXSamples)
         val pNowY = lastSample(pYSamples)
         val lNow = lastSample(lSamples)
@@ -72,27 +82,27 @@ class MomentumWidget : ScreenDebugWidget() {
 
         renderer.drawText(
             text = "Σp = (${fmt1(pNowX)}, ${fmt1(pNowY)})",
-            position = Vec2(pad, baseY),
+            position = Vec2(originX, baseY),
             size = textSize,
-            color = Color.WHITE,
+            color = DebugTheme.textColor,
         )
         renderer.drawText(
             text = "ΣL = ${fmt2(lNow)}",
-            position = Vec2(pad, baseY + lineHeight),
+            position = Vec2(originX, baseY + LINE_HEIGHT),
             size = textSize,
-            color = Color.WHITE,
+            color = DebugTheme.textColor,
         )
         renderer.drawText(
             text = "ΣKE = ${fmt1(keNow)}",
-            position = Vec2(pad, baseY + lineHeight * 2),
+            position = Vec2(originX, baseY + LINE_HEIGHT * 2),
             size = textSize,
-            color = Color.WHITE,
+            color = DebugTheme.textColor,
         )
 
-        val sparkX = pad + 220f
-        drawSparkline(renderer, pXSamples, baseY + 2f, sparkX, sparkW, sparkH, Color(0.4f, 0.8f, 1f, 1f))
-        drawSparkline(renderer, lSamples, baseY + 2f + lineHeight, sparkX, sparkW, sparkH, Color(0.4f, 1f, 0.6f, 1f))
-        drawSparkline(renderer, keSamples, baseY + 2f + lineHeight * 2, sparkX, sparkW, sparkH, Color(1f, 0.6f, 0.4f, 1f))
+        val sparkX = originX + SPARK_COLUMN
+        drawSparkline(renderer, pXSamples, baseY + 2f, sparkX, SPARK_WIDTH, SPARK_HEIGHT, Color(0.4f, 0.8f, 1f, 1f))
+        drawSparkline(renderer, lSamples, baseY + 2f + LINE_HEIGHT, sparkX, SPARK_WIDTH, SPARK_HEIGHT, Color(0.4f, 1f, 0.6f, 1f))
+        drawSparkline(renderer, keSamples, baseY + 2f + LINE_HEIGHT * 2, sparkX, SPARK_WIDTH, SPARK_HEIGHT, Color(1f, 0.6f, 0.4f, 1f))
     }
 
     private fun fmt1(v: Float): String = String.format(Locale.US, "%.1f", v)

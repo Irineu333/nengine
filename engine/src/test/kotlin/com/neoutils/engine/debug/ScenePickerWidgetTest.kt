@@ -4,6 +4,7 @@ import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.RecordedEvent
 import com.neoutils.engine.render.RecordingRenderer
+import com.neoutils.engine.render.TextMeasurer
 import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.FakeInput
@@ -24,7 +25,13 @@ class ScenePickerWidgetTest {
         }
         val group = Node().apply { name = "Group"; addChild(target) }
         val root = Node().apply { name = "Root"; addChild(group) }
-        val tree = SceneTree(root).also { it.resize(800f, 600f); it.start() }
+        val tree = SceneTree(root).also {
+            it.resize(800f, 600f)
+            // Matches RecordingRenderer.measureText so the dock's contentSize
+            // (which measures via tree.textMeasurer) agrees with the draw.
+            it.textMeasurer = TextMeasurer { text, size -> Vec2(text.length * size * 0.5f, size) }
+            it.start()
+        }
         tree.debug.scenePicker.enabled = true
         tree.hitTestPick(FakeInput(pointer = Vec2(120f, 110f), leftClicked = true))
         assertSame(target, tree.debug.scenePicker.selected)
@@ -38,12 +45,13 @@ class ScenePickerWidgetTest {
     fun `panel anchors to the bottom-right corner`() {
         val (tree, _, recorder) = treeWithSelectedTarget() // surface 800x600
         tree.render(recorder)
-        // The panel's background/border share one rect whose far corner sits a
-        // uniform margin from the bottom-right of the surface.
+        // The DebugDock places the BOTTOM_RIGHT widget a theme margin from the
+        // bottom-right; its panel rect's far corner sits at (size - margin).
+        val margin = DebugTheme.margin
         val anchored = recorder.events.filterIsInstance<RecordedEvent.Rect>().any {
             val right = it.rect.origin.x + it.rect.size.x
             val bottom = it.rect.origin.y + it.rect.size.y
-            kotlin.math.abs(right - (800f - 8f)) < 0.5f && kotlin.math.abs(bottom - (600f - 8f)) < 0.5f
+            kotlin.math.abs(right - (800f - margin)) < 0.5f && kotlin.math.abs(bottom - (600f - margin)) < 0.5f
         }
         assertTrue(anchored, "expected a panel rect anchored to the bottom-right margin")
     }

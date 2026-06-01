@@ -21,6 +21,8 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
 
     override val title: String = "Log"
 
+    override val slot: DockSlot = DockSlot.BOTTOM_LEFT
+
     /** Display-only floor; orthogonal to `Log.config`. Set freely at runtime. */
     var minLevel: LogLevel = LogLevel.Debug
 
@@ -29,6 +31,10 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
     private var head: Int = 0
     private var size: Int = 0
     private val lock = Any()
+
+    // The dock measures via contentSize before drawDebug runs; cache the same
+    // visible snapshot so both agree within a frame.
+    private var lastVisible: List<LogEntry> = emptyList()
 
     init { name = "LogOverlayWidget" }
 
@@ -58,7 +64,8 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
         }
     }
 
-    override fun drawDebug(renderer: Renderer) {
+    /** Oldest→newest visible tail, snapshotted under [lock] and cached. */
+    private fun snapshotVisible(): List<LogEntry> {
         val snapshot = synchronized(lock) {
             val out = ArrayList<LogEntry>(size)
             var cursor = (head - size + capacity) % capacity
@@ -68,22 +75,29 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
             }
             out
         }
-        if (snapshot.isEmpty()) return
-        val owningTree = tree ?: return
+        return snapshot.filter { it.level.ordinal >= minLevel.ordinal }
+    }
 
-        val visible = snapshot.filter { it.level.ordinal >= minLevel.ordinal }
+    override fun contentSize(): Vec2 {
+        lastVisible = snapshotVisible()
+        if (lastVisible.isEmpty()) return Vec2.ZERO
+        return Vec2(WIDTH, DebugTheme.padding * 2f + lastVisible.size * LINE_HEIGHT)
+    }
+
+    override fun drawDebug(renderer: Renderer) {
+        val visible = lastVisible
         if (visible.isEmpty()) return
 
-        // Anchor at the bottom-left, oldest visible line on top, newest at the
-        // base. `position.y` is the text's top edge, so the newest line's top
-        // sits one LINE_HEIGHT above the padding to keep it fully on screen.
-        // Re-anchored every frame so it follows tree.resize.
-        val newestTop = owningTree.size.y - PADDING - LINE_HEIGHT
+        drawPanelChrome(renderer, dockOrigin, Vec2(WIDTH, DebugTheme.padding * 2f + visible.size * LINE_HEIGHT))
+
+        // Oldest visible line on top, newest at the base; drawn newest-first so
+        // overlapping (none here) and recorded order stay newest-first.
+        val top = dockOrigin.y + DebugTheme.padding
         for ((rowFromBottom, entry) in visible.asReversed().withIndex()) {
-            val y = newestTop - rowFromBottom * LINE_HEIGHT
+            val index = visible.size - 1 - rowFromBottom
             renderer.drawText(
                 text = "[${entry.tag}] ${entry.message}",
-                position = Vec2(PADDING, y),
+                position = Vec2(dockOrigin.x + DebugTheme.padding, top + index * LINE_HEIGHT),
                 size = TEXT_SIZE,
                 color = colorFor(entry.level),
             )
@@ -91,13 +105,13 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
     }
 
     private fun colorFor(level: LogLevel): Color = when (level) {
-        LogLevel.Warn -> DEBUG_LOG_WARN_COLOR
-        LogLevel.Error -> DEBUG_LOG_ERROR_COLOR
-        else -> DEBUG_LOG_NEUTRAL_COLOR
+        LogLevel.Warn -> DebugTheme.logWarnColor
+        LogLevel.Error -> DebugTheme.logErrorColor
+        else -> DebugTheme.logNeutralColor
     }
 
     companion object {
-        private const val PADDING: Float = 8f
+        private const val WIDTH: Float = 360f
         private const val LINE_HEIGHT: Float = 16f
         private const val TEXT_SIZE: Float = 12f
     }

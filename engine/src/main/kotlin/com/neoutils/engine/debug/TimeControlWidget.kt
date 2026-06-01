@@ -1,9 +1,7 @@
 package com.neoutils.engine.debug
 
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.Border
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Panel
 import java.util.Locale
@@ -27,6 +25,8 @@ class TimeControlWidget : ScreenDebugWidget() {
 
     override val title: String = "Time"
 
+    override val slot: DockSlot = DockSlot.TOP_LEFT
+
     private var panel: Panel? = null
     private var pauseButton: Button? = null
     private var speedDisplay: Button? = null
@@ -43,12 +43,15 @@ class TimeControlWidget : ScreenDebugWidget() {
         }
         if (!enabled) return
         refreshLabels()
-        repositionPanel()
     }
+
+    override fun contentSize(): Vec2 = panel?.size ?: Vec2.ZERO
 
     override fun drawDebug(renderer: Renderer) {
         // Panel + Buttons draw themselves through the scene-graph traversal;
-        // this widget itself emits nothing.
+        // place the panel at the dock-assigned origin just before its children
+        // draw (this onDraw runs ahead of the panel child in the DFS).
+        panel?.position = dockOrigin
     }
 
     private fun buildPanel() {
@@ -56,8 +59,8 @@ class TimeControlWidget : ScreenDebugWidget() {
         val newPanel = Panel().apply {
             name = "TimeControlPanel"
             size = Vec2(PANEL_WIDTH, PANEL_HEADER + ROW_HEIGHT * 3 + ROW_GAP)
-            color = PANEL_COLOR
-            border = Border(color = PANEL_BORDER, width = 1f)
+            color = DebugTheme.panelBackground
+            border = DebugTheme.border
         }
         addChild(newPanel)
         panel = newPanel
@@ -94,7 +97,7 @@ class TimeControlWidget : ScreenDebugWidget() {
         plus.pressed.connect { tree?.let { it.timeScale = stepSpeed(it.timeScale, up = true) } }
         newPanel.addChild(plus)
 
-        repositionPanel()
+        panel?.position = dockOrigin
     }
 
     private fun rowButton(buttonName: String, index: Int, label: String): Button =
@@ -135,11 +138,6 @@ class TimeControlWidget : ScreenDebugWidget() {
         }
     }
 
-    private fun repositionPanel() {
-        val p = panel ?: return
-        p.position = Vec2(PANEL_MARGIN, PANEL_MARGIN)
-    }
-
     private fun pauseLabel(paused: Boolean): String = if (paused) "Resume" else "Pause"
 
     private fun speedValueLabel(scale: Float): String =
@@ -176,11 +174,8 @@ class TimeControlWidget : ScreenDebugWidget() {
 
         private const val PANEL_WIDTH: Float = 140f
         private const val STEPPER_WIDTH: Float = 28f
-        private const val PANEL_MARGIN: Float = 12f
         private const val PANEL_HEADER: Float = 6f
         private const val ROW_HEIGHT: Float = 24f
         private const val ROW_GAP: Float = 4f
-        private val PANEL_COLOR: Color = Color(0.10f, 0.10f, 0.12f, 0.85f)
-        private val PANEL_BORDER: Color = Color(0.55f, 0.55f, 0.60f, 1f)
     }
 }

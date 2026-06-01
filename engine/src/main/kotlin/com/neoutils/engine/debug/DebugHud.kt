@@ -1,9 +1,7 @@
 package com.neoutils.engine.debug
 
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.Border
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Panel
 
@@ -18,12 +16,14 @@ import com.neoutils.engine.scene.Panel
  *    to the scene (via the deferred-mutation pending queue). When it flips
  *    to `false`, those children are removed — so a closed HUD draws zero
  *    rects/text and consumes zero clicks.
- *  - Pinned to the top-right corner with a 12 px inset; re-pinned each
- *    frame so it follows `tree.resize`.
+ *  - Docked at the top-right corner by the `DebugDock`; the panel follows
+ *    `dockOrigin`, so it re-pins on `tree.resize` with no corner math here.
  */
 class DebugHud : ScreenDebugWidget() {
 
     override val title: String = "Debug HUD"
+
+    override val slot: DockSlot = DockSlot.TOP_RIGHT
 
     private var panel: Panel? = null
     private val rows: MutableList<Row> = mutableListOf()
@@ -40,12 +40,15 @@ class DebugHud : ScreenDebugWidget() {
         }
         if (!enabled) return
         refreshLabels()
-        repositionPanel()
     }
 
+    override fun contentSize(): Vec2 = panel?.size ?: Vec2.ZERO
+
     override fun drawDebug(renderer: Renderer) {
-        // The Panel + Buttons draw themselves via the scene-graph traversal;
-        // this widget itself emits nothing.
+        // The Panel + Buttons draw themselves via the scene-graph traversal.
+        // Place the panel at the dock-assigned origin just before its children
+        // draw (this onDraw runs ahead of the panel child in the DFS).
+        panel?.position = dockOrigin
     }
 
     private fun buildPanel() {
@@ -54,8 +57,8 @@ class DebugHud : ScreenDebugWidget() {
         val newPanel = Panel().apply {
             name = "DebugHudPanel"
             size = Vec2(PANEL_WIDTH, PANEL_HEADER + ROW_HEIGHT * candidates.size + ROW_GAP)
-            color = PANEL_COLOR
-            border = Border(color = PANEL_BORDER, width = 1f)
+            color = DebugTheme.panelBackground
+            border = DebugTheme.border
         }
         addChild(newPanel)
         panel = newPanel
@@ -72,7 +75,7 @@ class DebugHud : ScreenDebugWidget() {
             newPanel.addChild(btn)
             rows += Row(widget, btn)
         }
-        repositionPanel()
+        panel?.position = dockOrigin
     }
 
     private fun tearDownPanel() {
@@ -89,12 +92,6 @@ class DebugHud : ScreenDebugWidget() {
         }
     }
 
-    private fun repositionPanel() {
-        val p = panel ?: return
-        val owningTree = tree ?: return
-        p.position = Vec2(owningTree.size.x - PANEL_WIDTH - PANEL_MARGIN, PANEL_MARGIN)
-    }
-
     private fun labelFor(widget: DebugWidget): String =
         if (widget.enabled) "[x] ${widget.title}" else "[ ] ${widget.title}"
 
@@ -102,11 +99,8 @@ class DebugHud : ScreenDebugWidget() {
 
     companion object {
         private const val PANEL_WIDTH: Float = 200f
-        private const val PANEL_MARGIN: Float = 12f
         private const val PANEL_HEADER: Float = 6f
         private const val ROW_HEIGHT: Float = 24f
         private const val ROW_GAP: Float = 4f
-        private val PANEL_COLOR: Color = Color(0.10f, 0.10f, 0.12f, 0.85f)
-        private val PANEL_BORDER: Color = Color(0.55f, 0.55f, 0.60f, 1f)
     }
 }

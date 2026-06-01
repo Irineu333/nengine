@@ -33,6 +33,9 @@ object DebugTheme {
     /** Height of the panel title bar / drag handle, in screen pixels. */
     val headerHeight: Float = 20f
 
+    /** Color of the drag-grip dots drawn in the header to signal "draggable". */
+    val headerGripColor: Color = Color(0.65f, 0.65f, 0.72f, 1f)
+
     /** Outer inset between a docked panel and the screen edge. */
     val margin: Float = 12f
 

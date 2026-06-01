@@ -5,6 +5,7 @@ import com.neoutils.engine.input.Key
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.render.RecordedEvent
 import com.neoutils.engine.render.RecordingRenderer
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Button
@@ -240,6 +241,20 @@ class DebugDraggableTest {
 
         assertTrue(input.mouseClickConsumed, "the panel absorbs the click")
         assertNull(tree.debug.scenePicker.selected, "the picker must not pick the node behind the panel")
+    }
+
+    @Test
+    fun `header draws a drag-grip affordance`() {
+        val tree = startedTree()
+        val widget = FixedScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f))
+        tree.debug.register(widget)
+        tree.debug.dock.relayout(tree.size)
+
+        val recorder = RecordingRenderer()
+        tree.render(recorder)
+        val gripDots = recorder.events.filterIsInstance<RecordedEvent.Rect>()
+            .count { it.filled && it.color == DebugTheme.headerGripColor }
+        assertEquals(6, gripDots, "the header shows a 2x3 grip of dots")
     }
 
     private fun findButton(node: Node, name: String): Button? {

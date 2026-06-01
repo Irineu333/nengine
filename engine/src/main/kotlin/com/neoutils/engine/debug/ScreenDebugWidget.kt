@@ -109,7 +109,32 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
             size = DebugTheme.titleTextSize,
             color = DebugTheme.textColor,
         )
+        drawDragGrip(renderer, o, full.x)
         renderer.drawRect(Rect(o, full), DebugTheme.panelBorderColor, filled = false)
+    }
+
+    /**
+     * A 2×3 grid of dots at the right of the header — the universal "grab me"
+     * affordance — signalling the title bar is the drag handle.
+     */
+    private fun drawDragGrip(renderer: Renderer, headerOrigin: Vec2, width: Float) {
+        val cols = 2
+        val rows = 3
+        val gridW = cols * GRIP_DOT + (cols - 1) * GRIP_GAP
+        val gridH = rows * GRIP_DOT + (rows - 1) * GRIP_GAP
+        val startX = headerOrigin.x + width - DebugTheme.padding - gridW
+        val startY = headerOrigin.y + (DebugTheme.headerHeight - gridH) / 2f
+        for (c in 0 until cols) {
+            for (r in 0 until rows) {
+                val x = startX + c * (GRIP_DOT + GRIP_GAP)
+                val y = startY + r * (GRIP_DOT + GRIP_GAP)
+                renderer.drawRect(
+                    Rect(Vec2(x, y), Vec2(GRIP_DOT, GRIP_DOT)),
+                    DebugTheme.headerGripColor,
+                    filled = true,
+                )
+            }
+        }
     }
 
     override fun onProcess(dt: Float) {
@@ -183,5 +208,10 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         val maxX = (surface.x - size.x).coerceAtLeast(0f)
         val maxY = (surface.y - size.y).coerceAtLeast(0f)
         return Vec2(pos.x.coerceIn(0f, maxX), pos.y.coerceIn(0f, maxY))
+    }
+
+    private companion object {
+        const val GRIP_DOT: Float = 2f
+        const val GRIP_GAP: Float = 2f
     }
 }

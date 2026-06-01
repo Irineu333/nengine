@@ -72,9 +72,10 @@ class MomentumWidget : ScreenDebugWidget() {
         if (size == 0) return
         val pad = DebugTheme.padding
         val textSize = DebugTheme.bodyTextSize
-        drawPanelChrome(renderer, dockOrigin, contentSize())
-        val originX = dockOrigin.x + pad
-        val baseY = dockOrigin.y + pad
+        val origin = origin
+        drawPanelChrome(renderer, origin, contentSize())
+        val originX = origin.x + pad
+        val baseY = origin.y + pad
         val pNowX = lastSample(pXSamples)
         val pNowY = lastSample(pYSamples)
         val lNow = lastSample(lSamples)

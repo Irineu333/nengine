@@ -66,8 +66,11 @@ arquivo/escopo de persistência — isso é uma Fase 3 deliberadamente separada.
 ## Risks / Trade-offs
 
 - **[Pega vs. clique de conteúdo]** painéis com botões (Time HUD) precisam
-  distinguir "arrastar a barra" de "clicar um botão". Mitigação: zona de pega
-  só no topo/título; o resto continua roteando clique normal.
+  distinguir "arrastar a barra" de "clicar um botão". Mitigação (implementada):
+  a zona de pega é o retângulo do painel **menos** os `Button` interativos
+  descendentes — pressionar a chrome inicia o arrasto, pressionar um controle
+  roteia o clique normalmente. Funciona para todo painel sem reservar uma
+  barra de título dedicada.
 - **[Consumo de drag retroativo]** gameplay existente que faz pan/arraste não
   conhece o flag novo. Mitigação: default não-consumido; varrer os jogos
   shipped (pool8 "puxar e soltar") e adotar o flag onde fizer sentido.
@@ -83,8 +86,13 @@ Aditivo. O flag de drag no `Input` tem default não-consumido (sem efeito em
 quem não o lê). O override de posição é opcional; sem arrasto, o layout é
 idêntico ao da `debug-ui-shell`. Sem breaking changes.
 
-## Open Questions
+## Open Questions (resolvidas no apply)
 
-- Nome exato do flag (`mouseDragConsumed` vs. um conceito mais geral de
-  "pointer capture") — decidir na implementação, alinhado ao `mouseClickConsumed`.
-- Gesto de reset: tecla, botão no HUD, ou ambos — cosmético, decidir no apply.
+- Nome do flag: **`Input.mouseDragConsumed`**, alinhado ao `mouseClickConsumed`.
+  Difere num ponto: tem getter/setter default no-op na interface (lê `false`,
+  ignora escrita) para que `Input`s que não lidam com arrasto de painel não
+  precisem de storage; os dois backends shipped o sobrescrevem com estado real.
+- Gesto de reset: **tecla** (`Backspace`) num nó interno
+  (`DebugLayoutShortcutNode`, gated em `hud.enabled`) chamando
+  `DebugRegistry.resetAllPanelPositions()`; `ScreenDebugWidget.resetPosition()`
+  reseta um painel só. Sem botão no HUD por ora (escopo mínimo).

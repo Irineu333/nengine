@@ -149,4 +149,14 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
 
     inline fun <reified T : DebugWidget> find(): T? =
         widgets.firstOrNull { it is T } as T?
+
+    /**
+     * Clears the drag override of every screen widget, sending each panel back
+     * to its `DockSlot`. Backs the "reset all" layout gesture (polled by the
+     * engine-internal `DebugLayoutShortcutNode`); a game can also call it to
+     * restore the default debug layout programmatically.
+     */
+    fun resetAllPanelPositions() {
+        for (widget in _widgets) (widget as? ScreenDebugWidget)?.resetPosition()
+    }
 }

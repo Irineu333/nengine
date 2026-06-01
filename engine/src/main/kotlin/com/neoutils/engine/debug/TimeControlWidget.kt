@@ -51,7 +51,7 @@ class TimeControlWidget : ScreenDebugWidget() {
         // Panel + Buttons draw themselves through the scene-graph traversal;
         // place the panel at the dock-assigned origin just before its children
         // draw (this onDraw runs ahead of the panel child in the DFS).
-        panel?.position = dockOrigin
+        panel?.position = origin
     }
 
     private fun buildPanel() {
@@ -97,7 +97,7 @@ class TimeControlWidget : ScreenDebugWidget() {
         plus.pressed.connect { tree?.let { it.timeScale = stepSpeed(it.timeScale, up = true) } }
         newPanel.addChild(plus)
 
-        panel?.position = dockOrigin
+        panel?.position = origin
     }
 
     private fun rowButton(buttonName: String, index: Int, label: String): Button =

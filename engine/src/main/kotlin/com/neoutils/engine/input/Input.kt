@@ -50,4 +50,20 @@ interface Input {
      * begins with a clean slate.
      */
     var mouseClickConsumed: Boolean
+
+    /**
+     * Per-tick drag-consumption signal mirroring [mouseClickConsumed]: reset to
+     * `false` by [com.neoutils.engine.tree.SceneTree.hitTestUI] at the start of
+     * each tick and set to `true` while a debug panel owns a pointer drag.
+     * Gameplay drag consumers (a camera pan, a "drag and drop" of world objects)
+     * MUST check this before acting on a held [isMouseDown] so dragging a debug
+     * panel does not also drag the camera/world along.
+     *
+     * Defaults to a no-op (always reads `false`, writes ignored) so an `Input`
+     * that never participates in debug-panel dragging needs no extra storage;
+     * the shipped backends override it with stored, per-tick state.
+     */
+    var mouseDragConsumed: Boolean
+        get() = false
+        set(_) {}
 }

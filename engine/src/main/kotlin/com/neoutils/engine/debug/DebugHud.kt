@@ -48,7 +48,7 @@ class DebugHud : ScreenDebugWidget() {
         // The Panel + Buttons draw themselves via the scene-graph traversal.
         // Place the panel at the dock-assigned origin just before its children
         // draw (this onDraw runs ahead of the panel child in the DFS).
-        panel?.position = dockOrigin
+        panel?.position = origin
     }
 
     private fun buildPanel() {
@@ -75,7 +75,7 @@ class DebugHud : ScreenDebugWidget() {
             newPanel.addChild(btn)
             rows += Row(widget, btn)
         }
-        panel?.position = dockOrigin
+        panel?.position = origin
     }
 
     private fun tearDownPanel() {

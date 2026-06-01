@@ -33,10 +33,11 @@ class FpsWidget : ScreenDebugWidget() {
 
     override fun drawDebug(renderer: Renderer) {
         val size = contentSize()
-        drawPanelChrome(renderer, dockOrigin, size)
+        val origin = origin
+        drawPanelChrome(renderer, origin, size)
         renderer.drawText(
             text = "fps ${counter.current.toInt()}",
-            position = Vec2(dockOrigin.x + DebugTheme.padding, dockOrigin.y + DebugTheme.padding),
+            position = Vec2(origin.x + DebugTheme.padding, origin.y + DebugTheme.padding),
             size = DebugTheme.titleTextSize,
             color = DebugTheme.textColor,
         )

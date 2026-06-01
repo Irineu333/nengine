@@ -200,7 +200,9 @@ class SceneTree(val root: Node) {
     /**
      * UI hit-test phase. Runs at the start of each tick (between
      * `input.beginTick()` and `tree.process(dt)`). Resets
-     * [Input.mouseClickConsumed] to `false`, then — if the left mouse button
+     * [Input.mouseClickConsumed] and [Input.mouseDragConsumed] to `false`
+     * (the drag flag is then set later in the tick by a debug panel that owns
+     * an active drag), then — if the left mouse button
      * fired this tick — walks every reachable `CanvasLayer` top-most-first
      * (sorted by `(layer desc, dfs-order desc)`); inside each layer subtree
      * the first enabled `Button` whose `screenRect()` contains the pointer
@@ -209,6 +211,7 @@ class SceneTree(val root: Node) {
      */
     fun hitTestUI(input: Input) {
         input.mouseClickConsumed = false
+        input.mouseDragConsumed = false
         if (!root.isLive) return
         if (!input.wasMouseClickedRaw(MouseButton.Left)) return
         val pointer = input.pointerPosition

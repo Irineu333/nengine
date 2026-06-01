@@ -88,16 +88,17 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
         val visible = lastVisible
         if (visible.isEmpty()) return
 
-        drawPanelChrome(renderer, dockOrigin, Vec2(WIDTH, DebugTheme.padding * 2f + visible.size * LINE_HEIGHT))
+        val origin = origin
+        drawPanelChrome(renderer, origin, Vec2(WIDTH, DebugTheme.padding * 2f + visible.size * LINE_HEIGHT))
 
         // Oldest visible line on top, newest at the base; drawn newest-first so
         // overlapping (none here) and recorded order stay newest-first.
-        val top = dockOrigin.y + DebugTheme.padding
+        val top = origin.y + DebugTheme.padding
         for ((rowFromBottom, entry) in visible.asReversed().withIndex()) {
             val index = visible.size - 1 - rowFromBottom
             renderer.drawText(
                 text = "[${entry.tag}] ${entry.message}",
-                position = Vec2(dockOrigin.x + DebugTheme.padding, top + index * LINE_HEIGHT),
+                position = Vec2(origin.x + DebugTheme.padding, top + index * LINE_HEIGHT),
                 size = TEXT_SIZE,
                 color = colorFor(entry.level),
             )

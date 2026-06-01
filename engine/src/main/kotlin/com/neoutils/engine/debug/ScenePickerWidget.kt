@@ -87,9 +87,10 @@ class ScenePickerWidget : ScreenDebugWidget() {
 
     override fun drawDebug(renderer: Renderer) {
         val current = layout ?: return
-        drawPanelChrome(renderer, dockOrigin, current.size)
-        val x = dockOrigin.x + DebugTheme.padding
-        var y = dockOrigin.y + DebugTheme.padding
+        val origin = origin
+        drawPanelChrome(renderer, origin, current.size)
+        val x = origin.x + DebugTheme.padding
+        var y = origin.y + DebugTheme.padding
         for (row in current.rows) {
             row.draw(renderer, x, y)
             y += row.height

@@ -74,9 +74,10 @@ class ProfilerWidget : ScreenDebugWidget() {
         val other = (total - hitTest - physics - process - render).coerceAtLeast(0f)
 
         val textSize = DebugTheme.bodyTextSize
-        drawPanelChrome(renderer, dockOrigin, contentSize())
-        val x = dockOrigin.x + DebugTheme.padding
-        var y = dockOrigin.y + DebugTheme.padding
+        val origin = origin
+        drawPanelChrome(renderer, origin, contentSize())
+        val x = origin.x + DebugTheme.padding
+        var y = origin.y + DebugTheme.padding
         row(renderer, "hitTest", hitTest, total, x, y, textSize); y += LINE_HEIGHT
         row(renderer, "physics ($lastSteps)", physics, total, x, y, textSize); y += LINE_HEIGHT
         row(renderer, "process", process, total, x, y, textSize); y += LINE_HEIGHT

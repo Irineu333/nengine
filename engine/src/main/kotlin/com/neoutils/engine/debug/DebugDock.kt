@@ -10,6 +10,11 @@ import com.neoutils.engine.math.Vec2
  * each widget's `dockOrigin`, which the widget draws from — no widget hardcodes
  * a corner.
  *
+ * A widget the user has dragged carries a `customOrigin` override: the dock
+ * leaves its position alone (only re-clamping it into the viewport) and does
+ * **not** reserve slot space for it, so the remaining slot widgets re-flow as
+ * if it were gone.
+ *
  * [relayout] is called by `SceneTree.render` each frame, so the layout re-flows
  * automatically on `tree.resize` and as variable-height widgets (picker, log)
  * change size. Plain class, never a `Node`; owned by `DebugRegistry`.
@@ -32,13 +37,19 @@ class DebugDock {
     fun relayout(surface: Vec2) {
         for (slot in DockSlot.values()) {
             val items = widgets
-                .filter { it.slot == slot && it.enabled }
+                // Dragged panels (customOrigin != null) own their position; skip
+                // them here so the slot stacks the remaining widgets only.
+                .filter { it.slot == slot && it.enabled && it.customOrigin == null }
                 .mapNotNull { w ->
                     val size = w.contentSize()
                     if (size.x > 0f && size.y > 0f) w to size else null
                 }
             if (items.isEmpty()) continue
             layoutSlot(slot, surface, items)
+        }
+        // Keep dragged panels inside the viewport after a resize.
+        for (w in widgets) {
+            if (w.enabled && w.customOrigin != null) w.reclampCustomOrigin(surface)
         }
     }
 

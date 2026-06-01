@@ -28,6 +28,8 @@ class SkikoInput : Input {
 
     @Volatile override var mouseClickConsumed: Boolean = false
 
+    @Volatile override var mouseDragConsumed: Boolean = false
+
     override fun isKeyDown(key: Key): Boolean = key in downKeys
 
     override fun wasKeyPressed(key: Key): Boolean = key in pressedThisTick

@@ -28,6 +28,8 @@ class LwjglInput : Input {
 
     @Volatile override var mouseClickConsumed: Boolean = false
 
+    @Volatile override var mouseDragConsumed: Boolean = false
+
     override val pointerPosition: Vec2 get() = pointer
 
     override fun isKeyDown(key: Key): Boolean = key in keysDown
